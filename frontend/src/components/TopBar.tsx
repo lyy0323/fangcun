@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useBoardContext, useActiveBoard } from '../context/BoardContext';
 import { PLACEHOLDER } from '../lib/types';
-import { Layers, Plus, Copy, Check, Upload, Sun, Moon, Settings, ChevronRight, X, BookOpen, Lightbulb, SendHorizontal, ExternalLink, Download, FolderUp } from 'lucide-react';
+import { Layers, Plus, ClipboardType, Check, Upload, Sun, Moon, Settings, ChevronRight, X, BookOpen, Lightbulb, SendHorizontal, ExternalLink, Download, FolderUp, ImageDown } from 'lucide-react';
 import type { Board } from '../lib/types';
+import { ExportPreview } from './ExportPreview';
 
 function SettingsModal({ onClose }: { onClose: () => void }) {
   const { state, dispatch } = useBoardContext();
@@ -67,7 +68,8 @@ function SettingsModal({ onClose }: { onClose: () => void }) {
               <li className="flex items-start gap-2"><span className="shrink-0 w-5 h-5 rounded border border-[var(--border)] flex items-center justify-center mt-0.5"><Moon size={11} /></span><span><b>深浅模式</b> — 切换浅色/深色主题</span></li>
               <li className="flex items-start gap-2"><span className="shrink-0 w-5 h-5 rounded border border-[var(--border)] flex items-center justify-center mt-0.5"><Settings size={11} /></span><span><b>设置</b> — 教程、导入导出、关于</span></li>
               <li className="flex items-start gap-2"><span className="shrink-0 w-5 h-5 rounded border border-[var(--border)] flex items-center justify-center mt-0.5"><Upload size={11} /></span><span><b>上传</b> — 全文填写完成后，提交至南洋吟游</span></li>
-              <li className="flex items-start gap-2"><span className="shrink-0 w-5 h-5 rounded border border-[var(--border)] flex items-center justify-center mt-0.5"><Copy size={11} /></span><span><b>复制</b> — 将当前作品含标点复制到剪贴板</span></li>
+              <li className="flex items-start gap-2"><span className="shrink-0 w-5 h-5 rounded border border-[var(--border)] flex items-center justify-center mt-0.5"><ImageDown size={11} /></span><span><b>导出图片</b> — 全文填写完成后，导出为图片</span></li>
+              <li className="flex items-start gap-2"><span className="shrink-0 w-5 h-5 rounded border border-[var(--border)] flex items-center justify-center mt-0.5"><ClipboardType size={11} /></span><span><b>复制文本</b> — 将当前作品含标点复制到剪贴板</span></li>
               <li className="flex items-start gap-2"><span className="shrink-0 w-5 h-5 rounded border border-[var(--border)] flex items-center justify-center mt-0.5"><Plus size={11} /></span><span><b>新建</b> — 选择诗/词体裁创建新画板</span></li>
             </ul>
           </div>
@@ -147,6 +149,7 @@ function SettingsModal({ onClose }: { onClose: () => void }) {
           </a>
           <p className="font-medium text-[var(--text)] pt-1">更新日志</p>
           <ul className="list-disc pl-4 space-y-1">
+            <li>v1.3 (2026-04-03) — 导出图片（5套配色、高清输出），画板批量导入导出</li>
             <li>v1.2 (2026-04-02) — 开放 API 及文档，CLI 工具，API Key 认证，前端免认证</li>
             <li>v1.1 (2026-03-18) — 词库扩容至45万首，字典实时搜索，重字提醒，设置面板，字典区收起/展开动画，灵感板换行修复</li>
             <li>v1.0 (2026-02-13) — 首版上线，诗词格律校验，韵部查询，词首/词末/对语字典，灵感板</li>
@@ -205,6 +208,7 @@ export function TopBar() {
   const [dropOpen, setDropOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [showExport, setShowExport] = useState(false);
   const [dark, setDark] = useState(() => {
     if (typeof window !== 'undefined') {
       return localStorage.getItem('theme') === 'dark' || document.documentElement.classList.contains('dark');
@@ -367,14 +371,25 @@ export function TopBar() {
         </button>
       )}
 
-      {/* 复制按钮 */}
+      {/* 导出图片（仅全文无空格时显示） */}
+      {board && !board.poemChars.includes(PLACEHOLDER) && (
+        <button
+          className="w-8 h-8 rounded-lg border border-[var(--grid-empty-border)] flex items-center justify-center text-[var(--text-secondary)] hover:bg-[var(--bg-card)] hover:text-[var(--text)] transition-colors"
+          onClick={() => setShowExport(true)}
+          title="导出图片"
+        >
+          <ImageDown size={15} />
+        </button>
+      )}
+
+      {/* 复制文本 */}
       {board && (
         <button
           className={`w-8 h-8 rounded-lg border flex items-center justify-center transition-colors ${copied ? 'bg-emerald-50 border-emerald-300 text-emerald-600' : 'border-[var(--grid-empty-border)] text-[var(--text-secondary)] hover:bg-[var(--bg-card)] hover:text-[var(--text)]'}`}
           onClick={handleCopy}
-          title="复制全文"
+          title="复制文本"
         >
-          {copied ? <Check size={15} /> : <Copy size={15} />}
+          {copied ? <Check size={15} /> : <ClipboardType size={15} />}
         </button>
       )}
 
@@ -387,6 +402,7 @@ export function TopBar() {
         <Plus size={18} />
       </button>
       {settingsOpen && <SettingsModal onClose={() => setSettingsOpen(false)} />}
+      {showExport && <ExportPreview onClose={() => setShowExport(false)} />}
     </header>
   );
 }
