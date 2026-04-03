@@ -2,7 +2,7 @@
 // 诗词图片导出 — Canvas 绘制引擎
 // ============================================================================
 
-export type ThemeKey = '素白' | '朱砂' | '墨韵' | '竹青' | '藏蓝';
+export type ThemeKey = '素白' | '朱砂' | '墨韵' | '竹青' | '藏蓝' | '烟紫' | '秋棠' | '霜灰';
 
 interface ColorTheme {
   bg: string;
@@ -17,9 +17,12 @@ export const THEMES: Record<ThemeKey, ColorTheme> = {
   '墨韵': { bg: '#1A1A1A', text: '#E8E4DF', accent: '#333333', muted: '#666666' },
   '竹青': { bg: '#F4F7F0', text: '#3A5F3A', accent: '#D0DBBF', muted: '#95A783' },
   '藏蓝': { bg: '#F0F2F7', text: '#2B3A67', accent: '#C8D0E0', muted: '#7F8CA7' },
+  '烟紫': { bg: '#F5F0F7', text: '#4A3560', accent: '#D4C5E0', muted: '#9585A7' },
+  '秋棠': { bg: '#FBF5EE', text: '#6B4226', accent: '#E8D0B0', muted: '#B09070' },
+  '霜灰': { bg: '#F2F2F0', text: '#3A3A3A', accent: '#D8D8D2', muted: '#999999' },
 };
 
-export const THEME_KEYS: ThemeKey[] = ['素白', '朱砂', '墨韵', '竹青', '藏蓝'];
+export const THEME_KEYS: ThemeKey[] = ['素白', '朱砂', '墨韵', '竹青', '藏蓝', '烟紫', '秋棠', '霜灰'];
 
 // ============================================================================
 // 布局参数
