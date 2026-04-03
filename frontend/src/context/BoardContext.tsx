@@ -56,7 +56,8 @@ export type Action =
   | { type: 'REPLACE_WITH_CANDIDATE'; index: number; char: string }
   | { type: 'ADD_INSPIRATION'; card: import('../lib/types').InspirationCard }
   | { type: 'DELETE_INSPIRATION'; cardId: string }
-  | { type: 'UPDATE_INSPIRATION'; cardId: string; content: string };
+  | { type: 'UPDATE_INSPIRATION'; cardId: string; content: string }
+  | { type: 'IMPORT_BOARDS'; boards: Board[] };
 
 // ============================================================================
 // Reducer
@@ -191,6 +192,13 @@ function reducer(state: AppState, action: Action): AppState {
             }
           : b,
       );
+      return { ...state, boards };
+    }
+    case 'IMPORT_BOARDS': {
+      const existingIds = new Set(state.boards.map(b => b.id));
+      const newBoards = action.boards.filter(b => !existingIds.has(b.id));
+      if (newBoards.length === 0) return state;
+      const boards = [...state.boards, ...newBoards];
       return { ...state, boards };
     }
     default:

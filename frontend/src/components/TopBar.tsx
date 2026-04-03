@@ -1,11 +1,58 @@
 import { useState, useEffect } from 'react';
 import { useBoardContext, useActiveBoard } from '../context/BoardContext';
 import { PLACEHOLDER } from '../lib/types';
-import { Layers, Plus, Copy, Check, Upload, Sun, Moon, Settings, ChevronRight, X, BookOpen, Lightbulb, SendHorizontal, ExternalLink } from 'lucide-react';
+import { Layers, Plus, Copy, Check, Upload, Sun, Moon, Settings, ChevronRight, X, BookOpen, Lightbulb, SendHorizontal, ExternalLink, Download, FolderUp } from 'lucide-react';
+import type { Board } from '../lib/types';
 
 function SettingsModal({ onClose }: { onClose: () => void }) {
+  const { state, dispatch } = useBoardContext();
   const [openSection, setOpenSection] = useState<string | null>(null);
+  const [importMsg, setImportMsg] = useState<string | null>(null);
   const toggle = (id: string) => setOpenSection(prev => prev === id ? null : id);
+
+  function handleExport() {
+    const data = {
+      version: 1,
+      app: 'fangcun',
+      exportedAt: new Date().toISOString(),
+      boards: state.boards,
+    };
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const date = new Date().toISOString().slice(0, 10);
+    a.href = url;
+    a.download = `fangcun-boards-${date}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  function handleImport(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const data = JSON.parse(reader.result as string);
+        if (!data.boards || !Array.isArray(data.boards)) {
+          setImportMsg('文件格式无效：缺少 boards 字段');
+          return;
+        }
+        const incoming = data.boards as Board[];
+        const existingIds = new Set(state.boards.map(b => b.id));
+        const newCount = incoming.filter(b => !existingIds.has(b.id)).length;
+        const skipCount = incoming.length - newCount;
+        dispatch({ type: 'IMPORT_BOARDS', boards: incoming });
+        const parts = [`导入 ${newCount} 个画板`];
+        if (skipCount > 0) parts.push(`跳过 ${skipCount} 个重复`);
+        setImportMsg(parts.join('，'));
+      } catch {
+        setImportMsg('文件解析失败，请检查 JSON 格式');
+      }
+    };
+    reader.readAsText(file);
+    e.target.value = '';
+  }
 
   const sections = [
     {
@@ -65,7 +112,23 @@ function SettingsModal({ onClose }: { onClose: () => void }) {
       id: 'import-export',
       title: '导入导出',
       content: (
-        <div className="text-sm text-[var(--text-muted)] py-2">即将推出，敬请期待</div>
+        <div className="text-sm text-[var(--text-secondary)] space-y-3 py-2">
+          <div className="flex gap-2">
+            <button
+              onClick={handleExport}
+              disabled={state.boards.length === 0}
+              className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-[var(--accent-light)] text-[var(--accent)] font-medium text-sm hover:opacity-80 transition-opacity disabled:opacity-40"
+            >
+              <Download size={14} /> 导出全部画板
+            </button>
+            <label className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-[var(--accent-light)] text-[var(--accent)] font-medium text-sm hover:opacity-80 transition-opacity cursor-pointer">
+              <FolderUp size={14} /> 导入画板
+              <input type="file" accept=".json" onChange={handleImport} className="hidden" />
+            </label>
+          </div>
+          <p className="text-xs text-[var(--text-muted)]">导出为 JSON 文件，可在其他设备导入恢复。导入时自动跳过已存在的画板。</p>
+          {importMsg && <p className="text-xs font-medium text-[var(--accent)]">{importMsg}</p>}
+        </div>
       ),
     },
     {
