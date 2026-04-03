@@ -46,7 +46,7 @@ function getCiLayout(lineCount: number) {
 }
 
 /** 每列最多显示的字数 */
-const MAX_COL_CHARS = 8;
+const MAX_COL_CHARS = 10;
 
 function getTitleConfig(titleLen: number) {
   if (titleLen <= 4) return { fontSize: 72, spacing: 97 };

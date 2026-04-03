@@ -163,30 +163,28 @@ export function ExportPreview({ onClose }: { onClose: () => void }) {
         </div>
 
         {/* 预览区 */}
-        <div className="flex-1 overflow-y-auto px-4 py-4">
-          {loading ? (
-            <div className="flex items-center justify-center py-20 text-[var(--text-muted)]">
-              <Loader size={20} className="animate-spin mr-2" />
-              加载字体…
+        <div className="flex-1 overflow-y-auto px-4 py-4 relative">
+          <div ref={previewRef} className="rounded-lg overflow-hidden shadow-sm" />
+          {loading && (
+            <div className="absolute inset-0 flex items-center justify-center bg-[var(--bg-card)]/80">
+              <Loader size={20} className="animate-spin text-[var(--text-muted)]" />
             </div>
-          ) : (
-            <div ref={previewRef} className="rounded-lg overflow-hidden shadow-sm" />
           )}
         </div>
 
         {/* 底栏：配色 + 下载 */}
-        <div className="px-5 py-3 border-t border-[var(--border)] flex items-center justify-between">
-          <div className="flex gap-2">
+        <div className="px-4 py-3 border-t border-[var(--border)] flex items-center justify-between gap-3">
+          <div className="flex flex-wrap gap-1.5">
             {THEME_KEYS.map((k) => (
               <button
                 key={k}
                 onClick={() => setTheme(k)}
-                className="w-7 h-7 rounded-full transition-all"
+                className="w-6 h-6 rounded-full transition-all shrink-0"
                 style={{
                   backgroundColor: THEMES[k].bg,
                   boxShadow:
                     theme === k
-                      ? `0 0 0 2px var(--bg-card), 0 0 0 4px ${THEMES[k].text}`
+                      ? `0 0 0 2px var(--bg-card), 0 0 0 3.5px ${THEMES[k].text}`
                       : `inset 0 0 0 1px rgba(0,0,0,0.12)`,
                 }}
                 title={k}
@@ -196,10 +194,10 @@ export function ExportPreview({ onClose }: { onClose: () => void }) {
           <button
             onClick={handleDownload}
             disabled={!canvasEl}
-            className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-[var(--accent-light)] text-[var(--accent)] font-medium text-sm hover:opacity-80 transition-opacity disabled:opacity-40"
+            className="shrink-0 w-8 h-8 rounded-lg flex items-center justify-center bg-[var(--accent-light)] text-[var(--accent)] hover:opacity-80 transition-opacity disabled:opacity-40"
+            title="下载"
           >
-            <Download size={14} />
-            下载
+            <Download size={16} />
           </button>
         </div>
       </div>
