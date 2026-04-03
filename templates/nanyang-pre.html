@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width,user-scalable=no,initial-scale=1.0,minimum-scale=1.0,maximum-scale=1.0" />
+    <title>数字南洋集 - 入口</title>
+	<link href="{{ url_for('static', filename='favicon.ico') }}" rel="shortcut icon">
+	
+    <style>
+        /* --- 1. 字体与主题 (与内容页一致) --- */
+		@font-face {
+            font-family: "hycl";
+            src: url("{{ font }}") format("woff");
+            font-display: swap;
+        }
+        
+        :root {
+            --bg-color: #FBFBF6;
+            --text-color: #1c1917;
+            --accent-color: #3c3937;
+            --border-color: #E0E0D8;
+        }
+
+        html {
+            font-size: 16px;
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: "hycl", 'Georgia', 'Noto Serif SC', serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 0;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        /* --- 2. 顶部导航栏 (与内容页一致) --- */
+		#navbar {
+            position: fixed;
+            top: 0;
+            width: 100%;
+            z-index: 100;
+            padding: 0.5em 0;
+            background-color: var(--bg-color);
+            border-bottom: 1px solid var(--border-color);
+		}
+        #navbar table {
+            color: var(--text-color);
+            margin: 0 auto;
+            width: 40em;
+            max-width: 90%;
+            text-align: center;
+            font-family: "hycl";
+        }
+        #navbar a {
+            text-decoration: none;
+            font-size: 1.2em; /* 统一字号 */
+            color: var(--text-color);
+            transition: color 0.2s ease;
+        }
+        #navbar a:hover {
+            color: var(--accent-color);
+        }
+        #navbar #page-title {
+            font-size: 1.5em;
+            color: var(--text-color);
+            width: auto;
+            font-weight: 600;
+        }
+
+        /* --- 3. 页面布局 --- */
+        #main-container {
+            position: relative;
+            padding-top: 4.5em; /* 避开导航栏 */
+            padding-bottom: 2em;
+        }
+
+        #content {
+            font-family: "hycl";
+            width: 40em;
+            max-width: 90%;
+            margin: 0 auto;
+            padding: 1em;
+        }
+        
+        .page-header {
+            font-size: 2em;
+            font-weight: 700;
+            text-align: center;
+            margin: 1.5em 0;
+            color: var(--text-color);
+        }
+
+        /* --- 4. 新的书单列表样式 --- */
+        .book-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .book-item {
+            display: flex;
+            align-items: center;
+            padding: 1.5em 0;
+            border-bottom: 1px solid var(--border-color);
+            gap: 1.5em;
+        }
+
+        .book-item:last-child {
+            border-bottom: none;
+        }
+
+        .book-cover {
+            width: 80px;
+            height: 112px;
+            object-fit: cover;
+            border-radius: 4px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            flex-shrink: 0;
+        }
+
+        .book-info {
+            flex-grow: 1; /* 占据剩余空间 */
+            min-width: 0; /* 允许 flex 缩小 */
+        }
+
+        .book-title {
+            font-size: 1.6em;
+            font-weight: 600;
+            color: var(--text-color);
+        }
+
+        .book-date {
+            font-size: 1em;
+            color: #57534e; /* stone-600 */
+            margin-top: 0.25em;
+        }
+
+        .book-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75em;
+            flex-shrink: 0;
+        }
+
+        .action-btn {
+            display: block;
+            padding: 0.6em 1.2em;
+            border-radius: 6px;
+            text-decoration: none;
+            text-align: center;
+            font-size: 1em;
+            transition: all 0.2s ease;
+            white-space: nowrap; /* 防止按钮文字换行 */
+        }
+
+        .action-btn.read {
+            background-color: var(--text-color);
+            color: var(--bg-color);
+            border: 1px solid var(--text-color);
+        }
+        .action-btn.read:hover {
+            background-color: var(--accent-color);
+            border-color: var(--accent-color);
+        }
+
+        .action-btn.collect {
+            background-color: transparent;
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
+        }
+        .action-btn.collect:hover {
+            background-color: var(--text-color);
+            color: var(--bg-color);
+            border-color: var(--text-color);
+        }
+        
+        /* --- 5. 响应式 --- */
+        @media (max-width: 640px) {
+            #content {
+                padding: 0.5em;
+            }
+            .book-item {
+                flex-wrap: wrap; /* 在小屏上允许换行 */
+                gap: 1em;
+                padding: 1em 0;
+            }
+            .book-cover {
+                width: 60px;
+                height: 84px;
+            }
+            .book-info {
+                /* 标题和日期占据封面右侧 */
+                flex-basis: 0; /* 允许缩小 */
+            }
+            .book-title {
+                font-size: 1.3em;
+            }
+            .book-date {
+                font-size: 0.9em;
+            }
+            .book-actions {
+                /* 按钮换行，占据全部宽度 */
+                flex-direction: row;
+                width: 100%;
+                gap: 1em;
+            }
+            .action-btn {
+                flex-grow: 1;
+                font-size: 0.9em;
+                padding: 0.75em 0.5em;
+            }
+            .page-header {
+                font-size: 1.6em;
+            }
+        }
+	</style>
+
+	<script>
+    // --- 屏幕自适应JS (与内容页一致) ---
+    var html = document.documentElement;
+    var hWidth = html.getBoundingClientRect().width;
+    if (hWidth <= 640) {
+		html.style.fontSize = hWidth/25 + "px";
+    } else {
+		html.style.fontSize = "16px"; // PC端使用固定的 16px
+		document.addEventListener('DOMContentLoaded', function() {
+			var contentDiv = document.getElementById('content');
+			if (contentDiv) {
+				contentDiv.style.maxWidth = '40em';
+			};
+			var navbarTable = document.querySelector('#navbar table');
+			if (navbarTable) {
+				navbarTable.style.setProperty('max-width', '40em', 'important');
+			};
+		});
+	}
+	</script>
+</head>
+<body>
+  
+  <!-- --- 顶部导航栏 --- -->
+  <div id="navbar">
+	<table>
+		<tr>
+            <!-- 保持原始的 "返回" 和 "主页" -->
+            <td><a href="/">返回</a></td>
+            <td id="page-title">数字南洋集</td>
+            <td><a href="/">主页</a></td>
+		</tr>
+    </table>
+  </div>
+
+  <!-- --- 页面内容 --- -->
+  <div id="main-container">
+      <div id="content">
+          
+          <!-- 
+            使用后端传入的 `books` 列表 
+            你需要修改你的 Flask 路由来传入这个 `books` 变量
+          -->
+          <ul class="book-list">
+              {% for book in books %}
+              <li class="book-item">
+                  <!-- 1. 封面 -->
+                  <img class="book-cover" 
+                       src="{{ book.image_url }}" 
+                       alt="{{ book.title }} 封面"
+                       onerror="this.style.display='none'"> <!-- 图片加载失败则隐藏 -->
+                  
+                  <!-- 2. 信息 -->
+                  <div class="book-info">
+                      <div class="book-title">{{ book.title }}</div>
+                      <div class="book-date">{{ book.pub_date }}</div>
+                  </div>
+                  
+                  <!-- 3. 操作 -->
+                  <div class="book-actions">
+                      <a href="{{ book.read_url }}" class="action-btn read">在线阅读</a>
+                      <!-- 
+                        数字藏品按钮
+                        onclick="alert(...); return false;" 
+                        是必需的，以防止页面跳转
+                      -->
+                      <a href="#" class="action-btn collect" 
+                         onclick="alert('即将推出，敬请期待'); return false;">
+                         数字藏品
+                      </a>
+                  </div>
+              </li>
+              {% endfor %}
+          </ul>
+      
+      </div>
+  </div>
+</body>
+</html>

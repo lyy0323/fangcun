@@ -1,0 +1,4298 @@
+[
+    {
+        "name": "七律平起首句入韵",
+        "genre": "Shi",
+        "cipai": "Qilyu",
+        "char_count": 56,
+        "tone_pattern": [
+            {
+                "tone": "A",
+                "comment": null
+            },
+            {
+                "tone": "P",
+                "comment": null
+            },
+            {
+                "tone": "A",
+                "comment": null
+            },
+            {
+                "tone": "Z",
+                "comment": null
+            },
+            {
+                "tone": "Z",
+                "comment": null
+            },
+            {
+                "tone": "P",
+                "comment": null
+            },
+            {
+                "tone": "P",
+                "comment": null
+            },
+            {
+                "tone": "A",
+                "comment": null
+            },
+            {
+                "tone": "Z",
+                "comment": null
+            },
+            [
+                [
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "A",
+                        "comment": null
+                    }
+                ],
+                [
+                    {
+                        "tone": "A",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    }
+                ]
+            ],
+            {
+                "tone": "Z",
+                "comment": null
+            },
+            {
+                "tone": "P",
+                "comment": null
+            },
+            {
+                "tone": "A",
+                "comment": null
+            },
+            {
+                "tone": "Z",
+                "comment": null
+            },
+            [
+                [
+                    {
+                        "tone": "A",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "Z",
+                        "comment": null
+                    },
+                    {
+                        "tone": "Z",
+                        "comment": null
+                    }
+                ],
+                [
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "Z",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "Z",
+                        "comment": null
+                    }
+                ]
+            ],
+            {
+                "tone": "A",
+                "comment": null
+            },
+            {
+                "tone": "P",
+                "comment": null
+            },
+            {
+                "tone": "A",
+                "comment": null
+            },
+            {
+                "tone": "Z",
+                "comment": null
+            },
+            {
+                "tone": "Z",
+                "comment": null
+            },
+            {
+                "tone": "P",
+                "comment": null
+            },
+            {
+                "tone": "P",
+                "comment": null
+            },
+            {
+                "tone": "A",
+                "comment": null
+            },
+            {
+                "tone": "P",
+                "comment": null
+            },
+            [
+                [
+                    {
+                        "tone": "A",
+                        "comment": null
+                    },
+                    {
+                        "tone": "Z",
+                        "comment": null
+                    },
+                    {
+                        "tone": "A",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "Z",
+                        "comment": null
+                    },
+                    {
+                        "tone": "A",
+                        "comment": null
+                    },
+                    {
+                        "tone": "Z",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "A",
+                        "comment": null
+                    }
+                ],
+                [
+                    {
+                        "tone": "A",
+                        "comment": null
+                    },
+                    {
+                        "tone": "Z",
+                        "comment": null
+                    },
+                    {
+                        "tone": "A",
+                        "comment": null
+                    },
+                    {
+                        "tone": "A",
+                        "comment": null
+                    },
+                    {
+                        "tone": "Z",
+                        "comment": null
+                    },
+                    {
+                        "tone": "A",
+                        "comment": null
+                    },
+                    {
+                        "tone": "Z",
+                        "comment": null
+                    },
+                    {
+                        "tone": "A",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    }
+                ]
+            ],
+            {
+                "tone": "Z",
+                "comment": null
+            },
+            {
+                "tone": "P",
+                "comment": null
+            },
+            {
+                "tone": "A",
+                "comment": null
+            },
+            {
+                "tone": "Z",
+                "comment": null
+            },
+            [
+                [
+                    {
+                        "tone": "A",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "Z",
+                        "comment": null
+                    },
+                    {
+                        "tone": "Z",
+                        "comment": null
+                    }
+                ],
+                [
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "Z",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "Z",
+                        "comment": null
+                    }
+                ]
+            ],
+            {
+                "tone": "A",
+                "comment": null
+            },
+            {
+                "tone": "P",
+                "comment": null
+            },
+            {
+                "tone": "A",
+                "comment": null
+            },
+            {
+                "tone": "Z",
+                "comment": null
+            },
+            {
+                "tone": "Z",
+                "comment": null
+            },
+            {
+                "tone": "P",
+                "comment": null
+            },
+            {
+                "tone": "P",
+                "comment": null
+            }
+        ],
+        "rhyme_rule": {
+            "type": "OR",
+            "rules": [
+                {
+                    "type": "SAME_CATEGORY",
+                    "positions": [
+                        6,
+                        13,
+                        27,
+                        41,
+                        55
+                    ]
+                },
+                {
+                    "type": "AND",
+                    "rules": [
+                        {
+                            "type": "SAME_CATEGORY",
+                            "positions": [
+                                13,
+                                27,
+                                41,
+                                55
+                            ]
+                        },
+                        {
+                            "type": "RELATION",
+                            "pos1": 6,
+                            "pos2": 13,
+                            "relation": "neighbor"
+                        }
+                    ]
+                }
+            ]
+        }
+    },
+    {
+        "name": "七律平起",
+        "genre": "Shi",
+        "cipai": "Qilyu",
+        "char_count": 56,
+        "tone_pattern": [
+            {
+                "tone": "A",
+                "comment": null
+            },
+            {
+                "tone": "P",
+                "comment": null
+            },
+            [
+                [
+                    {
+                        "tone": "A",
+                        "comment": null
+                    },
+                    {
+                        "tone": "Z",
+                        "comment": null
+                    },
+                    {
+                        "tone": "A",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "Z",
+                        "comment": null
+                    },
+                    {
+                        "tone": "A",
+                        "comment": null
+                    },
+                    {
+                        "tone": "Z",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "A",
+                        "comment": null
+                    }
+                ],
+                [
+                    {
+                        "tone": "A",
+                        "comment": null
+                    },
+                    {
+                        "tone": "Z",
+                        "comment": null
+                    },
+                    {
+                        "tone": "A",
+                        "comment": null
+                    },
+                    {
+                        "tone": "A",
+                        "comment": null
+                    },
+                    {
+                        "tone": "Z",
+                        "comment": null
+                    },
+                    {
+                        "tone": "A",
+                        "comment": null
+                    },
+                    {
+                        "tone": "Z",
+                        "comment": null
+                    },
+                    {
+                        "tone": "A",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    }
+                ]
+            ],
+            {
+                "tone": "Z",
+                "comment": null
+            },
+            {
+                "tone": "P",
+                "comment": null
+            },
+            {
+                "tone": "A",
+                "comment": null
+            },
+            {
+                "tone": "Z",
+                "comment": null
+            },
+            [
+                [
+                    {
+                        "tone": "A",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "Z",
+                        "comment": null
+                    },
+                    {
+                        "tone": "Z",
+                        "comment": null
+                    }
+                ],
+                [
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "Z",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "Z",
+                        "comment": null
+                    }
+                ]
+            ],
+            {
+                "tone": "A",
+                "comment": null
+            },
+            {
+                "tone": "P",
+                "comment": null
+            },
+            {
+                "tone": "A",
+                "comment": null
+            },
+            {
+                "tone": "Z",
+                "comment": null
+            },
+            {
+                "tone": "Z",
+                "comment": null
+            },
+            {
+                "tone": "P",
+                "comment": null
+            },
+            {
+                "tone": "P",
+                "comment": null
+            },
+            {
+                "tone": "A",
+                "comment": null
+            },
+            {
+                "tone": "P",
+                "comment": null
+            },
+            [
+                [
+                    {
+                        "tone": "A",
+                        "comment": null
+                    },
+                    {
+                        "tone": "Z",
+                        "comment": null
+                    },
+                    {
+                        "tone": "A",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "Z",
+                        "comment": null
+                    },
+                    {
+                        "tone": "A",
+                        "comment": null
+                    },
+                    {
+                        "tone": "Z",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "A",
+                        "comment": null
+                    }
+                ],
+                [
+                    {
+                        "tone": "A",
+                        "comment": null
+                    },
+                    {
+                        "tone": "Z",
+                        "comment": null
+                    },
+                    {
+                        "tone": "A",
+                        "comment": null
+                    },
+                    {
+                        "tone": "A",
+                        "comment": null
+                    },
+                    {
+                        "tone": "Z",
+                        "comment": null
+                    },
+                    {
+                        "tone": "A",
+                        "comment": null
+                    },
+                    {
+                        "tone": "Z",
+                        "comment": null
+                    },
+                    {
+                        "tone": "A",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    }
+                ]
+            ],
+            {
+                "tone": "Z",
+                "comment": null
+            },
+            {
+                "tone": "P",
+                "comment": null
+            },
+            {
+                "tone": "A",
+                "comment": null
+            },
+            {
+                "tone": "Z",
+                "comment": null
+            },
+            [
+                [
+                    {
+                        "tone": "A",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "Z",
+                        "comment": null
+                    },
+                    {
+                        "tone": "Z",
+                        "comment": null
+                    }
+                ],
+                [
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "Z",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "Z",
+                        "comment": null
+                    }
+                ]
+            ],
+            {
+                "tone": "A",
+                "comment": null
+            },
+            {
+                "tone": "P",
+                "comment": null
+            },
+            {
+                "tone": "A",
+                "comment": null
+            },
+            {
+                "tone": "Z",
+                "comment": null
+            },
+            {
+                "tone": "Z",
+                "comment": null
+            },
+            {
+                "tone": "P",
+                "comment": null
+            },
+            {
+                "tone": "P",
+                "comment": null
+            }
+        ],
+        "rhyme_rule": {
+            "type": "SAME_CATEGORY",
+            "positions": [
+                13,
+                27,
+                41,
+                55
+            ]
+        }
+    },
+    {
+        "name": "七律仄起",
+        "genre": "Shi",
+        "cipai": "Qilyu",
+        "char_count": 56,
+        "tone_pattern": [
+            {
+                "tone": "A",
+                "comment": null
+            },
+            {
+                "tone": "Z",
+                "comment": null
+            },
+            [
+                [
+                    {
+                        "tone": "A",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "Z",
+                        "comment": null
+                    },
+                    {
+                        "tone": "Z",
+                        "comment": null
+                    }
+                ],
+                [
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "Z",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "Z",
+                        "comment": null
+                    }
+                ]
+            ],
+            {
+                "tone": "A",
+                "comment": null
+            },
+            {
+                "tone": "P",
+                "comment": null
+            },
+            {
+                "tone": "A",
+                "comment": null
+            },
+            {
+                "tone": "Z",
+                "comment": null
+            },
+            {
+                "tone": "Z",
+                "comment": null
+            },
+            {
+                "tone": "P",
+                "comment": null
+            },
+            {
+                "tone": "P",
+                "comment": null
+            },
+            {
+                "tone": "A",
+                "comment": null
+            },
+            {
+                "tone": "P",
+                "comment": null
+            },
+            [
+                [
+                    {
+                        "tone": "A",
+                        "comment": null
+                    },
+                    {
+                        "tone": "Z",
+                        "comment": null
+                    },
+                    {
+                        "tone": "A",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "Z",
+                        "comment": null
+                    },
+                    {
+                        "tone": "A",
+                        "comment": null
+                    },
+                    {
+                        "tone": "Z",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "A",
+                        "comment": null
+                    }
+                ],
+                [
+                    {
+                        "tone": "A",
+                        "comment": null
+                    },
+                    {
+                        "tone": "Z",
+                        "comment": null
+                    },
+                    {
+                        "tone": "A",
+                        "comment": null
+                    },
+                    {
+                        "tone": "A",
+                        "comment": null
+                    },
+                    {
+                        "tone": "Z",
+                        "comment": null
+                    },
+                    {
+                        "tone": "A",
+                        "comment": null
+                    },
+                    {
+                        "tone": "Z",
+                        "comment": null
+                    },
+                    {
+                        "tone": "A",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    }
+                ]
+            ],
+            {
+                "tone": "Z",
+                "comment": null
+            },
+            {
+                "tone": "P",
+                "comment": null
+            },
+            {
+                "tone": "A",
+                "comment": null
+            },
+            {
+                "tone": "Z",
+                "comment": null
+            },
+            [
+                [
+                    {
+                        "tone": "A",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "Z",
+                        "comment": null
+                    },
+                    {
+                        "tone": "Z",
+                        "comment": null
+                    }
+                ],
+                [
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "Z",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "Z",
+                        "comment": null
+                    }
+                ]
+            ],
+            {
+                "tone": "A",
+                "comment": null
+            },
+            {
+                "tone": "P",
+                "comment": null
+            },
+            {
+                "tone": "A",
+                "comment": null
+            },
+            {
+                "tone": "Z",
+                "comment": null
+            },
+            {
+                "tone": "Z",
+                "comment": null
+            },
+            {
+                "tone": "P",
+                "comment": null
+            },
+            {
+                "tone": "P",
+                "comment": null
+            },
+            {
+                "tone": "A",
+                "comment": null
+            },
+            {
+                "tone": "P",
+                "comment": null
+            },
+            [
+                [
+                    {
+                        "tone": "A",
+                        "comment": null
+                    },
+                    {
+                        "tone": "Z",
+                        "comment": null
+                    },
+                    {
+                        "tone": "A",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "Z",
+                        "comment": null
+                    },
+                    {
+                        "tone": "A",
+                        "comment": null
+                    },
+                    {
+                        "tone": "Z",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "A",
+                        "comment": null
+                    }
+                ],
+                [
+                    {
+                        "tone": "A",
+                        "comment": null
+                    },
+                    {
+                        "tone": "Z",
+                        "comment": null
+                    },
+                    {
+                        "tone": "A",
+                        "comment": null
+                    },
+                    {
+                        "tone": "A",
+                        "comment": null
+                    },
+                    {
+                        "tone": "Z",
+                        "comment": null
+                    },
+                    {
+                        "tone": "A",
+                        "comment": null
+                    },
+                    {
+                        "tone": "Z",
+                        "comment": null
+                    },
+                    {
+                        "tone": "A",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    }
+                ]
+            ],
+            {
+                "tone": "Z",
+                "comment": null
+            },
+            {
+                "tone": "P",
+                "comment": null
+            }
+        ],
+        "rhyme_rule": {
+            "type": "SAME_CATEGORY",
+            "positions": [
+                13,
+                27,
+                41,
+                55
+            ]
+        }
+    },
+    {
+        "name": "七律仄起首句入韵",
+        "genre": "Shi",
+        "cipai": "Qilyu",
+        "char_count": 56,
+        "tone_pattern": [
+            {
+                "tone": "A",
+                "comment": null
+            },
+            {
+                "tone": "Z",
+                "comment": null
+            },
+            [
+                [
+                    {
+                        "tone": "A",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "Z",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    }
+                ],
+                [
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "A",
+                        "comment": null
+                    },
+                    {
+                        "tone": "Z",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    }
+                ]
+            ],
+            {
+                "tone": "A",
+                "comment": null
+            },
+            {
+                "tone": "P",
+                "comment": null
+            },
+            {
+                "tone": "A",
+                "comment": null
+            },
+            {
+                "tone": "Z",
+                "comment": null
+            },
+            {
+                "tone": "Z",
+                "comment": null
+            },
+            {
+                "tone": "P",
+                "comment": null
+            },
+            {
+                "tone": "P",
+                "comment": null
+            },
+            {
+                "tone": "A",
+                "comment": null
+            },
+            {
+                "tone": "P",
+                "comment": null
+            },
+            [
+                [
+                    {
+                        "tone": "A",
+                        "comment": null
+                    },
+                    {
+                        "tone": "Z",
+                        "comment": null
+                    },
+                    {
+                        "tone": "A",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "Z",
+                        "comment": null
+                    },
+                    {
+                        "tone": "A",
+                        "comment": null
+                    },
+                    {
+                        "tone": "Z",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "A",
+                        "comment": null
+                    }
+                ],
+                [
+                    {
+                        "tone": "A",
+                        "comment": null
+                    },
+                    {
+                        "tone": "Z",
+                        "comment": null
+                    },
+                    {
+                        "tone": "A",
+                        "comment": null
+                    },
+                    {
+                        "tone": "A",
+                        "comment": null
+                    },
+                    {
+                        "tone": "Z",
+                        "comment": null
+                    },
+                    {
+                        "tone": "A",
+                        "comment": null
+                    },
+                    {
+                        "tone": "Z",
+                        "comment": null
+                    },
+                    {
+                        "tone": "A",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    }
+                ]
+            ],
+            {
+                "tone": "Z",
+                "comment": null
+            },
+            {
+                "tone": "P",
+                "comment": null
+            },
+            {
+                "tone": "A",
+                "comment": null
+            },
+            {
+                "tone": "Z",
+                "comment": null
+            },
+            [
+                [
+                    {
+                        "tone": "A",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "Z",
+                        "comment": null
+                    },
+                    {
+                        "tone": "Z",
+                        "comment": null
+                    }
+                ],
+                [
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "Z",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "Z",
+                        "comment": null
+                    }
+                ]
+            ],
+            {
+                "tone": "A",
+                "comment": null
+            },
+            {
+                "tone": "P",
+                "comment": null
+            },
+            {
+                "tone": "A",
+                "comment": null
+            },
+            {
+                "tone": "Z",
+                "comment": null
+            },
+            {
+                "tone": "Z",
+                "comment": null
+            },
+            {
+                "tone": "P",
+                "comment": null
+            },
+            {
+                "tone": "P",
+                "comment": null
+            },
+            {
+                "tone": "A",
+                "comment": null
+            },
+            {
+                "tone": "P",
+                "comment": null
+            },
+            [
+                [
+                    {
+                        "tone": "A",
+                        "comment": null
+                    },
+                    {
+                        "tone": "Z",
+                        "comment": null
+                    },
+                    {
+                        "tone": "A",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "Z",
+                        "comment": null
+                    },
+                    {
+                        "tone": "A",
+                        "comment": null
+                    },
+                    {
+                        "tone": "Z",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "A",
+                        "comment": null
+                    }
+                ],
+                [
+                    {
+                        "tone": "A",
+                        "comment": null
+                    },
+                    {
+                        "tone": "Z",
+                        "comment": null
+                    },
+                    {
+                        "tone": "A",
+                        "comment": null
+                    },
+                    {
+                        "tone": "A",
+                        "comment": null
+                    },
+                    {
+                        "tone": "Z",
+                        "comment": null
+                    },
+                    {
+                        "tone": "A",
+                        "comment": null
+                    },
+                    {
+                        "tone": "Z",
+                        "comment": null
+                    },
+                    {
+                        "tone": "A",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    }
+                ]
+            ],
+            {
+                "tone": "Z",
+                "comment": null
+            },
+            {
+                "tone": "P",
+                "comment": null
+            }
+        ],
+        "rhyme_rule": {
+            "type": "OR",
+            "rules": [
+                {
+                    "type": "SAME_CATEGORY",
+                    "positions": [
+                        6,
+                        13,
+                        27,
+                        41,
+                        55
+                    ]
+                },
+                {
+                    "type": "AND",
+                    "rules": [
+                        {
+                            "type": "SAME_CATEGORY",
+                            "positions": [
+                                13,
+                                27,
+                                41,
+                                55
+                            ]
+                        },
+                        {
+                            "type": "RELATION",
+                            "pos1": 6,
+                            "pos2": 13,
+                            "relation": "neighbor"
+                        }
+                    ]
+                }
+            ]
+        }
+    },
+    {
+        "name": "七绝平起首句入韵",
+        "genre": "Shi",
+        "cipai": "Qijue",
+        "char_count": 28,
+        "tone_pattern": [
+            {
+                "tone": "A",
+                "comment": null
+            },
+            {
+                "tone": "P",
+                "comment": null
+            },
+            {
+                "tone": "A",
+                "comment": null
+            },
+            {
+                "tone": "Z",
+                "comment": null
+            },
+            {
+                "tone": "Z",
+                "comment": null
+            },
+            {
+                "tone": "P",
+                "comment": null
+            },
+            {
+                "tone": "P",
+                "comment": null
+            },
+            {
+                "tone": "A",
+                "comment": null
+            },
+            {
+                "tone": "Z",
+                "comment": null
+            },
+            [
+                [
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "A",
+                        "comment": null
+                    }
+                ],
+                [
+                    {
+                        "tone": "A",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    }
+                ]
+            ],
+            {
+                "tone": "Z",
+                "comment": null
+            },
+            {
+                "tone": "P",
+                "comment": null
+            },
+            {
+                "tone": "A",
+                "comment": null
+            },
+            {
+                "tone": "Z",
+                "comment": null
+            },
+            [
+                [
+                    {
+                        "tone": "A",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "Z",
+                        "comment": null
+                    },
+                    {
+                        "tone": "Z",
+                        "comment": null
+                    }
+                ],
+                [
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "Z",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "Z",
+                        "comment": null
+                    }
+                ]
+            ],
+            {
+                "tone": "A",
+                "comment": null
+            },
+            {
+                "tone": "P",
+                "comment": null
+            },
+            {
+                "tone": "A",
+                "comment": null
+            },
+            {
+                "tone": "Z",
+                "comment": null
+            },
+            {
+                "tone": "Z",
+                "comment": null
+            },
+            {
+                "tone": "P",
+                "comment": null
+            },
+            {
+                "tone": "P",
+                "comment": null
+            }
+        ],
+        "rhyme_rule": {
+            "type": "OR",
+            "rules": [
+                {
+                    "type": "SAME_CATEGORY",
+                    "positions": [
+                        6,
+                        13,
+                        27
+                    ]
+                },
+                {
+                    "type": "AND",
+                    "rules": [
+                        {
+                            "type": "SAME_CATEGORY",
+                            "positions": [
+                                13,
+                                27
+                            ]
+                        },
+                        {
+                            "type": "RELATION",
+                            "pos1": 6,
+                            "pos2": 13,
+                            "relation": "neighbor"
+                        }
+                    ]
+                }
+            ]
+        }
+    },
+    {
+        "name": "七绝平起",
+        "genre": "Shi",
+        "cipai": "Qijue",
+        "char_count": 28,
+        "tone_pattern": [
+            {
+                "tone": "A",
+                "comment": null
+            },
+            {
+                "tone": "P",
+                "comment": null
+            },
+            [
+                [
+                    {
+                        "tone": "A",
+                        "comment": null
+                    },
+                    {
+                        "tone": "Z",
+                        "comment": null
+                    },
+                    {
+                        "tone": "A",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "Z",
+                        "comment": null
+                    },
+                    {
+                        "tone": "A",
+                        "comment": null
+                    },
+                    {
+                        "tone": "Z",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "A",
+                        "comment": null
+                    }
+                ],
+                [
+                    {
+                        "tone": "A",
+                        "comment": null
+                    },
+                    {
+                        "tone": "Z",
+                        "comment": null
+                    },
+                    {
+                        "tone": "A",
+                        "comment": null
+                    },
+                    {
+                        "tone": "A",
+                        "comment": null
+                    },
+                    {
+                        "tone": "Z",
+                        "comment": null
+                    },
+                    {
+                        "tone": "A",
+                        "comment": null
+                    },
+                    {
+                        "tone": "Z",
+                        "comment": null
+                    },
+                    {
+                        "tone": "A",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    }
+                ]
+            ],
+            {
+                "tone": "Z",
+                "comment": null
+            },
+            {
+                "tone": "P",
+                "comment": null
+            },
+            {
+                "tone": "A",
+                "comment": null
+            },
+            {
+                "tone": "Z",
+                "comment": null
+            },
+            [
+                [
+                    {
+                        "tone": "A",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "Z",
+                        "comment": null
+                    },
+                    {
+                        "tone": "Z",
+                        "comment": null
+                    }
+                ],
+                [
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "Z",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "Z",
+                        "comment": null
+                    }
+                ]
+            ],
+            {
+                "tone": "A",
+                "comment": null
+            },
+            {
+                "tone": "P",
+                "comment": null
+            },
+            {
+                "tone": "A",
+                "comment": null
+            },
+            {
+                "tone": "Z",
+                "comment": null
+            },
+            {
+                "tone": "Z",
+                "comment": null
+            },
+            {
+                "tone": "P",
+                "comment": null
+            },
+            {
+                "tone": "P",
+                "comment": null
+            }
+        ],
+        "rhyme_rule": {
+            "type": "SAME_CATEGORY",
+            "positions": [
+                13,
+                27
+            ]
+        }
+    },
+    {
+        "name": "七绝仄起",
+        "genre": "Shi",
+        "cipai": "Qijue",
+        "char_count": 28,
+        "tone_pattern": [
+            {
+                "tone": "A",
+                "comment": null
+            },
+            {
+                "tone": "Z",
+                "comment": null
+            },
+            [
+                [
+                    {
+                        "tone": "A",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "Z",
+                        "comment": null
+                    },
+                    {
+                        "tone": "Z",
+                        "comment": null
+                    }
+                ],
+                [
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "Z",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "Z",
+                        "comment": null
+                    }
+                ]
+            ],
+            {
+                "tone": "A",
+                "comment": null
+            },
+            {
+                "tone": "P",
+                "comment": null
+            },
+            {
+                "tone": "A",
+                "comment": null
+            },
+            {
+                "tone": "Z",
+                "comment": null
+            },
+            {
+                "tone": "Z",
+                "comment": null
+            },
+            {
+                "tone": "P",
+                "comment": null
+            },
+            {
+                "tone": "P",
+                "comment": null
+            },
+            {
+                "tone": "A",
+                "comment": null
+            },
+            {
+                "tone": "P",
+                "comment": null
+            },
+            [
+                [
+                    {
+                        "tone": "A",
+                        "comment": null
+                    },
+                    {
+                        "tone": "Z",
+                        "comment": null
+                    },
+                    {
+                        "tone": "A",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "Z",
+                        "comment": null
+                    },
+                    {
+                        "tone": "A",
+                        "comment": null
+                    },
+                    {
+                        "tone": "Z",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "A",
+                        "comment": null
+                    }
+                ],
+                [
+                    {
+                        "tone": "A",
+                        "comment": null
+                    },
+                    {
+                        "tone": "Z",
+                        "comment": null
+                    },
+                    {
+                        "tone": "A",
+                        "comment": null
+                    },
+                    {
+                        "tone": "A",
+                        "comment": null
+                    },
+                    {
+                        "tone": "Z",
+                        "comment": null
+                    },
+                    {
+                        "tone": "A",
+                        "comment": null
+                    },
+                    {
+                        "tone": "Z",
+                        "comment": null
+                    },
+                    {
+                        "tone": "A",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    }
+                ]
+            ],
+            {
+                "tone": "Z",
+                "comment": null
+            },
+            {
+                "tone": "P",
+                "comment": null
+            }
+        ],
+        "rhyme_rule": {
+            "type": "SAME_CATEGORY",
+            "positions": [
+                13,
+                27
+            ]
+        }
+    },
+    {
+        "name": "七绝仄起首句入韵",
+        "genre": "Shi",
+        "cipai": "Qijue",
+        "char_count": 28,
+        "tone_pattern": [
+            {
+                "tone": "A",
+                "comment": null
+            },
+            {
+                "tone": "Z",
+                "comment": null
+            },
+            [
+                [
+                    {
+                        "tone": "A",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "Z",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    }
+                ],
+                [
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "A",
+                        "comment": null
+                    },
+                    {
+                        "tone": "Z",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    }
+                ]
+            ],
+            {
+                "tone": "A",
+                "comment": null
+            },
+            {
+                "tone": "P",
+                "comment": null
+            },
+            {
+                "tone": "A",
+                "comment": null
+            },
+            {
+                "tone": "Z",
+                "comment": null
+            },
+            {
+                "tone": "Z",
+                "comment": null
+            },
+            {
+                "tone": "P",
+                "comment": null
+            },
+            {
+                "tone": "P",
+                "comment": null
+            },
+            {
+                "tone": "A",
+                "comment": null
+            },
+            {
+                "tone": "P",
+                "comment": null
+            },
+            [
+                [
+                    {
+                        "tone": "A",
+                        "comment": null
+                    },
+                    {
+                        "tone": "Z",
+                        "comment": null
+                    },
+                    {
+                        "tone": "A",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "Z",
+                        "comment": null
+                    },
+                    {
+                        "tone": "A",
+                        "comment": null
+                    },
+                    {
+                        "tone": "Z",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "A",
+                        "comment": null
+                    }
+                ],
+                [
+                    {
+                        "tone": "A",
+                        "comment": null
+                    },
+                    {
+                        "tone": "Z",
+                        "comment": null
+                    },
+                    {
+                        "tone": "A",
+                        "comment": null
+                    },
+                    {
+                        "tone": "A",
+                        "comment": null
+                    },
+                    {
+                        "tone": "Z",
+                        "comment": null
+                    },
+                    {
+                        "tone": "A",
+                        "comment": null
+                    },
+                    {
+                        "tone": "Z",
+                        "comment": null
+                    },
+                    {
+                        "tone": "A",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    }
+                ]
+            ],
+            {
+                "tone": "Z",
+                "comment": null
+            },
+            {
+                "tone": "P",
+                "comment": null
+            }
+        ],
+        "rhyme_rule": {
+            "type": "OR",
+            "rules": [
+                {
+                    "type": "SAME_CATEGORY",
+                    "positions": [
+                        6,
+                        13,
+                        27
+                    ]
+                },
+                {
+                    "type": "AND",
+                    "rules": [
+                        {
+                            "type": "SAME_CATEGORY",
+                            "positions": [
+                                13,
+                                27
+                            ]
+                        },
+                        {
+                            "type": "RELATION",
+                            "pos1": 6,
+                            "pos2": 13,
+                            "relation": "neighbor"
+                        }
+                    ]
+                }
+            ]
+        }
+    },
+    {
+        "name": "五律仄起首句入韵",
+        "genre": "Shi",
+        "cipai": "Wulyu",
+        "char_count": 40,
+        "tone_pattern": [
+            {
+                "tone": "A",
+                "comment": null
+            },
+            {
+                "tone": "Z",
+                "comment": null
+            },
+            {
+                "tone": "Z",
+                "comment": null
+            },
+            {
+                "tone": "P",
+                "comment": null
+            },
+            {
+                "tone": "P",
+                "comment": null
+            },
+            [
+                [
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "A",
+                        "comment": null
+                    }
+                ],
+                [
+                    {
+                        "tone": "A",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    }
+                ]
+            ],
+            {
+                "tone": "Z",
+                "comment": null
+            },
+            {
+                "tone": "P",
+                "comment": null
+            },
+            [
+                [
+                    {
+                        "tone": "A",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "Z",
+                        "comment": null
+                    },
+                    {
+                        "tone": "Z",
+                        "comment": null
+                    }
+                ],
+                [
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "Z",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "Z",
+                        "comment": null
+                    }
+                ]
+            ],
+            {
+                "tone": "A",
+                "comment": null
+            },
+            {
+                "tone": "Z",
+                "comment": null
+            },
+            {
+                "tone": "Z",
+                "comment": null
+            },
+            {
+                "tone": "P",
+                "comment": null
+            },
+            {
+                "tone": "P",
+                "comment": null
+            },
+            [
+                [
+                    {
+                        "tone": "A",
+                        "comment": null
+                    },
+                    {
+                        "tone": "Z",
+                        "comment": null
+                    },
+                    {
+                        "tone": "A",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "Z",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "A",
+                        "comment": null
+                    }
+                ],
+                [
+                    {
+                        "tone": "A",
+                        "comment": null
+                    },
+                    {
+                        "tone": "Z",
+                        "comment": null
+                    },
+                    {
+                        "tone": "A",
+                        "comment": null
+                    },
+                    {
+                        "tone": "A",
+                        "comment": null
+                    },
+                    {
+                        "tone": "Z",
+                        "comment": null
+                    },
+                    {
+                        "tone": "A",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    }
+                ]
+            ],
+            {
+                "tone": "Z",
+                "comment": null
+            },
+            {
+                "tone": "P",
+                "comment": null
+            },
+            [
+                [
+                    {
+                        "tone": "A",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "Z",
+                        "comment": null
+                    },
+                    {
+                        "tone": "Z",
+                        "comment": null
+                    }
+                ],
+                [
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "Z",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "Z",
+                        "comment": null
+                    }
+                ]
+            ],
+            {
+                "tone": "A",
+                "comment": null
+            },
+            {
+                "tone": "Z",
+                "comment": null
+            },
+            {
+                "tone": "Z",
+                "comment": null
+            },
+            {
+                "tone": "P",
+                "comment": null
+            },
+            {
+                "tone": "P",
+                "comment": null
+            }
+        ],
+        "rhyme_rule": {
+            "type": "OR",
+            "rules": [
+                {
+                    "type": "SAME_CATEGORY",
+                    "positions": [
+                        4,
+                        9,
+                        19,
+                        29,
+                        39
+                    ]
+                },
+                {
+                    "type": "AND",
+                    "rules": [
+                        {
+                            "type": "SAME_CATEGORY",
+                            "positions": [
+                                9,
+                                19,
+                                29,
+                                39
+                            ]
+                        },
+                        {
+                            "type": "RELATION",
+                            "pos1": 4,
+                            "pos2": 9,
+                            "relation": "neighbor"
+                        }
+                    ]
+                }
+            ]
+        }
+    },
+    {
+        "name": "五律仄起",
+        "genre": "Shi",
+        "cipai": "Wulyu",
+        "char_count": 40,
+        "tone_pattern": [
+            [
+                [
+                    {
+                        "tone": "A",
+                        "comment": null
+                    },
+                    {
+                        "tone": "Z",
+                        "comment": null
+                    },
+                    {
+                        "tone": "A",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "Z",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "A",
+                        "comment": null
+                    }
+                ],
+                [
+                    {
+                        "tone": "A",
+                        "comment": null
+                    },
+                    {
+                        "tone": "Z",
+                        "comment": null
+                    },
+                    {
+                        "tone": "A",
+                        "comment": null
+                    },
+                    {
+                        "tone": "A",
+                        "comment": null
+                    },
+                    {
+                        "tone": "Z",
+                        "comment": null
+                    },
+                    {
+                        "tone": "A",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    }
+                ]
+            ],
+            {
+                "tone": "Z",
+                "comment": null
+            },
+            {
+                "tone": "P",
+                "comment": null
+            },
+            [
+                [
+                    {
+                        "tone": "A",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "Z",
+                        "comment": null
+                    },
+                    {
+                        "tone": "Z",
+                        "comment": null
+                    }
+                ],
+                [
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "Z",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "Z",
+                        "comment": null
+                    }
+                ]
+            ],
+            {
+                "tone": "A",
+                "comment": null
+            },
+            {
+                "tone": "Z",
+                "comment": null
+            },
+            {
+                "tone": "Z",
+                "comment": null
+            },
+            {
+                "tone": "P",
+                "comment": null
+            },
+            {
+                "tone": "P",
+                "comment": null
+            },
+            [
+                [
+                    {
+                        "tone": "A",
+                        "comment": null
+                    },
+                    {
+                        "tone": "Z",
+                        "comment": null
+                    },
+                    {
+                        "tone": "A",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "Z",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "A",
+                        "comment": null
+                    }
+                ],
+                [
+                    {
+                        "tone": "A",
+                        "comment": null
+                    },
+                    {
+                        "tone": "Z",
+                        "comment": null
+                    },
+                    {
+                        "tone": "A",
+                        "comment": null
+                    },
+                    {
+                        "tone": "A",
+                        "comment": null
+                    },
+                    {
+                        "tone": "Z",
+                        "comment": null
+                    },
+                    {
+                        "tone": "A",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    }
+                ]
+            ],
+            {
+                "tone": "Z",
+                "comment": null
+            },
+            {
+                "tone": "P",
+                "comment": null
+            },
+            [
+                [
+                    {
+                        "tone": "A",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "Z",
+                        "comment": null
+                    },
+                    {
+                        "tone": "Z",
+                        "comment": null
+                    }
+                ],
+                [
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "Z",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "Z",
+                        "comment": null
+                    }
+                ]
+            ],
+            {
+                "tone": "A",
+                "comment": null
+            },
+            {
+                "tone": "Z",
+                "comment": null
+            },
+            {
+                "tone": "Z",
+                "comment": null
+            },
+            {
+                "tone": "P",
+                "comment": null
+            },
+            {
+                "tone": "P",
+                "comment": null
+            }
+        ],
+        "rhyme_rule": {
+            "type": "SAME_CATEGORY",
+            "positions": [
+                9,
+                19,
+                29,
+                39
+            ]
+        }
+    },
+    {
+        "name": "五律平起",
+        "genre": "Shi",
+        "cipai": "Wulyu",
+        "char_count": 40,
+        "tone_pattern": [
+            [
+                [
+                    {
+                        "tone": "A",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "Z",
+                        "comment": null
+                    },
+                    {
+                        "tone": "Z",
+                        "comment": null
+                    }
+                ],
+                [
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "Z",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "Z",
+                        "comment": null
+                    }
+                ]
+            ],
+            {
+                "tone": "A",
+                "comment": null
+            },
+            {
+                "tone": "Z",
+                "comment": null
+            },
+            {
+                "tone": "Z",
+                "comment": null
+            },
+            {
+                "tone": "P",
+                "comment": null
+            },
+            {
+                "tone": "P",
+                "comment": null
+            },
+            [
+                [
+                    {
+                        "tone": "A",
+                        "comment": null
+                    },
+                    {
+                        "tone": "Z",
+                        "comment": null
+                    },
+                    {
+                        "tone": "A",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "Z",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "A",
+                        "comment": null
+                    }
+                ],
+                [
+                    {
+                        "tone": "A",
+                        "comment": null
+                    },
+                    {
+                        "tone": "Z",
+                        "comment": null
+                    },
+                    {
+                        "tone": "A",
+                        "comment": null
+                    },
+                    {
+                        "tone": "A",
+                        "comment": null
+                    },
+                    {
+                        "tone": "Z",
+                        "comment": null
+                    },
+                    {
+                        "tone": "A",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    }
+                ]
+            ],
+            {
+                "tone": "Z",
+                "comment": null
+            },
+            {
+                "tone": "P",
+                "comment": null
+            },
+            [
+                [
+                    {
+                        "tone": "A",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "Z",
+                        "comment": null
+                    },
+                    {
+                        "tone": "Z",
+                        "comment": null
+                    }
+                ],
+                [
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "Z",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "Z",
+                        "comment": null
+                    }
+                ]
+            ],
+            {
+                "tone": "A",
+                "comment": null
+            },
+            {
+                "tone": "Z",
+                "comment": null
+            },
+            {
+                "tone": "Z",
+                "comment": null
+            },
+            {
+                "tone": "P",
+                "comment": null
+            },
+            {
+                "tone": "P",
+                "comment": null
+            },
+            [
+                [
+                    {
+                        "tone": "A",
+                        "comment": null
+                    },
+                    {
+                        "tone": "Z",
+                        "comment": null
+                    },
+                    {
+                        "tone": "A",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "Z",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "A",
+                        "comment": null
+                    }
+                ],
+                [
+                    {
+                        "tone": "A",
+                        "comment": null
+                    },
+                    {
+                        "tone": "Z",
+                        "comment": null
+                    },
+                    {
+                        "tone": "A",
+                        "comment": null
+                    },
+                    {
+                        "tone": "A",
+                        "comment": null
+                    },
+                    {
+                        "tone": "Z",
+                        "comment": null
+                    },
+                    {
+                        "tone": "A",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    }
+                ]
+            ],
+            {
+                "tone": "Z",
+                "comment": null
+            },
+            {
+                "tone": "P",
+                "comment": null
+            }
+        ],
+        "rhyme_rule": {
+            "type": "SAME_CATEGORY",
+            "positions": [
+                9,
+                19,
+                29,
+                39
+            ]
+        }
+    },
+    {
+        "name": "五律平起首句入韵",
+        "genre": "Shi",
+        "cipai": "Wulyu",
+        "char_count": 40,
+        "tone_pattern": [
+            [
+                [
+                    {
+                        "tone": "A",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "Z",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    }
+                ],
+                [
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "A",
+                        "comment": null
+                    },
+                    {
+                        "tone": "Z",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    }
+                ]
+            ],
+            {
+                "tone": "A",
+                "comment": null
+            },
+            {
+                "tone": "Z",
+                "comment": null
+            },
+            {
+                "tone": "Z",
+                "comment": null
+            },
+            {
+                "tone": "P",
+                "comment": null
+            },
+            {
+                "tone": "P",
+                "comment": null
+            },
+            [
+                [
+                    {
+                        "tone": "A",
+                        "comment": null
+                    },
+                    {
+                        "tone": "Z",
+                        "comment": null
+                    },
+                    {
+                        "tone": "A",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "Z",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "A",
+                        "comment": null
+                    }
+                ],
+                [
+                    {
+                        "tone": "A",
+                        "comment": null
+                    },
+                    {
+                        "tone": "Z",
+                        "comment": null
+                    },
+                    {
+                        "tone": "A",
+                        "comment": null
+                    },
+                    {
+                        "tone": "A",
+                        "comment": null
+                    },
+                    {
+                        "tone": "Z",
+                        "comment": null
+                    },
+                    {
+                        "tone": "A",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    }
+                ]
+            ],
+            {
+                "tone": "Z",
+                "comment": null
+            },
+            {
+                "tone": "P",
+                "comment": null
+            },
+            [
+                [
+                    {
+                        "tone": "A",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "Z",
+                        "comment": null
+                    },
+                    {
+                        "tone": "Z",
+                        "comment": null
+                    }
+                ],
+                [
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "Z",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "Z",
+                        "comment": null
+                    }
+                ]
+            ],
+            {
+                "tone": "A",
+                "comment": null
+            },
+            {
+                "tone": "Z",
+                "comment": null
+            },
+            {
+                "tone": "Z",
+                "comment": null
+            },
+            {
+                "tone": "P",
+                "comment": null
+            },
+            {
+                "tone": "P",
+                "comment": null
+            },
+            [
+                [
+                    {
+                        "tone": "A",
+                        "comment": null
+                    },
+                    {
+                        "tone": "Z",
+                        "comment": null
+                    },
+                    {
+                        "tone": "A",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "Z",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "A",
+                        "comment": null
+                    }
+                ],
+                [
+                    {
+                        "tone": "A",
+                        "comment": null
+                    },
+                    {
+                        "tone": "Z",
+                        "comment": null
+                    },
+                    {
+                        "tone": "A",
+                        "comment": null
+                    },
+                    {
+                        "tone": "A",
+                        "comment": null
+                    },
+                    {
+                        "tone": "Z",
+                        "comment": null
+                    },
+                    {
+                        "tone": "A",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    }
+                ]
+            ],
+            {
+                "tone": "Z",
+                "comment": null
+            },
+            {
+                "tone": "P",
+                "comment": null
+            }
+        ],
+        "rhyme_rule": {
+            "type": "OR",
+            "rules": [
+                {
+                    "type": "SAME_CATEGORY",
+                    "positions": [
+                        4,
+                        9,
+                        19,
+                        29,
+                        39
+                    ]
+                },
+                {
+                    "type": "AND",
+                    "rules": [
+                        {
+                            "type": "SAME_CATEGORY",
+                            "positions": [
+                                9,
+                                19,
+                                29,
+                                39
+                            ]
+                        },
+                        {
+                            "type": "RELATION",
+                            "pos1": 4,
+                            "pos2": 9,
+                            "relation": "neighbor"
+                        }
+                    ]
+                }
+            ]
+        }
+    },
+    {
+        "name": "五绝仄起首句入韵",
+        "genre": "Shi",
+        "cipai": "Wujue",
+        "char_count": 20,
+        "tone_pattern": [
+            {
+                "tone": "A",
+                "comment": null
+            },
+            {
+                "tone": "Z",
+                "comment": null
+            },
+            {
+                "tone": "Z",
+                "comment": null
+            },
+            {
+                "tone": "P",
+                "comment": null
+            },
+            {
+                "tone": "P",
+                "comment": null
+            },
+            [
+                [
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "A",
+                        "comment": null
+                    }
+                ],
+                [
+                    {
+                        "tone": "A",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    }
+                ]
+            ],
+            {
+                "tone": "Z",
+                "comment": null
+            },
+            {
+                "tone": "P",
+                "comment": null
+            },
+            [
+                [
+                    {
+                        "tone": "A",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "Z",
+                        "comment": null
+                    },
+                    {
+                        "tone": "Z",
+                        "comment": null
+                    }
+                ],
+                [
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "Z",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "Z",
+                        "comment": null
+                    }
+                ]
+            ],
+            {
+                "tone": "A",
+                "comment": null
+            },
+            {
+                "tone": "Z",
+                "comment": null
+            },
+            {
+                "tone": "Z",
+                "comment": null
+            },
+            {
+                "tone": "P",
+                "comment": null
+            },
+            {
+                "tone": "P",
+                "comment": null
+            }
+        ],
+        "rhyme_rule": {
+            "type": "OR",
+            "rules": [
+                {
+                    "type": "SAME_CATEGORY",
+                    "positions": [
+                        4,
+                        9,
+                        19
+                    ]
+                },
+                {
+                    "type": "AND",
+                    "rules": [
+                        {
+                            "type": "SAME_CATEGORY",
+                            "positions": [
+                                9,
+                                19
+                            ]
+                        },
+                        {
+                            "type": "RELATION",
+                            "pos1": 4,
+                            "pos2": 9,
+                            "relation": "neighbor"
+                        }
+                    ]
+                }
+            ]
+        }
+    },
+    {
+        "name": "五绝仄起",
+        "genre": "Shi",
+        "cipai": "Wujue",
+        "char_count": 20,
+        "tone_pattern": [
+            [
+                [
+                    {
+                        "tone": "A",
+                        "comment": null
+                    },
+                    {
+                        "tone": "Z",
+                        "comment": null
+                    },
+                    {
+                        "tone": "A",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "Z",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "A",
+                        "comment": null
+                    }
+                ],
+                [
+                    {
+                        "tone": "A",
+                        "comment": null
+                    },
+                    {
+                        "tone": "Z",
+                        "comment": null
+                    },
+                    {
+                        "tone": "A",
+                        "comment": null
+                    },
+                    {
+                        "tone": "A",
+                        "comment": null
+                    },
+                    {
+                        "tone": "Z",
+                        "comment": null
+                    },
+                    {
+                        "tone": "A",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    }
+                ]
+            ],
+            {
+                "tone": "Z",
+                "comment": null
+            },
+            {
+                "tone": "P",
+                "comment": null
+            },
+            [
+                [
+                    {
+                        "tone": "A",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "Z",
+                        "comment": null
+                    },
+                    {
+                        "tone": "Z",
+                        "comment": null
+                    }
+                ],
+                [
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "Z",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "Z",
+                        "comment": null
+                    }
+                ]
+            ],
+            {
+                "tone": "A",
+                "comment": null
+            },
+            {
+                "tone": "Z",
+                "comment": null
+            },
+            {
+                "tone": "Z",
+                "comment": null
+            },
+            {
+                "tone": "P",
+                "comment": null
+            },
+            {
+                "tone": "P",
+                "comment": null
+            }
+        ],
+        "rhyme_rule": {
+            "type": "SAME_CATEGORY",
+            "positions": [
+                9,
+                19
+            ]
+        }
+    },
+    {
+        "name": "五绝平起",
+        "genre": "Shi",
+        "cipai": "Wujue",
+        "char_count": 20,
+        "tone_pattern": [
+            [
+                [
+                    {
+                        "tone": "A",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "Z",
+                        "comment": null
+                    },
+                    {
+                        "tone": "Z",
+                        "comment": null
+                    }
+                ],
+                [
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "Z",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "Z",
+                        "comment": null
+                    }
+                ]
+            ],
+            {
+                "tone": "A",
+                "comment": null
+            },
+            {
+                "tone": "Z",
+                "comment": null
+            },
+            {
+                "tone": "Z",
+                "comment": null
+            },
+            {
+                "tone": "P",
+                "comment": null
+            },
+            {
+                "tone": "P",
+                "comment": null
+            },
+            [
+                [
+                    {
+                        "tone": "A",
+                        "comment": null
+                    },
+                    {
+                        "tone": "Z",
+                        "comment": null
+                    },
+                    {
+                        "tone": "A",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "Z",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "A",
+                        "comment": null
+                    }
+                ],
+                [
+                    {
+                        "tone": "A",
+                        "comment": null
+                    },
+                    {
+                        "tone": "Z",
+                        "comment": null
+                    },
+                    {
+                        "tone": "A",
+                        "comment": null
+                    },
+                    {
+                        "tone": "A",
+                        "comment": null
+                    },
+                    {
+                        "tone": "Z",
+                        "comment": null
+                    },
+                    {
+                        "tone": "A",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    }
+                ]
+            ],
+            {
+                "tone": "Z",
+                "comment": null
+            },
+            {
+                "tone": "P",
+                "comment": null
+            }
+        ],
+        "rhyme_rule": {
+            "type": "SAME_CATEGORY",
+            "positions": [
+                9,
+                19
+            ]
+        }
+    },
+    {
+        "name": "五绝平起首句入韵",
+        "genre": "Shi",
+        "cipai": "Wujue",
+        "char_count": 20,
+        "tone_pattern": [
+            [
+                [
+                    {
+                        "tone": "A",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "Z",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    }
+                ],
+                [
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "A",
+                        "comment": null
+                    },
+                    {
+                        "tone": "Z",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    }
+                ]
+            ],
+            {
+                "tone": "A",
+                "comment": null
+            },
+            {
+                "tone": "Z",
+                "comment": null
+            },
+            {
+                "tone": "Z",
+                "comment": null
+            },
+            {
+                "tone": "P",
+                "comment": null
+            },
+            {
+                "tone": "P",
+                "comment": null
+            },
+            [
+                [
+                    {
+                        "tone": "A",
+                        "comment": null
+                    },
+                    {
+                        "tone": "Z",
+                        "comment": null
+                    },
+                    {
+                        "tone": "A",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "Z",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "A",
+                        "comment": null
+                    }
+                ],
+                [
+                    {
+                        "tone": "A",
+                        "comment": null
+                    },
+                    {
+                        "tone": "Z",
+                        "comment": null
+                    },
+                    {
+                        "tone": "A",
+                        "comment": null
+                    },
+                    {
+                        "tone": "A",
+                        "comment": null
+                    },
+                    {
+                        "tone": "Z",
+                        "comment": null
+                    },
+                    {
+                        "tone": "A",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    },
+                    {
+                        "tone": "P",
+                        "comment": null
+                    }
+                ]
+            ],
+            {
+                "tone": "Z",
+                "comment": null
+            },
+            {
+                "tone": "P",
+                "comment": null
+            }
+        ],
+        "rhyme_rule": {
+            "type": "OR",
+            "rules": [
+                {
+                    "type": "SAME_CATEGORY",
+                    "positions": [
+                        4,
+                        9,
+                        19
+                    ]
+                },
+                {
+                    "type": "AND",
+                    "rules": [
+                        {
+                            "type": "SAME_CATEGORY",
+                            "positions": [
+                                9,
+                                19
+                            ]
+                        },
+                        {
+                            "type": "RELATION",
+                            "pos1": 4,
+                            "pos2": 9,
+                            "relation": "neighbor"
+                        }
+                    ]
+                }
+            ]
+        }
+    }
+]

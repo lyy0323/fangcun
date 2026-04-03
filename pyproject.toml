@@ -1,0 +1,21 @@
+[build-system]
+requires = ["setuptools>=68.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "fangcun"
+version = "0.1.0"
+description = "方寸 — 格律诗词校验工具 (Chinese classical poetry tonal pattern & rhyme validator)"
+requires-python = ">=3.10"
+dependencies = [
+  "flask>=3.1",
+  "flask-cors>=6.0",
+  "flask-limiter>=3.12",
+  "psycopg2-binary>=2.9",
+]
+
+[project.scripts]
+fangcun = "cli:main"
+
+[tool.setuptools]
+py-modules = ["cli", "checker", "config_loader", "api_keys"]

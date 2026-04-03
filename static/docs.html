@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>方寸 API 文档</title>
+<style>
+  :root {
+    --bg: #ffffff;
+    --bg-code: #f6f8fa;
+    --bg-sidebar: #f9fafb;
+    --border: #e5e7eb;
+    --text: #1f2937;
+    --text-secondary: #6b7280;
+    --accent: #2563eb;
+    --accent-light: #eff6ff;
+    --green: #059669;
+    --green-bg: #ecfdf5;
+    --red: #dc2626;
+    --red-bg: #fef2f2;
+    --orange: #d97706;
+    --orange-bg: #fffbeb;
+    --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans SC", sans-serif;
+    --font-mono: "SF Mono", "Fira Code", "Fira Mono", Menlo, Consolas, monospace;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: smooth; scroll-padding-top: 2rem; }
+  body { font-family: var(--font-sans); color: var(--text); line-height: 1.7; background: var(--bg); }
+
+  /* Layout */
+  .layout { display: flex; min-height: 100vh; }
+  .sidebar {
+    width: 260px; flex-shrink: 0; position: sticky; top: 0; height: 100vh;
+    overflow-y: auto; background: var(--bg-sidebar); border-right: 1px solid var(--border);
+    padding: 1.5rem 0; font-size: 0.875rem;
+  }
+  .sidebar-title {
+    font-size: 1.125rem; font-weight: 700; padding: 0 1.25rem 1rem;
+    border-bottom: 1px solid var(--border); margin-bottom: 1rem;
+  }
+  .sidebar-title span { color: var(--text-secondary); font-weight: 400; font-size: 0.8rem; margin-left: 0.5rem; }
+  .sidebar nav a {
+    display: block; padding: 0.35rem 1.25rem; color: var(--text-secondary);
+    text-decoration: none; transition: all 0.15s;
+  }
+  .sidebar nav a:hover { color: var(--accent); background: var(--accent-light); }
+  .sidebar nav a.section-title {
+    font-weight: 600; color: var(--text); margin-top: 1rem; font-size: 0.8rem;
+    text-transform: uppercase; letter-spacing: 0.05em;
+    pointer-events: none;
+  }
+  .main { flex: 1; max-width: 860px; padding: 2.5rem 3rem 4rem; }
+
+  /* Typography */
+  h1 { font-size: 2rem; font-weight: 800; margin-bottom: 0.5rem; }
+  h1 + p { color: var(--text-secondary); margin-bottom: 2rem; font-size: 1.05rem; }
+  h2 {
+    font-size: 1.4rem; font-weight: 700; margin-top: 3rem; margin-bottom: 1rem;
+    padding-bottom: 0.5rem; border-bottom: 2px solid var(--border);
+  }
+  h3 { font-size: 1.1rem; font-weight: 600; margin-top: 1.5rem; margin-bottom: 0.5rem; }
+  p { margin-bottom: 0.75rem; }
+
+  /* Method badge */
+  .method {
+    display: inline-block; font-family: var(--font-mono); font-size: 0.8rem;
+    font-weight: 700; padding: 0.15rem 0.5rem; border-radius: 4px; margin-right: 0.5rem;
+    vertical-align: middle;
+  }
+  .method-post { background: var(--green-bg); color: var(--green); }
+  .method-get  { background: var(--accent-light); color: var(--accent); }
+  .endpoint {
+    font-family: var(--font-mono); font-size: 1rem; font-weight: 600;
+    vertical-align: middle;
+  }
+  .endpoint-line {
+    background: var(--bg-code); border: 1px solid var(--border); border-radius: 8px;
+    padding: 0.75rem 1rem; margin-bottom: 1rem;
+  }
+
+  /* Tables */
+  table { width: 100%; border-collapse: collapse; margin-bottom: 1rem; font-size: 0.9rem; }
+  th { text-align: left; font-weight: 600; padding: 0.5rem 0.75rem; border-bottom: 2px solid var(--border); }
+  td { padding: 0.5rem 0.75rem; border-bottom: 1px solid var(--border); }
+  td:first-child { font-family: var(--font-mono); font-size: 0.85rem; white-space: nowrap; }
+  tr:last-child td { border-bottom: none; }
+
+  /* Code */
+  code {
+    font-family: var(--font-mono); font-size: 0.85em;
+    background: var(--bg-code); padding: 0.15em 0.4em; border-radius: 4px;
+  }
+  pre {
+    background: #0d1117; color: #e6edf3; border-radius: 8px;
+    padding: 1rem 1.25rem; overflow-x: auto; margin-bottom: 1rem;
+    font-size: 0.85rem; line-height: 1.6;
+  }
+  pre code { background: none; padding: 0; color: inherit; }
+  .comment { color: #8b949e; }
+  .string  { color: #a5d6ff; }
+  .key     { color: #7ee787; }
+  .number  { color: #79c0ff; }
+  .bool    { color: #ff7b72; }
+
+  /* Badges */
+  .badge {
+    display: inline-block; font-size: 0.75rem; font-weight: 600;
+    padding: 0.1rem 0.4rem; border-radius: 3px; vertical-align: middle;
+  }
+  .badge-required { background: var(--red-bg); color: var(--red); }
+  .badge-optional { background: var(--bg-code); color: var(--text-secondary); }
+
+  /* Callout */
+  .callout {
+    background: var(--accent-light); border-left: 3px solid var(--accent);
+    padding: 0.75rem 1rem; border-radius: 0 6px 6px 0; margin-bottom: 1rem;
+    font-size: 0.9rem;
+  }
+  .callout-warn {
+    background: var(--orange-bg); border-left-color: var(--orange);
+  }
+
+  /* Status table */
+  .status-code {
+    font-family: var(--font-mono); font-weight: 700; font-size: 0.85rem;
+  }
+  .s2xx { color: var(--green); }
+  .s4xx { color: var(--red); }
+
+  /* Divider */
+  hr { border: none; border-top: 1px solid var(--border); margin: 2rem 0; }
+
+  /* Responsive */
+  @media (max-width: 768px) {
+    .sidebar { display: none; }
+    .main { padding: 1.5rem 1rem; max-width: 100vw; overflow-x: hidden; }
+    .endpoint-line { overflow-x: auto; }
+    pre { max-width: calc(100vw - 2rem); font-size: 0.75rem; padding: 0.75rem; word-break: break-all; }
+    table { display: block; overflow-x: auto; white-space: nowrap; }
+    td:first-child { white-space: normal; }
+    h1 { font-size: 1.5rem; }
+    h2 { font-size: 1.2rem; }
+    .callout { font-size: 0.8rem; }
+  }
+</style>
+</head>
+<body>
+<div class="layout">
+
+<!-- Sidebar -->
+<aside class="sidebar">
+  <div class="sidebar-title">方寸 API <span>v0.1</span></div>
+  <nav>
+    <a class="section-title">概览</a>
+    <a href="#auth">认证</a>
+    <a href="#rate-limit">限流</a>
+    <a href="#errors">错误处理</a>
+    <a href="#params">参数约束</a>
+
+    <a class="section-title">端点</a>
+    <a href="#validate">校验格律</a>
+    <a href="#char">查字</a>
+    <a href="#rhyme-lookup">查韵部字表</a>
+    <a href="#rhyme-list">韵部列表</a>
+    <a href="#rules">格律规则列表</a>
+    <a href="#dictionary">词语联想</a>
+
+  </nav>
+</aside>
+
+<!-- Main -->
+<main class="main">
+
+<h1>方寸 API 文档</h1>
+<p>格律诗词校验与辅助创作接口。</p>
+
+<!-- ==================== 认证 ==================== -->
+<h2 id="auth">认证</h2>
+<p>所有 <code>/api/*</code> 请求需通过 <code>X-API-Key</code> Header 传递 API Key：</p>
+<pre><code>X-API-Key: fc_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx</code></pre>
+
+<h3>获取 Key</h3>
+<p>发送邮件至 <a href="mailto:guoxue_sjtu@163.com?subject=方寸 API Key 申请&amp;body=您好，%0A%0A我希望申请方寸 API Key，信息如下：%0A%0A姓名/团队：%0A用途说明：%0A预计调用量：%0A%0A谢谢！" style="color: var(--accent); font-weight: 600;">guoxue_sjtu@163.com</a>，请包含以下信息：</p>
+
+<pre><code>收件人: guoxue_sjtu@163.com
+主　题: 方寸 API Key 申请
+
+您好，
+
+我希望申请方寸 API Key，信息如下：
+
+姓名/团队：
+用途说明：
+预计调用量：
+
+谢谢！</code></pre>
+
+<p>审核通过后将回复包含 API Key 的邮件。</p>
+
+<!-- ==================== 限流 ==================== -->
+<h2 id="rate-limit">限流</h2>
+<table>
+  <tr><th>端点</th><th>限制</th></tr>
+  <tr><td>/api/validate_meter</td><td>60 次/分钟</td></tr>
+  <tr><td>/api/dictionary/search</td><td>120 次/分钟</td></tr>
+  <tr><td>其他</td><td>60 次/分钟</td></tr>
+</table>
+<p>超限返回 <code>429 Too Many Requests</code>。</p>
+
+<!-- ==================== 错误 ==================== -->
+<h2 id="errors">错误处理</h2>
+<p>错误统一返回 JSON：</p>
+<pre><code>{ <span class="key">"error"</span>: <span class="string">"错误描述"</span> }</code></pre>
+<table>
+  <tr><th>状态码</th><th>含义</th></tr>
+  <tr><td><span class="status-code s4xx">400</span></td><td>参数校验失败（无效枚举值、参数过长等）</td></tr>
+  <tr><td><span class="status-code s4xx">401</span></td><td>缺失或无效 API Key</td></tr>
+  <tr><td><span class="status-code s4xx">404</span></td><td>资源不存在（如韵部名不存在）</td></tr>
+  <tr><td><span class="status-code s4xx">429</span></td><td>请求频率超限</td></tr>
+</table>
+
+<!-- ==================== 参数约束 ==================== -->
+<h2 id="params">参数约束</h2>
+<table>
+  <tr><th>约束</th><th>说明</th></tr>
+  <tr><td>参数长度</td><td>所有查询参数上限 2000 字符</td></tr>
+  <tr><td>请求体</td><td>上限 50 KB</td></tr>
+  <tr><td><code>genre</code></td><td><code>Shi</code>（诗）或 <code>Ci</code>（词）</td></tr>
+  <tr><td><code>book</code></td><td><code>Pingshuiyun</code>（平水韵）或 <code>Cilinzhengyun</code>（词林正韵）</td></tr>
+  <tr><td><code>mode</code></td><td><code>head</code>、<code>tail</code>、<code>pair</code></td></tr>
+  <tr><td><code>tone</code></td><td><code>P</code>（平）或 <code>Z</code>（仄）</td></tr>
+</table>
+
+<hr>
+
+<!-- ==================== 1. 校验格律 ==================== -->
+<h2 id="validate">校验格律</h2>
+<p>检测诗词的平仄和押韵是否符合规则。这是核心接口。</p>
+
+<div class="endpoint-line">
+  <span class="method method-post">POST</span>
+  <span class="endpoint">/api/validate_meter</span>
+</div>
+
+<h3>请求体 (JSON)</h3>
+<table>
+  <tr><th>字段</th><th>类型</th><th></th><th>说明</th></tr>
+  <tr><td>poem_text</td><td>string</td><td><span class="badge badge-required">必填</span></td><td>诗词文本（标点、空格自动忽略，只提取汉字）</td></tr>
+  <tr><td>genre</td><td>string</td><td><span class="badge badge-optional">可选</span></td><td><code>Shi</code> 或 <code>Ci</code>，默认 <code>Shi</code></td></tr>
+  <tr><td>rhyme_book_name</td><td>string</td><td><span class="badge badge-optional">可选</span></td><td>韵书名，默认 <code>Pingshuiyun</code></td></tr>
+  <tr><td>rule_name</td><td>string</td><td><span class="badge badge-optional">可选</span></td><td>指定规则名（如 <code>五绝仄起</code>），不传则自动匹配最接近的</td></tr>
+  <tr><td>ensure_longpu</td><td>bool</td><td><span class="badge badge-optional">可选</span></td><td>仅匹配龙谱规则，默认 <code>false</code></td></tr>
+</table>
+
+<h3>请求示例</h3>
+<pre><code>curl -X POST https://write.sjtuguoxue.space/api/validate_meter \
+  -H <span class="string">"X-API-Key: fc_xxx"</span> \
+  -H <span class="string">"Content-Type: application/json"</span> \
+  -d <span class="string">'{
+    "poem_text": "白日依山尽，黄河入海流。欲穷千里目，更上一层楼。",
+    "genre": "Shi",
+    "rhyme_book_name": "Pingshuiyun"
+  }'</span></code></pre>
+
+<h3>响应示例 — 格律通过</h3>
+<pre><code>{
+  <span class="key">"is_valid"</span>: <span class="bool">true</span>,
+  <span class="key">"closest_rule"</span>: {
+    <span class="key">"name"</span>: <span class="string">"五绝仄起"</span>,
+    <span class="key">"genre"</span>: <span class="string">"Shi"</span>,
+    <span class="key">"cipai"</span>: <span class="string">"Wujue"</span>,
+    <span class="key">"char_count"</span>: <span class="number">20</span>
+  },
+  <span class="key">"errors"</span>: [],
+  <span class="key">"warnings"</span>: [],
+  <span class="key">"rhyme_name"</span>: <span class="string">"十一尤"</span>,
+  <span class="key">"rhyme_positions"</span>: [<span class="number">9</span>, <span class="number">19</span>],
+  <span class="key">"rhyme_chars"</span>: [<span class="string">"流"</span>, <span class="string">"楼"</span>],
+  <span class="key">"rhyme_groups"</span>: [
+    { <span class="key">"positions"</span>: [<span class="number">9</span>, <span class="number">19</span>], <span class="key">"type"</span>: <span class="string">"same"</span> }
+  ],
+  <span class="key">"rhyme_relations"</span>: [],
+  <span class="key">"display_segments"</span>: [
+    {
+      <span class="key">"start_index"</span>: <span class="number">0</span>,
+      <span class="key">"text_chars"</span>: [<span class="string">"白"</span>, <span class="string">"日"</span>, <span class="string">"依"</span>, <span class="string">"山"</span>, <span class="string">"尽"</span>, <span class="string">"黄"</span>, <span class="string">"河"</span>, <span class="string">"入"</span>, <span class="string">"海"</span>, <span class="string">"流"</span>],
+      <span class="key">"rule_items"</span>: [
+        { <span class="key">"tone"</span>: <span class="string">"A"</span> }, { <span class="key">"tone"</span>: <span class="string">"Z"</span> }, { <span class="key">"tone"</span>: <span class="string">"A"</span> },
+        { <span class="key">"tone"</span>: <span class="string">"P"</span> }, { <span class="key">"tone"</span>: <span class="string">"Z"</span> }, { <span class="key">"tone"</span>: <span class="string">"P"</span> },
+        { <span class="key">"tone"</span>: <span class="string">"P"</span> }, { <span class="key">"tone"</span>: <span class="string">"A"</span> }, { <span class="key">"tone"</span>: <span class="string">"Z"</span> }, { <span class="key">"tone"</span>: <span class="string">"P"</span> }
+      ]
+    }
+  ]
+}</code></pre>
+
+<h3>响应示例 — 有错误</h3>
+<pre><code>{
+  <span class="key">"is_valid"</span>: <span class="bool">false</span>,
+  <span class="key">"closest_rule"</span>: {
+    <span class="key">"name"</span>: <span class="string">"五绝仄起首句入韵"</span>,
+    <span class="key">"char_count"</span>: <span class="number">20</span>
+  },
+  <span class="key">"errors"</span>: [
+    {
+      <span class="key">"position"</span>: <span class="number">1</span>,
+      <span class="key">"character"</span>: <span class="string">"风"</span>,
+      <span class="key">"error_type"</span>: <span class="string">"Tone"</span>,
+      <span class="key">"message"</span>: <span class="string">"应为仄, 实为平"</span>
+    },
+    {
+      <span class="key">"position"</span>: <span class="number">6</span>,
+      <span class="key">"character"</span>: <span class="string">"雨"</span>,
+      <span class="key">"error_type"</span>: <span class="string">"Tone"</span>,
+      <span class="key">"message"</span>: <span class="string">"应为平, 实为仄"</span>
+    }
+  ],
+  <span class="key">"rhyme_name"</span>: <span class="string">"五微"</span>,
+  <span class="key">"rhyme_chars"</span>: [<span class="string">"开"</span>, <span class="string">"飞"</span>, <span class="string">"归"</span>]
+}</code></pre>
+
+<h3>响应字段说明</h3>
+<table>
+  <tr><th>字段</th><th>说明</th></tr>
+  <tr><td>is_valid</td><td>是否完全通过校验</td></tr>
+  <tr><td>closest_rule</td><td>匹配到的最接近规则（名称、体裁、词牌、字数）</td></tr>
+  <tr><td>errors[]</td><td>错误列表，每项含位置 (0-indexed)、字符、错误类型 (<code>Tone</code>/<code>Rhyme</code>)、描述</td></tr>
+  <tr><td>warnings[]</td><td>警告列表（如重复用字）</td></tr>
+  <tr><td>rhyme_name</td><td>推断的韵部名（一韵到底时）</td></tr>
+  <tr><td>rhyme_positions</td><td>押韵位置（0-indexed）</td></tr>
+  <tr><td>rhyme_chars</td><td>押韵字列表</td></tr>
+  <tr><td>display_segments[]</td><td>分段显示数据。<code>tone</code>：<code>P</code>=平、<code>Z</code>=仄、<code>A</code>=中（可平可仄）</td></tr>
+</table>
+
+<hr>
+
+<!-- ==================== 2. 查字 ==================== -->
+<h2 id="char">查字</h2>
+<p>查询单个汉字的声调和所属韵部。支持繁体自动转简体。</p>
+
+<div class="endpoint-line">
+  <span class="method method-get">GET</span>
+  <span class="endpoint">/api/char/lookup</span>
+</div>
+
+<table>
+  <tr><th>参数</th><th>类型</th><th></th><th>说明</th></tr>
+  <tr><td>char</td><td>string</td><td><span class="badge badge-required">必填</span></td><td>单个汉字</td></tr>
+  <tr><td>book</td><td>string</td><td><span class="badge badge-optional">可选</span></td><td>韵书名。不传则返回所有韵书</td></tr>
+</table>
+
+<h3>示例 — 指定韵书</h3>
+<pre><code>curl <span class="string">"https://write.sjtuguoxue.space/api/char/lookup?char=花&amp;book=Pingshuiyun"</span> \
+  -H <span class="string">"X-API-Key: fc_xxx"</span></code></pre>
+<pre><code>{
+  <span class="key">"char"</span>: <span class="string">"花"</span>,
+  <span class="key">"tones"</span>: [<span class="string">"平"</span>, <span class="string">"上"</span>],
+  <span class="key">"rhyme_categories"</span>: [
+    { <span class="key">"name"</span>: <span class="string">"六麻"</span>, <span class="key">"tone_type"</span>: <span class="string">"P"</span> }
+  ]
+}</code></pre>
+
+<h3>示例 — 不指定韵书（返回所有）</h3>
+<pre><code>{
+  <span class="key">"char"</span>: <span class="string">"花"</span>,
+  <span class="key">"tones"</span>: [<span class="string">"平"</span>, <span class="string">"上"</span>],
+  <span class="key">"rhyme_categories"</span>: {
+    <span class="key">"Pingshuiyun"</span>: [<span class="string">"六麻"</span>],
+    <span class="key">"Cilinzhengyun"</span>: [<span class="string">"第3部_仄"</span>, <span class="string">"第10部_平"</span>]
+  }
+}</code></pre>
+
+<div class="callout"><code>tones</code> 为原始声调（平、上、去、入），<code>rhyme_categories</code> 为韵书中的韵部归属。</div>
+
+<hr>
+
+<!-- ==================== 3. 查韵部字表 ==================== -->
+<h2 id="rhyme-lookup">查韵部字表</h2>
+<p>查看某个韵部包含哪些字。</p>
+
+<div class="endpoint-line">
+  <span class="method method-get">GET</span>
+  <span class="endpoint">/api/rhyme/lookup</span>
+</div>
+
+<table>
+  <tr><th>参数</th><th>类型</th><th></th><th>说明</th></tr>
+  <tr><td>book</td><td>string</td><td><span class="badge badge-optional">可选</span></td><td>韵书名，默认 <code>Pingshuiyun</code></td></tr>
+  <tr><td>category</td><td>string</td><td><span class="badge badge-required">必填</span></td><td>韵部名，如 <code>一东</code></td></tr>
+  <tr><td>include</td><td>string</td><td><span class="badge badge-optional">可选</span></td><td>包含关联韵部，逗号分隔（如 <code>neighbor</code>）</td></tr>
+</table>
+
+<h3>示例</h3>
+<pre><code>curl <span class="string">"https://write.sjtuguoxue.space/api/rhyme/lookup?book=Pingshuiyun&amp;category=一东"</span> \
+  -H <span class="string">"X-API-Key: fc_xxx"</span></code></pre>
+<pre><code>{
+  <span class="key">"category_name"</span>: <span class="string">"一东"</span>,
+  <span class="key">"tone_type"</span>: <span class="string">"P"</span>,
+  <span class="key">"total"</span>: <span class="number">392</span>,
+  <span class="key">"characters"</span>: [<span class="string">"中"</span>, <span class="string">"总"</span>, <span class="string">"种"</span>, <span class="string">"同"</span>, <span class="string">"东"</span>, <span class="string">"红"</span>, <span class="string">"风"</span>, <span class="comment">...</span>],
+  <span class="key">"relations"</span>: {
+    <span class="key">"neighbor"</span>: [<span class="string">"二冬"</span>]
+  }
+}</code></pre>
+
+<div class="callout">字表按词频降序排列（常用字在前）。<code>relations</code> 标注邻韵等关系。<br>传入 <code>include=neighbor</code> 时，响应变为 <code>{ "primary": {...}, "related": [...] }</code>，同时返回邻韵字表。</div>
+
+<hr>
+
+<!-- ==================== 4. 韵部列表 ==================== -->
+<h2 id="rhyme-list">韵部列表</h2>
+<p>列出韵书中的所有韵部概览。</p>
+
+<div class="endpoint-line">
+  <span class="method method-get">GET</span>
+  <span class="endpoint">/api/rhyme/list</span>
+</div>
+
+<table>
+  <tr><th>参数</th><th>类型</th><th></th><th>说明</th></tr>
+  <tr><td>book</td><td>string</td><td><span class="badge badge-optional">可选</span></td><td>韵书名，默认 <code>Pingshuiyun</code></td></tr>
+  <tr><td>tone</td><td>string</td><td><span class="badge badge-optional">可选</span></td><td>按声调过滤：<code>P</code>（平声韵）或 <code>Z</code>（仄声韵）</td></tr>
+</table>
+
+<h3>示例</h3>
+<pre><code>curl <span class="string">"https://write.sjtuguoxue.space/api/rhyme/list?book=Pingshuiyun&amp;tone=P"</span> \
+  -H <span class="string">"X-API-Key: fc_xxx"</span></code></pre>
+<pre><code>{
+  <span class="key">"book"</span>: <span class="string">"Pingshuiyun"</span>,
+  <span class="key">"categories"</span>: [
+    {
+      <span class="key">"name"</span>: <span class="string">"一东"</span>,
+      <span class="key">"tone_type"</span>: <span class="string">"P"</span>,
+      <span class="key">"char_count"</span>: <span class="number">392</span>,
+      <span class="key">"preview"</span>: <span class="string">"中总种同衕东梦红风冲"</span>
+    },
+    {
+      <span class="key">"name"</span>: <span class="string">"二冬"</span>,
+      <span class="key">"tone_type"</span>: <span class="string">"P"</span>,
+      <span class="key">"char_count"</span>: <span class="number">262</span>,
+      <span class="key">"preview"</span>: <span class="string">"从共重龙供冲封鍾鐘钟"</span>
+    }
+  ]
+}</code></pre>
+
+<div class="callout"><code>preview</code> 为该韵部最高频的前 10 个字。</div>
+
+<hr>
+
+<!-- ==================== 5. 格律规则列表 ==================== -->
+<h2 id="rules">格律规则列表</h2>
+<p>列出可用的诗词格律规则或词牌。</p>
+
+<div class="endpoint-line">
+  <span class="method method-get">GET</span>
+  <span class="endpoint">/api/rules/list</span>
+</div>
+
+<table>
+  <tr><th>参数</th><th>类型</th><th></th><th>说明</th></tr>
+  <tr><td>genre</td><td>string</td><td><span class="badge badge-optional">可选</span></td><td><code>Shi</code> 或 <code>Ci</code>，默认 <code>Ci</code></td></tr>
+  <tr><td>search</td><td>string</td><td><span class="badge badge-optional">可选</span></td><td>按关键词搜索规则名或词牌名</td></tr>
+</table>
+
+<h3>示例 — 搜索五绝</h3>
+<pre><code>curl <span class="string">"https://write.sjtuguoxue.space/api/rules/list?genre=Shi&amp;search=五绝"</span> \
+  -H <span class="string">"X-API-Key: fc_xxx"</span></code></pre>
+<pre><code>[
+  { <span class="key">"name"</span>: <span class="string">"五绝仄起首句入韵"</span>, <span class="key">"char_count"</span>: <span class="number">20</span> },
+  { <span class="key">"name"</span>: <span class="string">"五绝仄起"</span>,         <span class="key">"char_count"</span>: <span class="number">20</span> },
+  { <span class="key">"name"</span>: <span class="string">"五绝平起"</span>,         <span class="key">"char_count"</span>: <span class="number">20</span> },
+  { <span class="key">"name"</span>: <span class="string">"五绝平起首句入韵"</span>, <span class="key">"char_count"</span>: <span class="number">20</span> }
+]</code></pre>
+
+<div class="callout">诗 (Shi) 约 16 条规则，词 (Ci) 约 2500+ 条词牌变体。</div>
+
+<hr>
+
+<!-- ==================== 6. 词语联想 ==================== -->
+<h2 id="dictionary">词语联想</h2>
+<p>按首字、尾字查诗词用语，或查对仗字。数据来源于古诗词语料统计。</p>
+
+<div class="endpoint-line">
+  <span class="method method-get">GET</span>
+  <span class="endpoint">/api/dictionary/search</span>
+</div>
+
+<table>
+  <tr><th>参数</th><th>类型</th><th></th><th>说明</th></tr>
+  <tr><td>term</td><td>string</td><td><span class="badge badge-required">必填</span></td><td>查询字（支持繁体）</td></tr>
+  <tr><td>mode</td><td>string</td><td><span class="badge badge-optional">可选</span></td><td><code>head</code>（以此字开头）、<code>tail</code>（以此字结尾）、<code>pair</code>（对仗字）。默认 <code>head</code></td></tr>
+  <tr><td>length</td><td>string</td><td><span class="badge badge-optional">可选</span></td><td>词语长度（<code>2</code>、<code>3</code>...），<code>all</code> 返回所有长度。默认 <code>2</code></td></tr>
+  <tr><td>tone</td><td>string</td><td><span class="badge badge-optional">可选</span></td><td>末字声调过滤：<code>P</code>（平）或 <code>Z</code>（仄）。默认不过滤</td></tr>
+</table>
+
+<h3>示例 — 首字联想</h3>
+<pre><code>curl <span class="string">"https://write.sjtuguoxue.space/api/dictionary/search?term=明&amp;mode=head&amp;length=2"</span> \
+  -H <span class="string">"X-API-Key: fc_xxx"</span></code></pre>
+<pre><code>[
+  [<span class="string">"明月"</span>, <span class="number">2298</span>],
+  [<span class="string">"明朝"</span>, <span class="number">1683</span>],
+  [<span class="string">"明日"</span>, <span class="number">1398</span>],
+  [<span class="string">"明年"</span>, <span class="number">797</span>],
+  [<span class="string">"明时"</span>, <span class="number">296</span>]
+]</code></pre>
+
+<div class="callout">返回 <code>[词语, 频次]</code> 数组，按频次降序排列。</div>
+
+<h3>示例 — 对仗字</h3>
+<pre><code>curl <span class="string">"https://write.sjtuguoxue.space/api/dictionary/search?term=月&amp;mode=pair"</span> \
+  -H <span class="string">"X-API-Key: fc_xxx"</span></code></pre>
+<pre><code>[
+  [<span class="string">"风"</span>, <span class="number">4450</span>],
+  [<span class="string">"云"</span>, <span class="number">3575</span>],
+  [<span class="string">"花"</span>, <span class="number">1386</span>],
+  [<span class="string">"山"</span>, <span class="number">1340</span>],
+  [<span class="string">"天"</span>, <span class="number">1142</span>]
+]</code></pre>
+
+<div class="callout">对仗模式返回与查询字在古诗中常对仗的字及频次。</div>
+
+<hr>
+
+
+</main>
+</div>
+</body>
+</html>

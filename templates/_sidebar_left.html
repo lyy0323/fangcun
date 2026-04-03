@@ -1,0 +1,27 @@
+<aside class="hub-sidebar desktop-only">
+    <div class="sidebar-header">
+        <h1 class="site-title"><a href="/"><img src="{{url_for('static', filename='pics/title.webp')}}" alt="南洋吟游" class="site-title-image"></a></h1>
+        <nav class="main-nav">
+            <ul>
+                <li><a href="/">首页</a></li>
+                <li><a href="/submit/">上传作品</a></li>
+                <li><a href="/random/">随机页面</a></li>
+                <li><a href="/timeline/{{ yr }}">时间线</a></li>
+                <li><a href="/stats/">数据统计</a></li>
+                <li><a href="/gamestats/">游戏统计</a></li>
+                <li><a href="/intro/">社团介绍</a></li>
+                <li><a href="http://cang.sjtuguoxue.space/">数字藏品</a></li>
+                <li><a href="/nanyang">数字南洋集</a></li>
+                <li><a href="/checker">格律校验</a></li>
+                <li><a href="https://music.163.com/m/playlist?id=14332525936" style="color: #993399; font-weight: bold;">🎶 和诗以歌</a></li>
+                <li><a href="https://mp.weixin.qq.com/s/RoCImUNKl97QmY8PwFSB0A" style="font-weight: bold;">年度报告</a></li>
+            </ul>
+        </nav>
+    </div>
+    <footer class="sidebar-footer">
+        <p>Copyright 2022-2026</p>
+        <p><a href="https://lyy0323.space/writing/">一只椰椰</a></p>
+        <p>访问量： {{ c }}</p>
+        <p>沪ICP备2025137436号</p>
+    </footer>
+</aside>

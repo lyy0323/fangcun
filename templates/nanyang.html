@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width,user-scalable=no,initial-scale=1.0,minimum-scale=1.0,maximum-scale=1.0" />
+    <title>数字南洋集</title>
+	<link href="{{url_for('static', filename='nanyang.css')}}" rel="stylesheet" type="text/css"/>
+	<link href="{{url_for('static', filename='favicon.ico')}}" rel="shortcut icon">
+	<script>
+    var html = document.documentElement; //获取到html元素
+    var hWidth = html.getBoundingClientRect().width;//获取到html的宽度
+    if (hWidth <= 640) {
+		html.style.fontSize = hWidth/25 + "px";
+        document.addEventListener('DOMContentLoaded', function() {
+            var titleTd = document.getElementById('nanyang-title');
+            if (titleTd && titleTd.textContent.indexOf('数字南洋集 - ') === 0) {
+                titleTd.textContent = titleTd.textContent.replace('数字南洋集 - ', '');
+            }
+        });
+    } else {
+		html.style.fontSize = "25px"
+		document.addEventListener('DOMContentLoaded', function() {
+			var contentDiv = document.getElementById('content');
+			if (contentDiv) {
+				contentDiv.style.maxWidth = '30em';
+			};
+			var navbarTable = document.querySelector('#navbar table');
+			if (navbarTable) {
+				navbarTable.style.setProperty('max-width', '30em', 'important');
+			};
+			var titleTd = document.getElementById('nanyang-title');
+			if (titleTd) {
+				titleTd.style.width = '50%';
+			};
+		});
+	}
+
+    document.addEventListener('DOMContentLoaded', function() {
+    var toggles = document.querySelectorAll('.author');
+
+    toggles.forEach(function(toggle) {
+        toggle.addEventListener('click', function() {
+            var content = this.nextElementSibling;
+            if (content.classList.contains('expanded')) {
+                content.classList.remove('expanded');
+            } else {
+                content.classList.add('expanded');
+            }
+        });
+    });
+});
+	</script>
+	<style>
+		#navbar {
+		  position: fixed;
+		  top: 0;
+		  width: 100%;
+		  color: #fff;
+		  z-index: 100;
+		  padding-top: 0.5em;
+		  padding-bottom: 0.5em
+		}
+		@font-face {
+            font-family: "hycl";
+            src: url("{{ font }}") format("woff");
+        }
+	</style>
+</head>
+<body>
+  <div id="navbar" style="align: center; background-color: #333; font-family: hycl">
+	<table style="color: #fff; margin: 0px auto; width: 90%; max-width: 20em; text-align: center; font-family: hycl">
+		<tr>
+		<td><a href="/nanyang" style="text-decoration:none; font-size: 1em; color: #fff; width: auto">返回</a></td>
+		{{ nyinfo | safe }}
+		<td><a href="/" style="text-decoration:none; font-size: 1em; color: #fff; width: auto">主页</a></td>
+		</tr>
+    </table>
+  </div>
+  <div id="out-content">
+  <div id="content" style="font-family: hycl">
+		{% for bla in contents %}
+	  		{{bla | safe}}
+	  	{% endfor %}
+	  	{% for bla in poems %}
+	  		{{bla | safe}}
+	  	{% endfor %}
+<!--	<div align="center" style="background: #333333; line-height: 1.7; color: #CCCCCC">-->
+<!--		{{ count }}篇内容&emsp;<a href="/" style="text-decoration: underline; text-underline-offset: 0.2em; color: #CCCCCC">返回首页</a>-->
+<!--	</div>-->
+	<br><br>
+  </div>
+	  </div>
+</body>
+</html>

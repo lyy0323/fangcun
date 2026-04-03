@@ -1,0 +1,778 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width,user-scalable=no,initial-scale=1.0,minimum-scale=1.0,maximum-scale=1.0" />
+    <title>{{ nav_info.title | default('数字南洋集') }}</title>
+	<link href="{{ url_for('static', filename='favicon.ico') }}" rel="shortcut icon">
+	
+    <style>
+        /* --- 1. 字体与主题 --- */
+		@font-face {
+            font-family: "hycl";
+            src: url("{{ font }}") format("woff");
+            font-display: swap; /* 优化字体加载 */
+        }
+        
+        :root {
+            /* 使用你偏好的主题色 */
+            --bg-color: #FBFBF6;
+            --text-color: #1c1917; /* 石色文本 */
+            /* --accent-color: #DDD4ED; 淡紫点缀 */
+            --accent-color: #3c3937; /* 变淡 */
+            --border-color: #E0E0D8; /* 边框/分隔线 */
+        }
+
+        html {
+            font-size: 16px; /* 基础字号 */
+            scroll-padding-top: 4.5em;
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: "hycl", 'Georgia', 'Noto Serif SC', serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 0;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        /* --- 2. 顶部导航栏 (亮色模式) --- */
+		#navbar {
+            position: fixed;
+            top: 0;
+            width: 100%;
+            z-index: 100;
+            padding: 0.5em 0;
+            background-color: var(--bg-color);
+            border-bottom: 1px solid var(--border-color);
+		}
+        #navbar table {
+            color: var(--text-color); /* 文字改为深色 */
+            margin: 0 auto;
+            width: 90%;
+            max-width: 40em; /* PC端宽度 */
+            text-align: center;
+            font-family: "hycl";
+        }
+        #navbar a {
+            text-decoration: none;
+            font-size: 1em;
+            color: var(--text-color); /* 链接改为深色 */
+            transition: color 0.2s ease;
+        }
+        #navbar a:hover {
+            color: var(--accent-color); /* 鼠标悬停高亮 */
+        }
+        #navbar #nanyang-title {
+            font-size: 1.5em;
+            color: var(--text-color);
+            width: auto;
+        }
+        /* 导航栏的上一页/下一页 */
+        #navbar .nav-link {
+            font-size: 1.2em;
+            color: var(--text-color);
+            min-width: 20%;
+        }
+        #navbar .nav-link:hover {
+            color: var(--accent-color);
+        }
+
+        /* --- 3. 新增：桌面端布局 --- */
+        #main-container {
+            /* 使用 Flexbox 实现 [左TOC] [中内容] 布局 */
+            display: block;
+            /* 关键：为 JS 绝对定位提供锚点 */
+            position: relative;
+            padding-top: 4.5em;
+        }
+
+        #left-sidebar-container {
+            /* 桌面端TOC容器 */
+            width: 14em; /* 目录宽度 */
+            flex-shrink: 0; /* 防止被压缩 */
+            display: none; /* 默认：移动端隐藏 */
+            position: relative; /* 为内部的TOC提供高度 */
+        }
+
+        #left-toc {
+            /* 桌面端TOC本体 */
+            width: 100%;
+            max-width: calc(50% - 370px);
+            /* 关键：JS 将控制 position (absolute/fixed) 和 top */
+            position: absolute;
+            font-size: 0.9em;
+            line-height: 1.5;
+            overflow-x: hidden;
+        }
+
+        #out-content {
+            /* 右侧主内容区域 */
+            /* padding-top: 4.5em;  <-- 移动到 #main-container */
+        }
+
+        #content {
+            font-family: "hycl";
+            width: 40em;
+            max-width: 80%;
+            margin: 0 auto;
+            padding: 1em;
+        }
+
+        /* --- 4. 目录样式 (拆分) --- */
+
+        /* 4a. 正文内部的TOC (ID选择器) */
+        .toc-title {
+            font-size: 2em; 
+            text-align: center; 
+            padding-top: 1em;
+            font-weight: 700;
+        }
+        #in-body-toc { /* <-- 之前是 .toc */
+             /* (样式由 h2-h5 控制) */
+        }
+        #in-body-toc a {
+            text-decoration: none;
+            color: var(--text-color);
+            border-bottom: 1px dashed var(--border-color);
+        }
+        #in-body-toc a:hover {
+            color: var(--accent-color);
+            border-bottom-style: solid;
+        }
+        #in-body-toc h2,
+        #in-body-toc h3,
+        #in-body-toc h4,
+        #in-body-toc h5 {
+            margin-top: 0.6em;
+            margin-bottom: 0.6em;
+            line-height: 1.4;
+        }
+        #in-body-toc h2 { font-size: 1.3em; font-weight: 600; padding-left: 0em; }
+        #in-body-toc h3 { font-size: 1.2em; font-weight: 500; padding-left: 1.5em; }
+        #in-body-toc h4 { font-size: 1.1em; font-weight: 400; padding-left: 3em; }
+        #in-body-toc h5 { font-size: 1.0em; font-weight: 400; color: #57534e; padding-left: 4.5em; }
+        
+        /* 4b. 新增：左侧浮动TOC */
+        #left-toc a {
+            text-decoration: none;
+            color: #57534e; /* 稍浅，不喧宾夺主 */
+            display: block;
+            padding: 0.2em 0;
+            border-bottom: none;
+            transition: color 0.2s ease, transform 0.2s ease;
+            overflow-wrap: break-word;
+            scrollbar-width: 0; /* Firefox */
+            scrollbar-color: transparent transparent; /* Firefox */
+        }
+        #left-toc a:hover {
+            color: var(--text-color);
+            transform: translateX(4px);
+        }
+        #left-toc::-webkit-scrollbar {
+            width: 0px;
+        }
+        #left-toc::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        #left-toc::-webkit-scrollbar-thumb {
+            background-color: transparent;
+            border-radius: 5px;
+        }
+        /* 仅在TOC悬浮且可滚动时显示滚动条 */
+        #left-toc:hover::-webkit-scrollbar-thumb {
+            background-color: var(--accent-color);
+        }
+        #left-toc:hover {
+             scrollbar-color: var(--accent-color) transparent; /* Firefox */
+        }
+
+        /* JS会添加这个类，使其可滚动 */
+        #left-toc.is-sticky {
+            max-height: calc(100vh - 6em); /* 4.5em navbar + 1.5em bottom margin */
+            overflow-y: auto; 
+        }
+        #left-toc h2,
+        #left-toc h3,
+        #left-toc h4,
+        #left-toc h5 {
+            margin: 0;
+            line-height: 1.5;
+        }
+        #left-toc h2 { font-size: 1.1em; font-weight: 600; padding-left: 0em; }
+        #left-toc h3 { font-size: 1.0em; font-weight: 500; padding-left: 1em; }
+        #left-toc h4 { font-size: 0.95em; font-weight: 400; padding-left: 2em; }
+        #left-toc h5 { font-size: 0.9em; font-weight: 400; color: #78716c; padding-left: 3em; }
+
+
+        /* --- 4. 排版与标题 (核心优化) --- */
+        h1, h2, h3, h4, h5 {
+            margin-top: 1.25em;
+            margin-bottom: 1.25em;
+            font-weight: 600; /* 标题加粗一点 */
+        }
+        
+        /* 目录标题 */
+        .toc-title {
+            font-size: 2em; 
+            text-align: center; 
+            padding-top: 1em;
+            font-weight: 700;
+        }
+        /* 目录链接 */
+        #content .toc a {
+            text-decoration: none;
+            color: var(--text-color);
+            border-bottom: 1px dashed var(--border-color);
+        }
+        #content .toc a:hover {
+            color: var(--accent-color);
+            border-bottom-style: solid;
+        }
+
+        /* --- 新增：目录层级样式 --- */
+        #content .toc h2,
+        #content .toc h3,
+        #content .toc h4,
+        #content .toc h5 {
+            /* 重置标题的默认边距，让目录更紧凑 */
+            margin-top: 0.6em;
+            margin-bottom: 0.6em;
+            line-height: 1.4;
+        }
+        #content .toc h2 {
+            font-size: 1.3em; /* 卷/序 */
+            font-weight: 600;
+            padding-left: 0em; /* 第1级：不缩进 */
+        }
+        #content .toc h3 {
+            font-size: 1.2em; /* 节 */
+            font-weight: 500;
+            padding-left: 1.5em; /* 第2级：缩进 */
+        }
+        #content .toc h4 {
+            font-size: 1.1em; /* 诗 */
+            font-weight: 400;
+            padding-left: 3em; /* 第3级：缩进 */
+        }
+        #content .toc h5 {
+            font-size: 1.0em; /* 组诗 - 其x */
+            font-weight: 400;
+            color: #57534e; /* 颜色稍浅 */
+            padding-left: 4.5em; /* 第4级：缩进 */
+        }
+        /* --- 结束：目录层级样式 --- */
+        
+        /* 卷标题 (h1) */
+        .chapter-title {
+            text-align: center;
+            font-size: 2.2em;
+            margin-top: 2.5em;
+            border-bottom: 2px solid var(--border-color);
+            padding-bottom: 0.5em;
+        }
+        /* 节标题 (h2) */
+        .section-title {
+            font-size: 1.8em;
+            border-left: 4px solid var(--accent-color); /* 节点缀色 */
+            padding-left: 0.5em;
+            margin-left: -0.8em; /* 视觉对齐 */
+        }
+        
+        /* 诗词标题 (h3) - 新样式 */
+        .poem-title {
+            font-size: 1.6em;
+            /* 关键：使用作者颜色作为左边框 */
+            border-left-width: 4px;
+            border-left-style: solid;
+            padding-left: 0.75em;
+            margin-left: -0.9em; /* 视觉对齐 */
+            /* 默认颜色，防止 item.author.color 为空 */
+            border-color: var(--border-color); 
+            transition: border-left-width 0.2s ease; /* 平滑动画 */
+        }
+        .poem-title:hover{
+            border-left-width: 8px;
+        }
+        .poem-title a {
+            text-decoration: none;
+            color: var(--text-color);
+        }
+        
+        /* 组诗标题 (h4) */
+        .group-poem-title {
+            font-size: 1.3em;
+            font-weight: 600;
+            margin-top: 1em;
+        }
+        .group-poem-title a {
+            text-decoration: none;
+            color: var(--text-color);
+        }
+
+        /* 作者 */
+        p.author {
+            font-size: 1.1em;
+            margin-top: 0.0em;
+            margin-bottom: 1.5em;
+            cursor: pointer; /* 提示可点击 */
+            -webkit-tap-highlight-color: transparent; /* 移除移动端点击高亮 */
+        }
+        p.author::after {
+             /* 提示可展开 */
+            content: ' ...点击展开';
+            font-size: 0.9em;
+            color: #999;
+            opacity: 0.0;
+            transition: opacity 0.2s ease;
+        }
+        p.author:hover::after {
+            opacity: 1.0;
+        }
+
+        /* 诗词正文 */
+        p.poemtext {
+            font-size: 1.1em;
+            line-height: 1.5; /* 关键：增加行高 */
+            margin-top: 0;
+            margin-bottom: 1.5em; /* 与行高一致 */
+        }
+
+        /* 脚注 / 序 / 备注 */
+        blockquote, .note-block {
+            font-size: 0.95em;
+            color: #57534e; /* 稍浅的文字 */
+            border-left: 3px solid var(--border-color);
+            padding-left: 1em;
+            margin-left: -1.1em;
+            margin-right: 0.5em;
+        }
+        blockquote p, .note-block p {
+            line-height: 1.7;
+        }
+
+        /* 作者简介 (默认折叠) */
+        .authordescribe {
+            padding-top: 0;
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.4s ease-out; /* 关键：平滑动画 */
+        }
+        .authordescribe.expanded {
+            max-height: 20em; /* 展开后的最大高度 */
+            transition: max-height 0.5s ease-in;
+        }
+
+        /* 水平分割线 */
+        hr {
+            border: 0;
+            border-top: 1px solid var(--border-color);
+            margin: 2.5em auto;
+            width: 100%;
+        }
+
+        /* --- 5. 移动端响应式 --- */
+        @media (max-width: 1279px) {
+            /* 移动端/平板：保持居中布局 */
+            #out-content {
+                margin: 0 auto;
+            }
+        }
+
+        @media (min-width: 1280px) {
+            /* 桌面端：激活左侧TOC */
+            #left-sidebar-container {
+                display: block;
+                position: absolute;
+                left: 20px;
+            }
+        }
+        
+        @media (max-width: 640px) {
+            /* 移动端小屏自适应 (无变化) */
+            #content { padding: 0.5em; }
+            #navbar #nanyang-title { font-size: 1.2em; width: 30%; }
+            #navbar .nav-link { font-size: 1em; }
+            #html {scroll-padding-top: 9em;}
+            #main-container {padding-top: 9em; }
+        }
+	</style>
+
+	<script>
+    // --- 屏幕自适应JS (与你原来的一致) ---
+    var html = document.documentElement;
+    var hWidth = html.getBoundingClientRect().width;
+    if (hWidth <= 640) {
+		html.style.fontSize = hWidth/25 + "px";
+        document.addEventListener('DOMContentLoaded', function() {
+            var titleTd = document.getElementById('nanyang-title');
+            if (titleTd && titleTd.textContent.indexOf('数字南洋集 - ') === 0) {
+                titleTd.textContent = titleTd.textContent.replace('数字南洋集 - ', '');
+            }
+        });
+    } else {
+		html.style.fontSize = "16px"; // PC端使用固定的 16px
+		document.addEventListener('DOMContentLoaded', function() {
+			var contentDiv = document.getElementById('content');
+			if (contentDiv) {
+				contentDiv.style.maxWidth = '40em';
+			};
+			var navbarTable = document.querySelector('#navbar table');
+			if (navbarTable) {
+				navbarTable.style.setProperty('max-width', '40em', 'important');
+			};
+		});
+	}
+
+    // --- 作者简介展开JS (与你原来的一致, 稍作优化) ---
+    document.addEventListener('DOMContentLoaded', function() {
+        var contentDiv = document.getElementById('content');
+        if (contentDiv) {
+            contentDiv.addEventListener('click', function(e) {
+                // 找到被点击的 .author 元素
+                var authorP = e.target.closest('p.author');
+                if (authorP) {
+                    var content = authorP.nextElementSibling;
+                    if (content && content.classList.contains('authordescribe')) {
+                        content.classList.toggle('expanded');
+                    }
+                }
+            });
+        }
+    });
+
+    document.addEventListener('DOMContentLoaded', function() {
+        // 1. 获取所有需要的元素
+        const leftToc = document.getElementById('left-toc');
+        const inBodyToc = document.getElementById('in-body-toc');
+        const navbar = document.getElementById('navbar');
+        const contentContainer = document.getElementById('content');
+        const mainContainer = document.getElementById('main-container');
+        const tocTitleAnchor = document.getElementById('toc-title-anchor');
+
+        // 如果页面上没有TOC（或缺少关键元素），则不执行
+        if (!leftToc || !inBodyToc || !contentContainer || !navbar || !mainContainer) {
+            console.warn('Floating TOC script: Missing required elements.');
+            return;
+        }
+
+        let isDesktop = window.innerWidth >= 1280;
+        
+        // 我们在 resize 和 load 时计算并缓存这些静态位置
+        let absoluteTop_Start = 0; // TOC的“起始”Y位置 (relative to main-container)
+        let absoluteTop_Stop = 0;  // TOC的“停止”Y位置 (relative to main-container)
+        let leftTocHeight = 0;
+        let contentHeight = 0;
+
+        /**
+         * 计算并缓存TOC的起始/停止绝对位置
+         */
+        function calculatePositions() {
+            if (!isDesktop || !inBodyToc || !contentContainer) return; // 确保元素存在
+
+            // 使用 offsetTop 来获取稳定的、相对于父元素的布局位置
+            // 起始位置 = 正文TOC的offsetTop + content的offsetTop
+            absoluteTop_Start = tocTitleAnchor.offsetTop + contentContainer.offsetTop;
+            
+            leftTocHeight = leftToc.offsetHeight;
+            contentHeight = contentContainer.offsetHeight;
+
+            // 停止位置 = (内容容器的顶部 + 内容高度) - TOC的高度
+            absoluteTop_Stop = (contentContainer.offsetTop + contentHeight) - leftTocHeight;
+
+            // 确保停止位置不会在起始位置之上 (当TOC比内容短时)
+            if (absoluteTop_Stop < absoluteTop_Start) {
+                absoluteTop_Stop = absoluteTop_Start;
+            }
+        }
+
+        /**
+         * 滚动事件的处理函数
+         * 使用 getBoundingClientRect 来获取*视口相对*位置 (用于触发)
+         */
+        function handleFloatingTocScroll() {
+            if (!isDesktop) {
+                // 重置所有样式 (用于从桌面切换到移动端)
+                leftToc.style.position = 'absolute';
+                leftToc.style.top = '0px'; // Reset
+                leftToc.style.visibility = 'hidden'; // 隐藏
+                leftToc.classList.remove('is-sticky');
+                return;
+            }
+            
+            // 确保可见
+            leftToc.style.visibility = 'visible';
+
+            const navbarHeight = navbar.offsetHeight;
+            const stickTopPx_Viewport = navbarHeight + 20; // 粘滞点距离视口顶部 (20px留白)
+            const tocTitle_ViewY = tocTitleAnchor.getBoundingClientRect().top;
+            
+            // 1. 获取视口触发器
+            // 正文目录的顶部 相对于 视口的位置
+            const inBodyToc_ViewY = inBodyToc.getBoundingClientRect().top;
+            
+            // 正文内容的底部 相对于 视口的位置
+            const content_ViewBottomY = contentContainer.getBoundingClientRect().bottom;
+
+            // 处理边缘情况：如果TOC比内容还高，就让它一直呆在顶部
+            if (leftTocHeight > contentHeight) {
+                leftToc.style.position = 'absolute';
+                leftToc.style.top = `${absoluteTop_Start}px`;
+                leftToc.classList.remove('is-sticky');
+                return;
+            }
+
+            // --- 3状态机 ---
+            
+            if (tocTitle_ViewY > stickTopPx_Viewport) {
+                // 状态 1: 在粘滞点之上
+                // (用户能看到 "目 录" 标题)
+                // 定位：绝对定位, 与 "目 录" 标题对齐
+                leftToc.style.position = 'absolute';
+                leftToc.style.top = `${absoluteTop_Start}px`;
+                leftToc.classList.remove('is-sticky');
+            
+            // } else if (content_ViewBottomY < leftTocHeight + stickTopPx_Viewport) {
+            //     // 状态 2: 滚动到内容底部
+            //     // (当"正文底部"即将上移超过"粘滞TOC的底部"时触发)
+            //     // 定位：绝对定位, TOC底部与正文底部对齐
+            //     leftToc.style.position = 'absolute';
+            //     leftToc.style.top = `${absoluteTop_Stop}px`;
+            //     leftToc.classList.remove('is-sticky');
+                
+            } else {
+                // 状态 3: 在中间, 粘滞状态
+                // (用户正在浏览正文)
+                // 定位：固定定位, 贴在导航栏下方
+                leftToc.style.position = 'fixed';
+                leftToc.style.top = `${stickTopPx_Viewport}px`;
+                leftToc.classList.add('is-sticky'); // <-- 激活独立滚动
+            }
+        }
+
+        // --- 3. 绑定监听器 ---
+        window.addEventListener('scroll', handleFloatingTocScroll, { passive: true });
+        
+        window.addEventListener('resize', () => {
+            isDesktop = window.innerWidth >= 1280;
+            // 窗口大小变化时，布局可能已变，必须重新计算
+            calculatePositions();
+            handleFloatingTocScroll();
+        });
+
+        // --- 4. 初始设置 ---
+        // 延迟执行，确保所有字体、图片渲染完毕，获得正确的 offsetHeight
+        setTimeout(() => {
+            calculatePositions();
+            handleFloatingTocScroll();
+            // 在计算后，TOC才可见，防止闪烁
+            if (isDesktop) {
+                 leftToc.style.visibility = 'visible';
+            }
+        }, 300); // 300毫秒是一个比较安全的延迟
+
+        // 初始隐藏TOC，防止在计算完成前闪烁
+        if (!isDesktop) {
+            leftToc.style.visibility = 'hidden';
+        }
+    });
+	</script>
+</head>
+<body>
+  
+  <!-- --- 顶部导航栏 --- -->
+  <div id="navbar">
+	<table>
+		<tr>
+            <td><a href="/nanyang">返回</a></td>
+            
+            <td class="nav-link">
+                {% if nav_info.prev %}
+                <a href="{{ nav_info.prev.url }}">&lt; {{ nav_info.prev.label }}</a>
+                {% endif %}
+            </td>
+            
+            <td id="nanyang-title">
+                {{ nav_info.title }}
+            </td>
+
+            <td class="nav-link">
+                {% if nav_info.next %}
+                <a href="{{ nav_info.next.url }}">{{ nav_info.next.label }} &gt;</a>
+                {% endif %}
+            </td>
+
+            <td><a href="/">主页</a></td>
+		</tr>
+    </table>
+  </div>
+
+<div id="main-container">
+
+    <!-- 1. 新增：左侧浮动TOC -->
+    <div id="left-sidebar-container">
+        <div id="left-toc">
+            <!-- 复制 Jinja 循环 -->
+            {% for item in toc_items %}
+                {% if item.level == 'h2' %}
+                    <h2><a href="#{{ item.id }}">{{ item.title }}</a></h2>
+                {% elif item.level == 'h3' %}
+                    <h3><a href="#{{ item.id }}">{{ item.title }}</a></h3>
+                {% elif item.level == 'h4' %}
+                    <h4><a href="#{{ item.id }}">{{ item.title }}</a></h4>
+                {% elif item.level == 'h5' %}
+                    <h5><a href="#{{ item.id }}">{{ item.title }}</a></h5>
+                {% endif %}
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- --- 页面内容 --- -->
+    <div id="out-content">
+        <div id="content">
+            
+            <!-- --- 渲染目录 (TOC) --- -->
+            <div class="toc-title" id="toc-title-anchor">目  录</div>
+              <!-- 关键：添加 ID，作为JS锚点 -->
+              <div class="toc" id="in-body-toc">
+                  {% for item in toc_items %}
+                      {% if item.level == 'h2' %}
+                          <h2><a href="#{{ item.id }}">{{ item.title }}</a></h2>
+                      {% elif item.level == 'h3' %}
+                          <h3><a href="#{{ item.id }}">{{ item.title }}</a></h3>
+                      {% elif item.level == 'h4' %}
+                          <h4><a href="#{{ item.id }}">{{ item.title }}</a></h4>
+                      {% elif item.level == 'h5' %}
+                          <h5><a href="#{{ item.id }}">{{ item.title }}</a></h5>
+                      {% endif %}
+                  {% endfor %}
+              </div>
+            
+            <br>
+
+            <!-- --- 渲染文档正文 --- -->
+            {% for item in document_items %}
+                
+                {% if item.type == 'preface' %}
+                    <!-- 序言 -->
+                    <h1 id="{{ item.id }}" class="chapter-title">{{ item.title }}</h1>
+                    {% for p in item.paragraphs %}
+                        <p>{{ p }}</p>
+                    {% endfor %}
+                
+                {% elif item.type == 'chapter' %}
+                    <!-- 卷 -->
+                    <h1 id="{{ item.id }}" class="chapter-title">{{ item.title }}</h1>
+                    {% if item.notes %}
+                        <blockquote class="note-block">
+                        {% for note in item.notes %}
+                            <p class="note">{{ note }}</p>
+                        {% endfor %}
+                        </blockquote>
+                    {% endif %}
+                
+                {% elif item.type == 'section' %}
+                    <!-- 节 -->
+                    <h2 id="{{ item.id }}" class="section-title">{{ item.title }}</h2>
+                    {% if item.notes %}
+                        <blockquote class="note-block">
+                        {% for note in item.notes %}
+                            <p class="note">{{ note }}</p>
+                        {% endfor %}
+                        </blockquote>
+                    {% endif %}
+
+                {% elif item.type == 'poem' %}
+                    <!-- 诗词 -->
+                    
+                    {% if item.is_group_poem %}
+                        <!-- --- 组诗逻辑 --- -->
+                        {% if item.group_seq_num == 1 %}
+                            <!-- 组诗的第一首：显示大标题和作者信息 -->
+                            <h3 id="{{ item.toc_id }}" class="poem-title" 
+                                style="border-color: {{ item.author.color | default('var(--border-color)') }};">
+                                {{ item.title }}
+                            </h3>
+                            <p class="author">{{ item.author.display }}</p>
+                            <div class="authordescribe">
+                                <blockquote>
+                                    <p>{{ item.author.description }}</p>
+                                    {% if item.author.page_url %}
+                                        <p><a href="{{ item.author.page_url }}">> 个人主页</a></p>
+                                    {% endif %}
+                                </blockquote>
+                            </div>
+                        {% endif %}
+                        
+                        {% if item.group_title %}
+                            <!-- 带有组诗标题的（如 "其一", "其二"） -->
+                            <h4 id="{{ item.id }}" class="group-poem-title">
+                                {% if item.poem_url %}
+                                    <a href="{{ item.poem_url }}">{{ item.group_title }}</a>
+                                {% else %}
+                                    {{ item.group_title }}
+                                {% endif %}
+                            </h4>
+                        {% elif item.group_seq_num > 1 %}
+                            <br>
+                        {% endif %}
+
+                    {% else %}
+                        <!-- --- 非组诗逻辑 --- -->
+                        <h3 id="{{ item.toc_id }}" class="poem-title"
+                            style="border-color: {{ item.author.color | default('var(--border-color)') }};">
+                            {% if item.poem_url %}
+                                <a href="{{ item.poem_url }}">{{ item.title }}</a>
+                            {% else %}
+                                {{ item.title }}
+                            {% endif %}
+                        </h3>
+                        <p class="author">{{ item.author.display }}</p>
+                        <div class="authordescribe">
+                            <blockquote>
+                                <p>{{ item.author.description }}</p>
+                                {% if item.author.page_url %}
+                                    <p><a href="{{ item.author.page_url }}">> 个人主页</a></p>
+                                {% endif %}
+                            </blockquote>
+                        </div>
+                    {% endif %}
+                    
+                    <!-- --- 诗词的共同部分 --- -->
+                    {% if item.preface %}
+                        <blockquote>{{ item.preface }}</blockquote>
+                    {% endif %}
+                    
+                    {% for p in item.paragraphs %}
+                        <p class="poemtext">{{ p }}</p>
+                    {% endfor %}
+                    
+                    {% if item.footnote %}
+                        <blockquote>{{ item.footnote }}</blockquote>
+                    {% endif %}
+                    
+                    <hr>
+
+                {% elif item.type == 'editors' %}
+                    <!-- 编辑信息 -->
+                    <br><br>
+                    <div class="note-block">
+                        <blockquote>
+                        {% for editor in item.editors %}
+                            <p>{{ editor.role }} | {{ editor.name | safe }}</p>
+                        {% endfor %}
+                        </blockquote>
+                    </div>
+                
+                {% endif %}
+            {% endfor %} <!-- 结束 document_items 循环 -->
+        
+        <br><br>
+        </div>
+    </div>
+</div>
+</body>
+</html>
