@@ -175,7 +175,7 @@ class PoetryChecker:
             current_errors = []
             
             # [修改] _check_tone 现在返回 (错误, 扁平化的规则)
-            tone_errors, flat_rule = self._check_tone(chars, rule.tone_pattern)
+            tone_errors, flat_rule = self._check_tone(chars, rule.tone_pattern, rhyme_book_name)
             current_errors.extend(tone_errors)
             
             rhyme_errors = self._check_rhyme(chars, rule.rhyme_rule, book)
@@ -257,9 +257,29 @@ class PoetryChecker:
             return self.char_dict.get(simplified)
         return None
 
-    def _get_char_tones(self, char: str) -> Set[str]:
+    def _get_char_tones(self, char: str, rhyme_book_name: str = None) -> Set[str]:
         data = self._lookup_char(char)
-        if not data or not data['tones']: return {'A'}
+        if not data: return {'A'}
+
+        # 如果指定了韵书，从该韵书的韵部 tone_type 判断平仄
+        if rhyme_book_name and rhyme_book_name in self.rhyme_books:
+            rhymes = data.get('rhymes', {}).get(rhyme_book_name, [])
+            if not rhymes: return {'A'}
+
+            mapped_tones = set()
+            book = self.rhyme_books[rhyme_book_name]
+
+            for rhyme_cat_name in rhymes:
+                rhyme_cat = book.categories.get(rhyme_cat_name)
+                if rhyme_cat and hasattr(rhyme_cat, 'tone_type'):
+                    mapped_tones.add(rhyme_cat.tone_type)
+
+            if len(mapped_tones) == 0: return {'A'}
+            if len(mapped_tones) > 1: return {'A'}  # 多音字（在不同韵部有不同平仄）
+            return mapped_tones
+
+        # 未指定韵书：使用全局声调
+        if not data.get('tones'): return {'A'}
         mapped_tones = set()
         for tone in data['tones']:
             mapped_tones.add('P' if tone in ['Ping', 'ping', '平', 'yinping', '阴平', 'yangping', '阳平'] else 'Z')
@@ -344,25 +364,27 @@ class PoetryChecker:
 
     # --- 算法 2a: 平仄检测 (已修改) ---
     
-    def _check_segment_match(self, 
-                             chars_segment: List[str], 
+    def _check_segment_match(self,
+                             chars_segment: List[str],
                              pattern_segment: List[str],
-                             base_index: int) -> List[ErrorDetail]:
+                             base_index: int,
+                             rhyme_book_name: str = None) -> List[ErrorDetail]:
         # (同前, 未修改)
         errors = []
         for i, char in enumerate(chars_segment):
             if char == '\u25a1': continue  # □ 占位符跳过
             rule_tone = pattern_segment[i]["tone"]
             if rule_tone == 'A': continue
-            actual_tones = self._get_char_tones(char)
+            actual_tones = self._get_char_tones(char, rhyme_book_name)
             if 'A' in actual_tones: continue
             if rule_tone not in actual_tones:
                 errors.append(ErrorDetail(base_index + i, char, 'Tone', f"应为{self._get_tone_tones_for_display(rule_tone)}, 实为{self._get_tone_tones_for_display(list(actual_tones)[0])}"))
         return errors
 
-    def _check_tone(self, 
-                    chars: List[str], 
-                    tone_pattern: List[Union[str, List[List[str]]]]) -> (List[ErrorDetail], List[str]):
+    def _check_tone(self,
+                    chars: List[str],
+                    tone_pattern: List[Union[str, List[List[str]]]],
+                    rhyme_book_name: str = None) -> (List[ErrorDetail], List[str]):
         """
         [平仄检测主算法 - 已修改]
         现在返回: (错误列表, 扁平化的最佳规则列表)
@@ -380,7 +402,7 @@ class PoetryChecker:
                 rule_tone = pattern_item["tone"]
                 flat_rule_pattern.append(pattern_item) # [新增]
                 if chars[i] != '\u25a1' and rule_tone != 'A':  # □ 占位符跳过
-                    actual_tones = self._get_char_tones(chars[i])
+                    actual_tones = self._get_char_tones(chars[i], rhyme_book_name)
                     if 'A' not in actual_tones and rule_tone not in actual_tones:
                         all_errors.append(ErrorDetail(i, chars[i], 'Tone', f"应为{self._get_tone_tones_for_display(rule_tone)}, 实为{self._get_tone_tones_for_display(list(actual_tones)[0])}"))
                 i += 1
@@ -404,7 +426,7 @@ class PoetryChecker:
                     i += variant_len; p += 1; continue
 
                 for variant_option in pattern_item:
-                    current_errors = self._check_segment_match(chars_segment, variant_option, i)
+                    current_errors = self._check_segment_match(chars_segment, variant_option, i, rhyme_book_name)
                     if not current_errors:
                         best_error_set = []; min_variant_errors = 0
                         best_variant_option = variant_option # [新增]

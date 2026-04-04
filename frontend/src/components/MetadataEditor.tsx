@@ -55,8 +55,8 @@ export function MetadataEditor() {
 
       console.log(`公历转农历: 输入=${gregorianDate}, 农历年=${lunar.getYear()}, 天干地支=${lunar.getYearInGanZhi()}`);
 
-      // 格式：甲辰年三月初一（使用天干地支年份）
-      return `${lunar.getYearInGanZhi()}年${lunar.getMonthInChinese()}月${lunar.getDayInChinese()}`;
+      // 格式：甲辰三月初一（使用天干地支年份，不带"年"字）
+      return `${lunar.getYearInGanZhi()}${lunar.getMonthInChinese()}月${lunar.getDayInChinese()}`;
     } catch (error) {
       console.error('公历转农历失败:', error);
       return gregorianDate;
@@ -67,8 +67,8 @@ export function MetadataEditor() {
   const convertLunarToGregorian = (lunarDate: string): string => {
     try {
       // 尝试从农历字符串提取年月日信息
-      // 格式例子：甲辰年三月初一、2024年三月初一
-      const yearMatch = lunarDate.match(/(\d{4}|[一二三四五六七八九十甲乙丙丁戊己庚辛壬癸子丑寅卯辰巳午未申酉戌亥]+)年/);
+      // 格式例子：甲辰三月初一、丙午二月十七、2024三月初一（支持带"年"字和不带"年"字）
+      const yearMatch = lunarDate.match(/^(\d{4}|[甲乙丙丁戊己庚辛壬癸][子丑寅卯辰巳午未申酉戌亥])年?/);
       const monthMatch = lunarDate.match(/(正|一|二|三|四|五|六|七|八|九|十|冬|腊|[0-9]+)月/);
       const dayMatch = lunarDate.match(/([初十廿三]?[一二三四五六七八九十]+|[0-9]+)(?:日|$)/);
 
