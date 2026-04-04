@@ -17,6 +17,7 @@ export function useValidation() {
 
   const charsKey = board?.poemChars.join('') ?? '';
   const boardId = board?.id ?? '';
+  const rhymeBookName = board?.rhymeBookName ?? '';
 
   // 始终跟踪最新 boardId
   boardIdRef.current = boardId;
@@ -55,5 +56,5 @@ export function useValidation() {
       if (timerRef.current) clearTimeout(timerRef.current);
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [charsKey, boardId]);
+  }, [charsKey, boardId, rhymeBookName]);
 }

@@ -9,6 +9,13 @@ export interface InspirationCard {
   createdAt: number;
 }
 
+export interface BoardMetadata {
+  date?: string;              // 日期文本（用户输入，如"2024-04-04"或"甲辰年三月初一"）
+  dateFormat?: 'Gregorian' | 'Lunar';  // 日期格式
+  rhymeBook?: string;        // 韵书（平水韵/词林正韵/中华通韵，仅标注用途）
+  preface?: string;          // 序言文本
+}
+
 export interface Board {
   id: string;
   title: string;
@@ -21,6 +28,7 @@ export interface Board {
   inspirationCards: InspirationCard[];
   createdAt: number;
   updatedAt: number;
+  metadata?: BoardMetadata;  // 元数据（可选，向后兼容）
 }
 
 // ============================================================================
