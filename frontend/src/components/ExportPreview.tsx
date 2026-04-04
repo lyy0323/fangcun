@@ -90,6 +90,61 @@ function buildPoemLines(board: Board, validation: ValidationResult | null): stri
 }
 
 // ============================================================================
+// 日期转换
+// ============================================================================
+
+/** 将公历日期转换为中文数字格式 */
+function convertGregorianToChinese(dateStr: string): string {
+  // 匹配公历格式：YYYY-MM-DD 或 YYYY/MM/DD 或 YYYY.MM.DD
+  const gregorianPattern = /^(\d{4})[-/.](\d{1,2})[-/.](\d{1,2})$/;
+  const match = dateStr.match(gregorianPattern);
+
+  if (!match) {
+    // 不是公历格式，原样返回（可能是农历）
+    return dateStr;
+  }
+
+  const year = match[1];
+  const month = parseInt(match[2]);
+  const day = parseInt(match[3]);
+
+  // 数字转中文
+  const numMap: Record<string, string> = {
+    '0': '零', '1': '一', '2': '二', '3': '三', '4': '四',
+    '5': '五', '6': '六', '7': '七', '8': '八', '9': '九'
+  };
+
+  // 转换年份（逐位转换）
+  const yearChinese = year.split('').map(d => numMap[d]).join('');
+
+  // 转换月份
+  const monthChinese = month === 10 ? '十' :
+                       month === 11 ? '十一' :
+                       month === 12 ? '十二' :
+                       month < 10 ? numMap[month.toString()] : '';
+
+  // 转换日期
+  let dayChinese = '';
+  if (day === 10) {
+    dayChinese = '十';
+  } else if (day < 10) {
+    dayChinese = numMap[day.toString()];
+  } else if (day < 20) {
+    dayChinese = '十' + numMap[(day % 10).toString()];
+  } else if (day === 20) {
+    dayChinese = '二十';
+  } else if (day < 30) {
+    dayChinese = '二十' + numMap[(day % 10).toString()];
+  } else if (day === 30) {
+    dayChinese = '三十';
+  } else {
+    dayChinese = '三十' + numMap[(day % 10).toString()];
+  }
+
+  return `${yearChinese}年${monthChinese}月${dayChinese}日`;
+}
+
+// ============================================================================
 // 组件
 // ============================================================================
 
@@ -106,7 +161,14 @@ export function ExportPreview({ onClose }: { onClose: () => void }) {
   const render = useCallback(async () => {
     if (!board || lines.length === 0) return;
     setLoading(true);
-    const allText = board.title + lines.join('');
+    const metadata = board.metadata || {};
+    const rawDate = metadata.date || '';
+    const preface = metadata.preface || '';
+
+    // 转换公历日期为中文数字格式
+    const date = rawDate ? convertGregorianToChinese(rawDate) : '';
+
+    const allText = board.title + lines.join('') + date + preface;
     const [, logo] = await Promise.all([loadExportFonts(allText), loadLogo()]);
     const canvas = renderToCanvas({
       title: board.title,
@@ -115,6 +177,8 @@ export function ExportPreview({ onClose }: { onClose: () => void }) {
       genre: board.genre,
       theme,
       logo,
+      date,
+      preface,
     });
     setCanvasEl(canvas);
     setLoading(false);

@@ -165,6 +165,54 @@ function drawVerticalText(
 }
 
 // ============================================================================
+// 元数据绘制（日期、序言）
+// ============================================================================
+
+interface MetadataInfo {
+  date?: string;
+  preface?: string;
+}
+
+interface TitleResult {
+  bottomY: number;
+  leftX: number;
+}
+
+/** 在标题左侧绘制元数据（日期、序言），竖排从右往左 */
+function drawMetadata(
+  ctx: CanvasRenderingContext2D,
+  metadata: MetadataInfo,
+  colors: ColorTheme,
+  titleResult: TitleResult,
+  canvasHeight: number,
+) {
+  const { date, preface } = metadata;
+  if (!date && !preface) return;
+
+  const metaFontSize = 28;
+  const metaSpacing = 40;
+  const startY = canvasHeight * 0.13;
+  const maxMetaColChars = 12; // 元数据每列最多12个字符
+
+  // 起始X位置：标题最左列左侧，增大间距
+  let currentX = titleResult.leftX - metaFontSize * 2.5;
+
+  ctx.fillStyle = colors.text;
+  ctx.font = serifFont(400, metaFontSize);
+
+  // 先绘制日期（最靠近标题）
+  if (date) {
+    drawVerticalColumns(ctx, date, currentX, startY, metaFontSize, metaSpacing, maxMetaColChars);
+    currentX -= metaFontSize * 2.5;
+  }
+
+  // 再绘制序言（在日期左侧）
+  if (preface) {
+    drawVerticalColumns(ctx, preface, currentX, startY, metaFontSize, metaSpacing, maxMetaColChars);
+  }
+}
+
+// ============================================================================
 // 主绘制
 // ============================================================================
 
@@ -175,10 +223,12 @@ export interface ExportData {
   genre: 'Shi' | 'Ci';
   theme: ThemeKey;
   logo?: HTMLImageElement | null;
+  date?: string;
+  preface?: string;
 }
 
 export function renderToCanvas(data: ExportData): HTMLCanvasElement {
-  const { title, lines, charCount, genre, theme } = data;
+  const { title, lines, charCount, genre, theme, date, preface } = data;
   const colors = THEMES[theme];
   const { height, fontSize, lineHeight } =
     genre === 'Ci' ? getCiLayout(lines.length) : getShiLayout(charCount);
@@ -199,11 +249,16 @@ export function renderToCanvas(data: ExportData): HTMLCanvasElement {
   drawTitleBlock(ctx, colors, titleInfo);
 
   // ---- 标题文字 ----
-  const titleBottomY = drawTitle(ctx, title, colors, height);
+  const titleResult = drawTitle(ctx, title, colors, height);
+
+  // ---- 元数据（日期、序） ----
+  if (date || preface) {
+    drawMetadata(ctx, { date, preface }, colors, titleResult, height);
+  }
 
   // ---- 诗句 ----
   const watermarkY = height - 70;
-  const poemTopY = Math.max(titleBottomY + 80, height * 0.48);
+  const poemTopY = Math.max(titleResult.bottomY + 80, height * 0.48);
   // 诗：底部留一行间距到水印；词：底部留常规间距
   const poemBottomLimit = genre === 'Shi'
     ? watermarkY - lineHeight
@@ -246,7 +301,9 @@ export function renderToCanvas(data: ExportData): HTMLCanvasElement {
 
 // ---- 标题绘制 ----
 
-/** 竖排多列绘制（超过 MAX_COL_CHARS 自动换列，从右往左） */
+/** 竖排多列绘制（超过 maxColChars 自动换列，从右往左）
+ * 返回 { maxBottom: 底部Y坐标, leftX: 最左侧列的X坐标 }
+ */
 function drawVerticalColumns(
   ctx: CanvasRenderingContext2D,
   text: string,
@@ -254,21 +311,26 @@ function drawVerticalColumns(
   startY: number,
   fontSize: number,
   spacing: number,
-): number {
+  maxColChars: number = MAX_COL_CHARS,
+): { maxBottom: number; leftX: number } {
   const chars = [...text];
   const cols: string[][] = [];
-  for (let i = 0; i < chars.length; i += MAX_COL_CHARS) {
-    cols.push(chars.slice(i, i + MAX_COL_CHARS));
+  for (let i = 0; i < chars.length; i += maxColChars) {
+    cols.push(chars.slice(i, i + maxColChars));
   }
   const colGap = fontSize * 1.5;
   let maxBottom = startY;
+  let leftX = rightX;
+
   // 从右往左排列各列
   cols.forEach((col, ci) => {
     const x = rightX - ci * colGap;
+    leftX = Math.min(leftX, x);
     const bottom = drawVerticalText(ctx, col.join(''), x, startY, spacing);
     maxBottom = Math.max(maxBottom, bottom);
   });
-  return maxBottom;
+
+  return { maxBottom, leftX };
 }
 
 function drawTitle(
@@ -276,7 +338,7 @@ function drawTitle(
   title: string,
   colors: ColorTheme,
   canvasHeight: number,
-): number {
+): { bottomY: number; leftX: number } {
   ctx.fillStyle = colors.text;
 
   // 处理词牌 · 分隔符
@@ -292,8 +354,11 @@ function drawTitle(
   const startY = canvasHeight * 0.13;
 
   ctx.font = serifFont(700, config.fontSize);
-  const bottomY = drawVerticalColumns(ctx, title, titleX, startY, config.fontSize, config.spacing);
-  return bottomY + config.fontSize * 0.5;
+  const result = drawVerticalColumns(ctx, title, titleX, startY, config.fontSize, config.spacing);
+  return {
+    bottomY: result.maxBottom + config.fontSize * 0.5,
+    leftX: result.leftX
+  };
 }
 
 function drawCiTitle(
@@ -302,7 +367,7 @@ function drawCiTitle(
   dotIdx: number,
   colors: ColorTheme,
   canvasHeight: number,
-): number {
+): { bottomY: number; leftX: number } {
   const cipai = title.slice(0, dotIdx);
   const subtitle = title.slice(dotIdx + 1);
   const config = getTitleConfig(Math.max(cipai.length, subtitle.length));
@@ -313,7 +378,7 @@ function drawCiTitle(
   // 词牌名右列（大字）
   ctx.fillStyle = colors.text;
   ctx.font = serifFont(700, config.fontSize);
-  const cipaiBottom = drawVerticalColumns(ctx, cipai, baseX, startY, config.fontSize, config.spacing);
+  const cipaiResult = drawVerticalColumns(ctx, cipai, baseX, startY, config.fontSize, config.spacing);
 
   // 题目左列（略小）
   const subFontSize = Math.round(config.fontSize * 0.75);
@@ -322,9 +387,12 @@ function drawCiTitle(
   ctx.fillStyle = colors.text;
   const subX = baseX - config.fontSize * 1.6;
   const subStartY = startY + config.spacing * 1.6;
-  const subBottom = drawVerticalColumns(ctx, subtitle, subX, subStartY, subFontSize, subSpacing);
+  const subResult = drawVerticalColumns(ctx, subtitle, subX, subStartY, subFontSize, subSpacing);
 
-  return Math.max(cipaiBottom, subBottom) + config.fontSize * 0.5;
+  return {
+    bottomY: Math.max(cipaiResult.maxBottom, subResult.maxBottom) + config.fontSize * 0.5,
+    leftX: Math.min(cipaiResult.leftX, subResult.leftX)
+  };
 }
 
 // ---- 标题色块 ----
