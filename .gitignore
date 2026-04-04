@@ -27,6 +27,7 @@ Thumbs.db
 .cursor/
 .vscode/
 .idea/
+.claude/
 *.sw?
 
 # Env
