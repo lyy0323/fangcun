@@ -32,3 +32,4 @@ Thumbs.db
 # Env
 .env
 .env.*
+.vercel

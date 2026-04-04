@@ -39,7 +39,7 @@ AUTH_DISABLED = os.environ.get("FANGCUN_AUTH_DISABLED", "0") == "1"
 
 # --- 合法枚举值 ---
 VALID_GENRES = {"Shi", "Ci"}
-VALID_BOOKS = {"Pingshuiyun", "Cilinzhengyun"}
+VALID_BOOKS = {"Pingshuiyun", "Cilinzhengyun", "Zhonghua_Tongyun"}
 VALID_MODES = {"head", "tail", "pair"}
 VALID_TONES = {"P", "Z"}
 MAX_PARAM_LENGTH = 2000
@@ -172,7 +172,7 @@ def check_api_auth():
 
     book = request.args.get("book") or request.args.get("rhyme_book") or (request.get_json(silent=True) or {}).get("rhyme_book_name")
     if book and book not in VALID_BOOKS:
-        return jsonify({"error": f"无效韵书: {book}，可选: Pingshuiyun, Cilinzhengyun"}), 400
+        return jsonify({"error": f"无效韵书: {book}，可选: Pingshuiyun, Cilinzhengyun, Zhonghua_Tongyun"}), 400
 
     mode = request.args.get("mode")
     if mode and mode not in VALID_MODES:

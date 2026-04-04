@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useReducer, useEffect, type Dispatch } from 'react';
-import type { Board, ValidationResult } from '../lib/types';
+import type { Board, ValidationResult, BoardMetadata } from '../lib/types';
 import { PLACEHOLDER } from '../lib/types';
 import { loadBoards, saveBoards, loadActiveBoardId, saveActiveBoardId } from '../lib/storage';
 
@@ -57,6 +57,7 @@ export type Action =
   | { type: 'ADD_INSPIRATION'; card: import('../lib/types').InspirationCard }
   | { type: 'DELETE_INSPIRATION'; cardId: string }
   | { type: 'UPDATE_INSPIRATION'; cardId: string; content: string }
+  | { type: 'UPDATE_METADATA'; metadata: Partial<BoardMetadata> }
   | { type: 'IMPORT_BOARDS'; boards: Board[] };
 
 // ============================================================================
@@ -194,6 +195,25 @@ function reducer(state: AppState, action: Action): AppState {
       );
       return { ...state, boards };
     }
+    case 'UPDATE_METADATA': {
+      const boards = state.boards.map(b => {
+        if (b.id !== state.activeBoardId) return b;
+
+        const updatedBoard = {
+          ...b,
+          metadata: { ...b.metadata, ...action.metadata },
+          updatedAt: Date.now(),
+        };
+
+        // 如果更新了韵书，同时更新格律检测使用的韵书
+        if (action.metadata.rhymeBook !== undefined) {
+          updatedBoard.rhymeBookName = action.metadata.rhymeBook;
+        }
+
+        return updatedBoard;
+      });
+      return { ...state, boards };
+    }
     case 'IMPORT_BOARDS': {
       const existingIds = new Set(state.boards.map(b => b.id));
       const newBoards = action.boards.filter(b => !existingIds.has(b.id));
@@ -241,16 +261,21 @@ export function useActiveBoard(): Board | null {
 
 // 工具: 创建新画板
 export function createBoard(genre: 'Shi' | 'Ci', ruleName: string, charCount: number): Board {
+  const defaultRhymeBook = genre === 'Shi' ? 'Pingshuiyun' : 'Cilinzhengyun';
   return {
     id: crypto.randomUUID(),
     title: `新建·${ruleName}`,
     genre,
     ruleName,
     charCount,
-    rhymeBookName: genre === 'Shi' ? 'Pingshuiyun' : 'Cilinzhengyun',
+    rhymeBookName: defaultRhymeBook,
     poemChars: Array(charCount).fill(PLACEHOLDER),
     candidatesMap: {},
     inspirationCards: [],
+    metadata: {
+      rhymeBook: defaultRhymeBook,
+      dateFormat: 'Gregorian',
+    },
     createdAt: Date.now(),
     updatedAt: Date.now(),
   };
