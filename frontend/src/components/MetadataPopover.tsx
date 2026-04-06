@@ -108,7 +108,7 @@ export function MetadataPopover({ onClose }: { onClose: () => void }) {
                 update('date', value);
                 setDateError(validateDate(value));
               }}
-              placeholder={dateFormat === 'Gregorian' ? '2024-04-04' : '甲辰年三月初一'}
+              placeholder={dateFormat === 'Gregorian' ? new Date().toISOString().slice(0, 10) : '甲辰年三月初一'}
               className={`flex-1 px-2 py-1.5 text-xs border rounded bg-[var(--bg-input)] focus:outline-none ${
                 dateError ? 'border-red-400 focus:border-red-400' : 'border-[var(--border)] focus:border-[var(--accent)]'
               }`}
