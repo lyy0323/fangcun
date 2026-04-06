@@ -14,6 +14,17 @@ export function MetadataPopover({ onClose }: { onClose: () => void }) {
   const metadata = board.metadata || {};
   const dateFormat = metadata.dateFormat || 'Gregorian';
 
+  // 当天日期（UTC+8）
+  const todayUTC8 = new Date(Date.now() + 8 * 3600_000);
+  const todayStr = todayUTC8.toISOString().slice(0, 10);
+  const todayLunar = (() => {
+    try {
+      const [y, m, d] = todayStr.split('-').map(Number);
+      const lunar = Solar.fromYmd(y, m, d).getLunar();
+      return `${lunar.getYearInGanZhi()}年${lunar.getMonthInChinese()}月${lunar.getDayInChinese()}`;
+    } catch { return '甲辰年三月初一'; }
+  })();
+
   const update = (field: keyof BoardMetadata, value: string) => {
     dispatch({ type: 'UPDATE_METADATA', metadata: { [field]: value } });
   };
@@ -108,7 +119,7 @@ export function MetadataPopover({ onClose }: { onClose: () => void }) {
                 update('date', value);
                 setDateError(validateDate(value));
               }}
-              placeholder={dateFormat === 'Gregorian' ? new Date().toISOString().slice(0, 10) : '甲辰年三月初一'}
+              placeholder={dateFormat === 'Gregorian' ? todayStr : todayLunar}
               className={`flex-1 px-2 py-1.5 text-xs border rounded bg-[var(--bg-input)] focus:outline-none ${
                 dateError ? 'border-red-400 focus:border-red-400' : 'border-[var(--border)] focus:border-[var(--accent)]'
               }`}

@@ -286,7 +286,7 @@ export function TopBar() {
     const text = buildText();
     const metadata = board.metadata || {};
     const date = ensureGregorianDate(
-      metadata.date || new Date().toISOString().slice(0, 10),
+      metadata.date || new Date(Date.now() + 8 * 3600_000).toISOString().slice(0, 10),
       metadata.dateFormat,
     );
     const params = new URLSearchParams({
