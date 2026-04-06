@@ -175,10 +175,10 @@ interface MetadataInfo {
 }
 
 // 元数据布局常量
-const META_PREFACE_FONT = 22;
-const META_PREFACE_LH = 34;
-const META_FOOTER_FONT = 20;
-const META_FOOTER_LH = 30;
+const META_PREFACE_FONT = 28;
+const META_PREFACE_LH = 44;
+const META_FOOTER_FONT = 24;
+const META_FOOTER_LH = 38;
 const META_GAP = 40;          // 元数据区与诗句区间距
 const META_MAX_W = W - PAD_X * 2; // 折行宽度
 
@@ -371,8 +371,8 @@ export function renderToCanvas(data: ExportData): HTMLCanvasElement {
     ? poemBottomLimit - actualTotalH
     : poemTopBound + (availableH - actualTotalH) / 2;
 
-  // 元数据居中点：诗与正文对齐（右偏半字宽补偿标点），词用画布中心
-  const metaCenterX = genre === 'Shi' ? W / 2 + fontSize * 0.5 : W / 2;
+  // 元数据居中点：诗略右偏（比正文偏移量小，因为元数据无末尾标点），词用画布中心
+  const metaCenterX = genre === 'Shi' ? W / 2 + fontSize * 0.2 : W / 2;
 
   // ---- 序言（紧贴诗句上方） ----
   if (preface) {
