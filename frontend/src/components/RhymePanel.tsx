@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useBoardContext, useActiveBoard } from '../context/BoardContext';
-import { rhymeLookup, rhymeList } from '../lib/api';
+import { rhymeLookup, rhymeList, charLookup } from '../lib/api';
 import type { RhymeLookupResult } from '../lib/types';
 import { RefreshCw, RotateCcw, ChevronDown } from 'lucide-react';
 
@@ -43,6 +43,13 @@ export function RhymePanel() {
     setRhymeChars([]);
     setRhymeTotal(0);
   }, [boardId]);
+
+  // 韵书切换时清除已加载的韵部列表和手动覆盖
+  useEffect(() => {
+    setAllCategories([]);
+    setManualOverride(null);
+    setManualOpen(false);
+  }, [bookName]);
 
   // 韵部推断变化时自动加载（除非用户手动覆盖了）
   useEffect(() => {
@@ -90,8 +97,40 @@ export function RhymePanel() {
     setManualOpen(false);
   };
 
+  // 点击韵脚字 → 查询该字韵部 → 切换
+  const handleRhymeCharClick = (ch: string) => {
+    charLookup(ch, bookName)
+      .then(data => {
+        const cat = data.rhyme_categories?.[0];
+        if (cat) setManualOverride(cat.name);
+      })
+      .catch(() => {});
+  };
+
   return (
     <div className="p-3 text-sm">
+      {/* 韵书选择 */}
+      <div className="mb-3 pb-3 border-b border-[var(--border)]">
+        <div className="text-xs text-[var(--text-secondary)] mb-1">韵书</div>
+        <select
+          value={bookName}
+          onChange={e => dispatch({ type: 'UPDATE_METADATA', metadata: { rhymeBook: e.target.value } })}
+          className="w-full px-2 py-1.5 text-xs border border-[var(--border)] rounded bg-[var(--bg-input)] focus:outline-none focus:border-[var(--accent)]"
+        >
+          {board?.genre === 'Shi' ? (
+            <>
+              <option value="Pingshuiyun">平水韵</option>
+              <option value="Zhonghua_Tongyun">中华通韵</option>
+            </>
+          ) : (
+            <>
+              <option value="Cilinzhengyun">词林正韵</option>
+              <option value="Zhonghua_Tongyun">中华通韵</option>
+            </>
+          )}
+        </select>
+      </div>
+
       {/* 韵部名 */}
       <div className="mb-3">
         <div className="text-xs text-[var(--text-secondary)] mb-1">韵部</div>
@@ -185,8 +224,10 @@ export function RhymePanel() {
               return (
                 <span
                   key={i}
-                  className="inline-flex items-center justify-center w-8 h-8 rounded-md border text-base font-medium"
+                  className="inline-flex items-center justify-center w-8 h-8 rounded-md border text-base font-medium cursor-pointer hover:opacity-70 transition-opacity"
                   style={{ color, borderColor: color + '40', backgroundColor: color + '10' }}
+                  onClick={() => handleRhymeCharClick(ch)}
+                  title={`查看「${ch}」所在韵部`}
                 >
                   {ch}
                 </span>

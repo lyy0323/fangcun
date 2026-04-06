@@ -110,7 +110,7 @@ function convertGregorianToChinese(dateStr: string): string {
 
   // 数字转中文
   const numMap: Record<string, string> = {
-    '0': '零', '1': '一', '2': '二', '3': '三', '4': '四',
+    '0': '〇', '1': '一', '2': '二', '3': '三', '4': '四',
     '5': '五', '6': '六', '7': '七', '8': '八', '9': '九'
   };
 
@@ -164,11 +164,12 @@ export function ExportPreview({ onClose }: { onClose: () => void }) {
     const metadata = board.metadata || {};
     const rawDate = metadata.date || '';
     const preface = metadata.preface || '';
+    const footnote = metadata.footnote || '';
 
     // 转换公历日期为中文数字格式
     const date = rawDate ? convertGregorianToChinese(rawDate) : '';
 
-    const allText = board.title + lines.join('') + date + preface;
+    const allText = board.title + lines.join('') + date + preface + footnote;
     const [, logo] = await Promise.all([loadExportFonts(allText), loadLogo()]);
     const canvas = renderToCanvas({
       title: board.title,
@@ -179,6 +180,7 @@ export function ExportPreview({ onClose }: { onClose: () => void }) {
       logo,
       date,
       preface,
+      footnote,
     });
     setCanvasEl(canvas);
     setLoading(false);

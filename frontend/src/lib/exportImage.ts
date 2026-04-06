@@ -165,50 +165,138 @@ function drawVerticalText(
 }
 
 // ============================================================================
-// 元数据绘制（日期、序言）
+// 元数据绘制（序言 → 作品上方，日期/脚注 → 作品下方）
 // ============================================================================
 
 interface MetadataInfo {
   date?: string;
   preface?: string;
+  footnote?: string;
 }
 
-interface TitleResult {
-  bottomY: number;
-  leftX: number;
+// 元数据布局常量
+const META_PREFACE_FONT = 22;
+const META_PREFACE_LH = 34;
+const META_FOOTER_FONT = 20;
+const META_FOOTER_LH = 30;
+const META_GAP = 40;          // 元数据区与诗句区间距
+const META_MAX_W = W - PAD_X * 2; // 折行宽度
+
+/** 按画布宽度折行文本，支持 \n，计入字间距 */
+function wrapText(ctx: CanvasRenderingContext2D, text: string, maxWidth: number, charSpacing: number = 0): string[] {
+  const result: string[] = [];
+  for (const paragraph of text.split('\n')) {
+    if (!paragraph) { result.push(''); continue; }
+    let line = '';
+    let lineW = 0;
+    for (const ch of paragraph) {
+      const chW = ctx.measureText(ch).width;
+      const newW = line ? lineW + charSpacing + chW : chW;
+      if (newW > maxWidth && line) {
+        result.push(line);
+        line = ch;
+        lineW = chW;
+      } else {
+        line += ch;
+        lineW = newW;
+      }
+    }
+    if (line) result.push(line);
+  }
+  return result;
 }
 
-/** 在标题左侧绘制元数据（日期、序言），竖排从右往左 */
-function drawMetadata(
+/** 测量元数据占用的额外高度（需要 ctx 来测量文本宽度） */
+function measureMetaHeight(
   ctx: CanvasRenderingContext2D,
   metadata: MetadataInfo,
-  colors: ColorTheme,
-  titleResult: TitleResult,
-  canvasHeight: number,
-) {
-  const { date, preface } = metadata;
-  if (!date && !preface) return;
+  maxW: number,
+): { prefaceH: number; footerH: number } {
+  let prefaceH = 0;
+  let footerH = 0;
 
-  const metaFontSize = 28;
-  const metaSpacing = 40;
-  const startY = canvasHeight * 0.13;
-  const maxMetaColChars = 12; // 元数据每列最多12个字符
-
-  // 起始X位置：标题最左列左侧，增大间距
-  let currentX = titleResult.leftX - metaFontSize * 2.5;
-
-  ctx.fillStyle = colors.text;
-  ctx.font = serifFont(400, metaFontSize);
-
-  // 先绘制日期（最靠近标题）
-  if (date) {
-    drawVerticalColumns(ctx, date, currentX, startY, metaFontSize, metaSpacing, maxMetaColChars);
-    currentX -= metaFontSize * 2.5;
+  if (metadata.preface) {
+    ctx.font = serifFont(400, META_PREFACE_FONT);
+    const lines = wrapText(ctx, metadata.preface, maxW, META_PREFACE_FONT * 0.08);
+    prefaceH = lines.length * META_PREFACE_LH + META_GAP;
   }
 
-  // 再绘制序言（在日期左侧）
-  if (preface) {
-    drawVerticalColumns(ctx, preface, currentX, startY, metaFontSize, metaSpacing, maxMetaColChars);
+  if (metadata.date || metadata.footnote) {
+    ctx.font = serifFont(400, META_FOOTER_FONT);
+    let lines = 0;
+    if (metadata.date) lines += 1;
+    if (metadata.footnote) {
+      lines += wrapText(ctx, metadata.footnote, maxW, META_FOOTER_FONT * 0.08).length;
+    }
+    footerH = lines * META_FOOTER_LH + META_GAP;
+  }
+
+  return { prefaceH, footerH };
+}
+
+/** 横排绘制序言（作品上方）；诗：始终居中，词：单行居中、多行左对齐 */
+function drawPreface(
+  ctx: CanvasRenderingContext2D,
+  text: string,
+  colors: ColorTheme,
+  startY: number,
+  genre: 'Shi' | 'Ci',
+  centerX: number,
+  maxW: number,
+) {
+  ctx.fillStyle = colors.muted;
+  ctx.font = serifFont(400, META_PREFACE_FONT);
+  const spacing = META_PREFACE_FONT * 0.08;
+  const lines = wrapText(ctx, text, maxW, spacing);
+  // 诗：始终居中（与正文对齐）；词：单行居中、多行左对齐
+  const centered = genre === 'Shi' || lines.length === 1;
+
+  lines.forEach((line, i) => {
+    const y = startY + i * META_PREFACE_LH + META_PREFACE_LH / 2;
+    if (centered) {
+      drawTextCentered(ctx, line, centerX, y, spacing);
+    } else {
+      drawTextLeft(ctx, line, PAD_X, y, spacing);
+    }
+  });
+}
+
+/** 横排绘制脚注+日期（作品下方）；诗：始终居中，词：单行居中、多行左对齐 */
+function drawFooter(
+  ctx: CanvasRenderingContext2D,
+  date: string | undefined,
+  footnote: string | undefined,
+  colors: ColorTheme,
+  startY: number,
+  genre: 'Shi' | 'Ci',
+  centerX: number,
+  maxW: number,
+) {
+  ctx.fillStyle = colors.muted;
+  ctx.font = serifFont(400, META_FOOTER_FONT);
+  const spacing = META_FOOTER_FONT * 0.08;
+  let y = startY;
+
+  // 脚注（在日期上方）
+  if (footnote) {
+    const lines = wrapText(ctx, footnote, maxW, spacing);
+    // 诗：始终居中（与正文对齐）；词：单行居中、多行左对齐
+    const centered = genre === 'Shi' || lines.length === 1;
+    lines.forEach((line, i) => {
+      const lineY = y + i * META_FOOTER_LH + META_FOOTER_LH / 2;
+      if (centered) {
+        drawTextCentered(ctx, line, centerX, lineY, spacing);
+      } else {
+        drawTextLeft(ctx, line, PAD_X, lineY, spacing);
+      }
+    });
+    y += lines.length * META_FOOTER_LH;
+  }
+
+  // 日期（始终居中，单行）
+  if (date) {
+    const lineY = y + META_FOOTER_LH / 2;
+    drawTextCentered(ctx, date, centerX, lineY, spacing);
   }
 }
 
@@ -225,13 +313,29 @@ export interface ExportData {
   logo?: HTMLImageElement | null;
   date?: string;
   preface?: string;
+  footnote?: string;
 }
 
 export function renderToCanvas(data: ExportData): HTMLCanvasElement {
-  const { title, lines, charCount, genre, theme, date, preface } = data;
+  const { title, lines, charCount, genre, theme, date, preface, footnote } = data;
   const colors = THEMES[theme];
-  const { height, fontSize, lineHeight } =
+  const { height: baseHeight, fontSize, lineHeight } =
     genre === 'Ci' ? getCiLayout(lines.length) : getShiLayout(charCount);
+
+  // ---- 元数据折行宽度：诗按正文行宽，词用默认边距 ----
+  let metaMaxW = META_MAX_W;
+  if (genre === 'Shi') {
+    const sentenceLen = charCount % 7 === 0 ? 7 : 5;
+    const charsPerLine = sentenceLen * 2 + 2; // 一联 + 标点
+    const letterSpacing = fontSize * 0.12;
+    metaMaxW = charsPerLine * fontSize + (charsPerLine - 1) * letterSpacing;
+  }
+
+  // ---- 测量元数据额外高度 ----
+  const measureCanvas = document.createElement('canvas');
+  const measureCtx = measureCanvas.getContext('2d')!;
+  const { prefaceH, footerH } = measureMetaHeight(measureCtx, { date, preface, footnote }, metaMaxW);
+  const height = baseHeight + prefaceH + footerH;
 
   const scale = 2;
   const canvas = document.createElement('canvas');
@@ -251,19 +355,39 @@ export function renderToCanvas(data: ExportData): HTMLCanvasElement {
   // ---- 标题文字 ----
   const titleResult = drawTitle(ctx, title, colors, height);
 
-  // ---- 元数据（日期、序） ----
-  if (date || preface) {
-    drawMetadata(ctx, { date, preface }, colors, titleResult, height);
+  // ---- 计算诗句实际位置 ----
+  const poemTopBound = Math.max(titleResult.bottomY + 80, height * 0.48);
+  const watermarkY = height - 70;
+  const poemBottomLimit = genre === 'Shi'
+    ? watermarkY - lineHeight - footerH
+    : watermarkY - 40 - footerH;
+
+  const totalPoemH = lines.length * lineHeight;
+  const availableH = poemBottomLimit - poemTopBound;
+  const actualLineH = totalPoemH > availableH ? availableH / lines.length : lineHeight;
+  const actualTotalH = lines.length * actualLineH;
+  // 诗：沉底；词：居中
+  const poemStartY = genre === 'Shi'
+    ? poemBottomLimit - actualTotalH
+    : poemTopBound + (availableH - actualTotalH) / 2;
+
+  // 元数据居中点：诗与正文对齐（右偏半字宽补偿标点），词用画布中心
+  const metaCenterX = genre === 'Shi' ? W / 2 + fontSize * 0.5 : W / 2;
+
+  // ---- 序言（紧贴诗句上方） ----
+  if (preface) {
+    const prefaceY = poemStartY - prefaceH;
+    drawPreface(ctx, preface, colors, prefaceY, genre, metaCenterX, metaMaxW);
   }
 
   // ---- 诗句 ----
-  const watermarkY = height - 70;
-  const poemTopY = Math.max(titleResult.bottomY + 80, height * 0.48);
-  // 诗：底部留一行间距到水印；词：底部留常规间距
-  const poemBottomLimit = genre === 'Shi'
-    ? watermarkY - lineHeight
-    : watermarkY - 40;
-  drawPoemLines(ctx, lines, colors, fontSize, lineHeight, poemTopY, poemBottomLimit, genre);
+  drawPoemLines(ctx, lines, colors, fontSize, lineHeight, poemTopBound, poemBottomLimit, genre);
+
+  // ---- 日期 / 脚注（作品下方） ----
+  if (date || footnote) {
+    const footerY = poemBottomLimit + 20;
+    drawFooter(ctx, date, footnote, colors, footerY, genre, metaCenterX, metaMaxW);
+  }
 
   // ---- 水印（logo + 文字） ----
   const wmText = '方寸 · 诗词画布';

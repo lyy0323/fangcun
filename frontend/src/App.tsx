@@ -5,7 +5,6 @@ import { GridEditor } from './components/GridEditor';
 import { RhymePanel } from './components/RhymePanel';
 import { GenreSelector } from './components/GenreSelector';
 import { InspirationBoard } from './components/InspirationBoard';
-import { MetadataEditor } from './components/MetadataEditor';
 import { Dictionary } from './components/Dictionary';
 import { useBoardContext, useActiveBoard } from './context/BoardContext';
 import { Lightbulb, BookOpen, PanelLeftClose, PanelRightClose } from 'lucide-react';
@@ -70,21 +69,10 @@ function Layout() {
       {board && (
         <div className="flex flex-1 min-h-0 relative">
           {/* 左侧栏 — 桌面端常驻 */}
-          <aside className="w-[20%] border-r border-[var(--border)] p-3 hidden lg:flex flex-col shrink-0 gap-3">
-            {/* 灵感板区域（占60%高度） */}
-            <div className="flex-[3] flex flex-col min-h-0">
-              <h3 className="text-xs font-medium text-[var(--text-secondary)] mb-2">灵感板</h3>
-              <div className="flex-1 overflow-hidden">
-                <InspirationBoard />
-              </div>
-            </div>
-
-            {/* 元数据编辑区域（占40%高度） */}
-            <div className="flex-[2] flex flex-col min-h-0 border-t border-[var(--border)] pt-3">
-              <h3 className="text-xs font-medium text-[var(--text-secondary)] mb-2">元数据</h3>
-              <div className="flex-1 overflow-y-auto min-h-0">
-                <MetadataEditor />
-              </div>
+          <aside className="w-[20%] border-r border-[var(--border)] p-3 hidden lg:flex flex-col shrink-0">
+            <h3 className="text-xs font-medium text-[var(--text-secondary)] mb-2">灵感板</h3>
+            <div className="flex-1 overflow-hidden min-h-0">
+              <InspirationBoard />
             </div>
           </aside>
 
@@ -118,24 +106,8 @@ function Layout() {
           </aside>
 
           {/* 移动端侧滑抽屉 */}
-          <MobileDrawer side="left" open={mobilePanel === 'left'} onClose={() => setMobilePanel(null)} title="灵感板 / 元数据">
-            <div className="flex flex-col h-full gap-3">
-              {/* 灵感板区域 */}
-              <div className="flex-[3] flex flex-col min-h-0">
-                <h3 className="text-xs font-medium text-[var(--text-secondary)] mb-2">灵感板</h3>
-                <div className="flex-1 overflow-hidden">
-                  <InspirationBoard />
-                </div>
-              </div>
-
-              {/* 元数据编辑区域 */}
-              <div className="flex-[2] flex flex-col min-h-0 border-t border-[var(--border)] pt-3">
-                <h3 className="text-xs font-medium text-[var(--text-secondary)] mb-2">元数据</h3>
-                <div className="flex-1 overflow-y-auto min-h-0">
-                  <MetadataEditor />
-                </div>
-              </div>
-            </div>
+          <MobileDrawer side="left" open={mobilePanel === 'left'} onClose={() => setMobilePanel(null)} title="灵感板">
+            <InspirationBoard />
           </MobileDrawer>
           <MobileDrawer side="right" open={mobilePanel === 'right'} onClose={() => setMobilePanel(null)} title="韵部">
             <RhymePanel />

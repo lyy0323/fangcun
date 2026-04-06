@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useBoardContext, useActiveBoard } from '../context/BoardContext';
 import { PLACEHOLDER } from '../lib/types';
-import { Layers, Plus, ClipboardType, Check, Upload, Sun, Moon, Settings, ChevronRight, X, BookOpen, Lightbulb, SendHorizontal, ExternalLink, Download, FolderUp, ImageDown } from 'lucide-react';
+import { ensureGregorianDate } from '../lib/dateConvert';
+import { Layers, Plus, ClipboardType, Check, Upload, Sun, Moon, Settings, ChevronRight, X, BookOpen, Lightbulb, SendHorizontal, ExternalLink, Download, FolderUp, ImageDown, ScrollText } from 'lucide-react';
 import type { Board } from '../lib/types';
 import { ExportPreview } from './ExportPreview';
+import { MetadataPopover } from './MetadataPopover';
 
 function SettingsModal({ onClose }: { onClose: () => void }) {
   const { state, dispatch } = useBoardContext();
@@ -149,6 +151,7 @@ function SettingsModal({ onClose }: { onClose: () => void }) {
           </a>
           <p className="font-medium text-[var(--text)] pt-1">更新日志</p>
           <ul className="list-disc pl-4 space-y-1">
+            <li>v1.4 (2026-04-06) — 元数据弹窗（序/脚注/农历日期），韵脚字点击切换韵部，导出排版重构（序上/脚注下/自适应高度），8套配色</li>
             <li>v1.3 (2026-04-03) — 导出图片（5套配色、高清输出），画板批量导入导出</li>
             <li>v1.2 (2026-04-02) — 开放 API 及文档，CLI 工具，API Key 认证，前端免认证</li>
             <li>v1.1 (2026-03-18) — 词库扩容至45万首，字典实时搜索，重字提醒，设置面板，字典区收起/展开动画，灵感板换行修复</li>
@@ -209,6 +212,7 @@ export function TopBar() {
   const [copied, setCopied] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [showExport, setShowExport] = useState(false);
+  const [metaOpen, setMetaOpen] = useState(false);
   const [dark, setDark] = useState(() => {
     if (typeof window !== 'undefined') {
       return localStorage.getItem('theme') === 'dark' || document.documentElement.classList.contains('dark');
@@ -280,13 +284,19 @@ export function TopBar() {
   const handleUpload = () => {
     if (!board) return;
     const text = buildText();
-    const today = new Date().toISOString().slice(0, 10);
+    const metadata = board.metadata || {};
+    const date = ensureGregorianDate(
+      metadata.date || new Date().toISOString().slice(0, 10),
+      metadata.dateFormat,
+    );
     const params = new URLSearchParams({
       '类型': board.genre === 'Shi' ? '诗' : '词',
       '正文': text,
-      '日期': today,
+      '日期': date,
       '标题': board.title,
     });
+    if (metadata.preface) params.set('序', metadata.preface);
+    if (metadata.footnote) params.set('脚注', metadata.footnote);
     window.open(`https://sjtuguoxue.space/submit/?${params.toString()}`, '_blank');
   };
 
@@ -339,6 +349,20 @@ export function TopBar() {
           </>
         )}
       </div>
+
+      {/* 元数据（日期/序/脚注） */}
+      {board && (
+        <div className="relative">
+          <button
+            className={`w-8 h-8 rounded-lg border flex items-center justify-center transition-colors ${metaOpen ? 'border-[var(--accent)] text-[var(--accent)] bg-[var(--accent-light)]' : 'border-[var(--border)] text-[var(--text-muted)] hover:bg-[var(--accent-light)] hover:text-[var(--accent)]'}`}
+            onClick={() => setMetaOpen(v => !v)}
+            title="日期 / 序 / 脚注"
+          >
+            <ScrollText size={15} />
+          </button>
+          {metaOpen && <MetadataPopover onClose={() => setMetaOpen(false)} />}
+        </div>
+      )}
 
       {/* 深色模式切换 */}
       <button

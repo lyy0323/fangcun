@@ -14,6 +14,7 @@ export interface BoardMetadata {
   dateFormat?: 'Gregorian' | 'Lunar';  // 日期格式
   rhymeBook?: string;        // 韵书（平水韵/词林正韵/中华通韵，仅标注用途）
   preface?: string;          // 序言文本
+  footnote?: string;         // 脚注文本
 }
 
 export interface Board {

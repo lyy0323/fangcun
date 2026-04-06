@@ -271,7 +271,7 @@ class PoetryChecker:
 
             for rhyme_cat_name in rhymes:
                 rhyme_cat = book.categories.get(rhyme_cat_name)
-                if rhyme_cat and hasattr(rhyme_cat, 'tone_type'):
+                if rhyme_cat:
                     mapped_tones.add(rhyme_cat.tone_type)
 
             if len(mapped_tones) == 0: return {'A'}

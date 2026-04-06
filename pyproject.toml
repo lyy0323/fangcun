@@ -17,5 +17,15 @@ dependencies = [
 [project.scripts]
 fangcun = "cli:main"
 
+[project.optional-dependencies]
+test = ["pytest>=8.0"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+markers = [
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+]
+
 [tool.setuptools]
 py-modules = ["cli", "checker", "config_loader", "api_keys"]
