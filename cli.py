@@ -266,7 +266,7 @@ def main():
     p_val.add_argument("--text", required=True, help="诗词文本")
     p_val.add_argument("--genre", required=True, choices=["Shi", "Ci"], help="体裁: Shi(诗) / Ci(词)")
     p_val.add_argument("--rhyme-book", default="Pingshuiyun",
-                       choices=["Pingshuiyun", "Cilinzhengyun"], help="韵书 (default: Pingshuiyun)")
+                       choices=["Pingshuiyun", "Cilinzhengyun", "Zhonghua_Tongyun"], help="韵书 (default: Pingshuiyun)")
     p_val.add_argument("--rule", default=None, help="指定规则名 (可选)")
     p_val.add_argument("--longpu", action="store_true", help="仅匹配龙谱")
     p_val.add_argument("--pretty", action="store_true", help="人类可读输出")
@@ -283,7 +283,7 @@ def main():
 
     # -- rhyme --
     p_rhyme = sub.add_parser("rhyme", help="查韵部字表 (browse rhyme category)")
-    p_rhyme.add_argument("--book", required=True, choices=["Pingshuiyun", "Cilinzhengyun"], help="韵书")
+    p_rhyme.add_argument("--book", required=True, choices=["Pingshuiyun", "Cilinzhengyun", "Zhonghua_Tongyun"], help="韵书")
     p_rhyme.add_argument("--category", required=True, help="韵部名 (如 一东)")
     p_rhyme.add_argument("--include", default=None, help="包含关联韵部, 逗号分隔 (如 neighbor,ye_ping)")
 
