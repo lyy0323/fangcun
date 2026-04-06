@@ -12,7 +12,7 @@ app = Flask(__name__)
 def debug():
     info = {"python": sys.version, "cwd": os.getcwd(), "root": ROOT}
     errors = []
-    for mod in ["flask_limiter", "psycopg2", "config_loader", "checker", "api_keys"]:
+    for mod in ["flask_limiter", "psycopg", "config_loader", "checker", "api_keys"]:
         try:
             __import__(mod)
             info[mod] = "ok"

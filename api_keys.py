@@ -93,9 +93,8 @@ def _migrate_sqlite(conn: sqlite3.Connection):
 # ---------------------------------------------------------------------------
 
 def _pg_conn():
-    import psycopg2
-    import psycopg2.extras
-    conn = psycopg2.connect(POSTGRES_URL)
+    import psycopg
+    conn = psycopg.connect(POSTGRES_URL)
     conn.autocommit = False
     with conn.cursor() as cur:
         cur.execute(_CREATE_TABLE_SQL)
