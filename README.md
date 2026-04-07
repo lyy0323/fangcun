@@ -1,6 +1,6 @@
 # 方寸 · 诗词创作画布
 
-古典诗词创作辅助工具，提供实时格律校验、韵部查询和词语联想，支持平水韵与词林正韵。
+古典诗词创作辅助工具，提供实时格律校验、韵部查询和词语联想，支持平水韵、词林正韵与中华通韵。
 
 **在线使用：** [write.sjtuguoxue.space](https://write.sjtuguoxue.space)
 **API 文档：** [write.sjtuguoxue.space/docs](https://write.sjtuguoxue.space/docs)
@@ -10,9 +10,11 @@
 ## 功能
 
 - **格律校验** — 五/七言律诗绝句 + 2500+ 词牌，实时标注平仄错误与韵脚问题
-- **韵部查询** — 平水韵 / 词林正韵双韵书，按词频排序，邻韵关联
+- **韵部查询** — 平水韵 / 词林正韵 / 中华通韵三套韵书，按词频排序，邻韵关联
 - **字典联想** — 词首、词末、对仗查询，45 万首古诗词语料
 - **创作画布** — 网格编辑器、灵感板、多画板管理、深色/浅色主题
+- **元数据编辑** — 序言、脚注、日期（农历/公历切换），导出图片和上传时自动携带
+- **导出图片** — Canvas 渲染诗词卡片，8 套配色方案，2x 高清输出
 - **开放 API** — 6 个 HTTP 端点，API Key 认证，供外部开发者和 AI Agent 调用
 - **CLI 工具** — `pip install` 后可用 `fangcun` 命令行校验格律
 
@@ -58,7 +60,7 @@ API Key 申请请邮件至 guoxue_sjtu@163.com，详见 [API 文档](https://wri
 |---|------|
 | 前端 | React 19 · TypeScript · Vite · Tailwind CSS 4 |
 | 后端 | Python · Flask · flask-limiter |
-| 数据 | 平水韵 / 词林正韵 · 45 万首诗词语料 |
+| 数据 | 平水韵 / 词林正韵 / 中华通韵 · 45 万首诗词语料 |
 | 部署 | Vercel (Serverless Python + Static) |
 | 数据库 | SQLite (本地) / Vercel Postgres (线上) |
 
