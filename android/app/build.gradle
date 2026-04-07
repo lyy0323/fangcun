@@ -1,0 +1,107 @@
+plugins {
+    id 'com.android.application'
+    id 'org.jetbrains.kotlin.android'
+    id 'com.chaquo.python'
+}
+
+android {
+    namespace 'com.fangcun.app'
+    compileSdk 36
+
+    defaultConfig {
+        applicationId "com.fangcun.app"
+        minSdk 26
+        targetSdk 36
+        versionCode 1
+        versionName "1.0.0"
+
+        ndk {
+            abiFilters "arm64-v8a", "x86_64"
+        }
+
+        python {
+            version "3.11"
+            pip {
+                install "flask"
+                install "flask-cors"
+                install "flask-limiter"
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    kotlinOptions {
+        jvmTarget = '17'
+    }
+
+    sourceSets {
+        main {
+            python.srcDirs = ['src/main/python', "$projectDir/generated/python"]
+            assets.srcDirs = ['src/main/assets', "$projectDir/generated/assets"]
+        }
+    }
+}
+
+// ============================================================================
+// 构建任务: 从上层项目复制 Python 源码、前端 dist、JSON 数据
+// ============================================================================
+
+def projectRoot = rootProject.projectDir.parentFile  // shiva/
+
+tasks.register('syncPythonSources', Copy) {
+    from(projectRoot) {
+        include 'app.py', 'checker.py', 'config_loader.py'
+    }
+    into "$projectDir/generated/python"
+}
+
+tasks.register('syncFrontendDist', Copy) {
+    from "$projectRoot/frontend/dist"
+    into "$projectDir/generated/assets/frontend"
+}
+
+tasks.register('syncConfigData', Copy) {
+    from "$projectRoot/static/config"
+    into "$projectDir/generated/assets/config"
+}
+
+tasks.register('syncAll') {
+    dependsOn 'syncPythonSources', 'syncFrontendDist', 'syncConfigData'
+}
+
+tasks.named('preBuild') {
+    dependsOn 'syncAll'
+}
+
+// Chaquopy 的 merge/extract 任务必须在同步完成后执行
+afterEvaluate {
+    tasks.matching {
+        (it.name.contains('merge') || it.name.contains('extract') || it.name.contains('package')) &&
+        (it.name.contains('Python') || it.name.contains('Assets') || it.name.contains('assets')) &&
+        !it.name.startsWith('sync')
+    }.configureEach {
+        dependsOn 'syncAll'
+    }
+}
+
+tasks.named('clean') {
+    doLast {
+        delete "$projectDir/generated"
+    }
+}
+
+dependencies {
+    implementation 'androidx.appcompat:appcompat:1.7.0'
+    implementation 'androidx.core:core-ktx:1.15.0'
+}

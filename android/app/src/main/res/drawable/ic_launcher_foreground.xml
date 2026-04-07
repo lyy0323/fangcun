@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 简单的方寸 Logo 占位图标 -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- 背景方块 -->
+    <path
+        android:fillColor="#5C534A"
+        android:pathData="M24,24h60v60h-60z" />
+    <!-- 内框 -->
+    <path
+        android:fillColor="#FAF8F5"
+        android:pathData="M30,30h48v48h-48z" />
+    <!-- 横线装饰 -->
+    <path
+        android:strokeColor="#5C534A"
+        android:strokeWidth="2"
+        android:pathData="M36,42h36M36,50h36M36,58h28" />
+</vector>
