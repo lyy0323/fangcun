@@ -40,6 +40,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - Production DB: Vercel Postgres (Neon), env var `POSTGRES_URL` auto-injected
 - Production URL: https://write.sjtuguoxue.space
 
+**Android (WebView + Chaquopy):**
+- `android/` — Gradle 项目，WebView 包裹 + 内嵌 Python 3.11 运行时
+- `android/app/src/main/java/com/fangcun/app/MainActivity.kt` — 启动流程：提取资源 → Chaquopy 初始化 → Flask 启动 → WebView 加载 localhost:5050
+- `android/app/src/main/python/start_server.py` — Android 端 Flask 启动脚本，禁用认证，注入 CSP，SPA 路由回退
+- Gradle 构建时自动同步 `app.py`/`checker.py`/`config_loader.py`、`frontend/dist/`、`static/config/` 到 APK
+- 全离线运行，无需网络；图片导出通过 JS Bridge (`AndroidBridge.saveImage`) 调用 MediaStore API
+
 ## Common Commands
 
 ```bash
@@ -61,6 +68,12 @@ fangcun key create --name "user" # Create API Key (needs POSTGRES_URL for prod)
 fangcun key list                 # List all keys
 fangcun key stats                # View route call stats
 fangcun key stats --date 2026-04-02  # Filter by date (UTC+8)
+
+# Android APK
+cd frontend && npm run build && cd ..   # 必须先构建前端
+cd android
+./gradlew assembleDebug                 # Debug APK → app/build/outputs/apk/debug/
+./gradlew assembleRelease               # Release APK（需签名）
 
 # Deploy
 vercel --prod                    # Deploy to production

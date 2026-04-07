@@ -17,6 +17,7 @@
 - **导出图片** — Canvas 渲染诗词卡片，8 套配色方案，2x 高清输出
 - **开放 API** — 6 个 HTTP 端点，API Key 认证，供外部开发者和 AI Agent 调用
 - **CLI 工具** — `pip install` 后可用 `fangcun` 命令行校验格律
+- **Android** — WebView + Chaquopy 内嵌 Python 运行时，全离线运行
 
 ## 快速开始
 
@@ -43,6 +44,16 @@ fangcun rhyme --book Pingshuiyun --category 一东
 fangcun suggest --term 明月 --mode head
 ```
 
+### Android APK
+
+```bash
+cd frontend && npm install && npm run build && cd ..   # 先构建前端
+cd android
+./gradlew assembleDebug           # Debug APK → app/build/outputs/apk/debug/
+```
+
+Gradle 构建时自动同步 Python 源码、前端产物和配置数据到 APK。基于 Chaquopy 在设备上运行 Flask，WebView 加载 localhost:5050，全离线无需网络。
+
 ### API
 
 ```bash
@@ -61,7 +72,7 @@ API Key 申请请邮件至 guoxue_sjtu@163.com，详见 [API 文档](https://wri
 | 前端 | React 19 · TypeScript · Vite · Tailwind CSS 4 |
 | 后端 | Python · Flask · flask-limiter |
 | 数据 | 平水韵 / 词林正韵 / 中华通韵 · 45 万首诗词语料 |
-| 部署 | Vercel (Serverless Python + Static) |
+| 部署 | Vercel (Serverless Python + Static) · Android (Chaquopy) |
 | 数据库 | SQLite (本地) / Vercel Postgres (线上) |
 
 ## 项目结构
@@ -77,6 +88,7 @@ API Key 申请请邮件至 guoxue_sjtu@163.com，详见 [API 文档](https://wri
 │   ├── docs.html       # API 文档页
 │   └── dashboard.html  # 调用统计看板
 ├── frontend/src/       # React 前端
+├── android/            # WebView + Chaquopy 打包
 ├── api/index.py        # Vercel serverless 入口
 └── vercel.json         # Vercel 路由配置
 ```
