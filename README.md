@@ -4,6 +4,7 @@
 
 **在线使用：** [write.sjtuguoxue.space](https://write.sjtuguoxue.space)
 **API 文档：** [write.sjtuguoxue.space/docs](https://write.sjtuguoxue.space/docs)
+**Android APK：** [GitHub Release 下载](https://github.com/lyy0323/fangcun/releases/latest)
 
 ![desktop-demo](frontend/public/slides/desktop-demo.png)
 
