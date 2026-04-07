@@ -67,6 +67,7 @@ function SettingsModal({ onClose }: { onClose: () => void }) {
             <p className="font-medium text-[var(--text)] flex items-center gap-1.5">顶部按钮</p>
             <ul className="mt-1 space-y-1.5 pl-1">
               <li className="flex items-start gap-2"><span className="shrink-0 w-5 h-5 rounded border border-[var(--border)] flex items-center justify-center mt-0.5"><Layers size={11} /></span><span><b>画板切换</b> — 管理多个创作画板，可新建、切换、删除</span></li>
+              <li className="flex items-start gap-2"><span className="shrink-0 w-5 h-5 rounded border border-[var(--border)] flex items-center justify-center mt-0.5"><ScrollText size={11} /></span><span><b>元数据</b> — 填写序言、脚注、日期（支持农历/公历切换），导出图片和上传时自动携带</span></li>
               <li className="flex items-start gap-2"><span className="shrink-0 w-5 h-5 rounded border border-[var(--border)] flex items-center justify-center mt-0.5"><Moon size={11} /></span><span><b>深浅模式</b> — 切换浅色/深色主题</span></li>
               <li className="flex items-start gap-2"><span className="shrink-0 w-5 h-5 rounded border border-[var(--border)] flex items-center justify-center mt-0.5"><Settings size={11} /></span><span><b>设置</b> — 教程、导入导出、关于</span></li>
               <li className="flex items-start gap-2"><span className="shrink-0 w-5 h-5 rounded border border-[var(--border)] flex items-center justify-center mt-0.5"><Upload size={11} /></span><span><b>上传</b> — 全文填写完成后，提交至南洋吟游</span></li>
