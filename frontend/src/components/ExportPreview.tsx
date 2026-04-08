@@ -165,11 +165,12 @@ export function ExportPreview({ onClose }: { onClose: () => void }) {
     const rawDate = metadata.date || '';
     const preface = metadata.preface || '';
     const footnote = metadata.footnote || '';
+    const author = metadata.author ?? localStorage.getItem('default_author') ?? '';
 
     // 转换公历日期为中文数字格式
     const date = rawDate ? convertGregorianToChinese(rawDate) : '';
 
-    const allText = board.title + lines.join('') + date + preface + footnote;
+    const allText = board.title + lines.join('') + date + preface + footnote + author;
     const [, logo] = await Promise.all([loadExportFonts(allText), loadLogo()]);
     const canvas = renderToCanvas({
       title: board.title,
@@ -181,6 +182,7 @@ export function ExportPreview({ onClose }: { onClose: () => void }) {
       date,
       preface,
       footnote,
+      author,
     });
     setCanvasEl(canvas);
     setLoading(false);

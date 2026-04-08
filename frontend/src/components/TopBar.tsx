@@ -11,6 +11,7 @@ function SettingsModal({ onClose }: { onClose: () => void }) {
   const { state, dispatch } = useBoardContext();
   const [openSection, setOpenSection] = useState<string | null>(null);
   const [importMsg, setImportMsg] = useState<string | null>(null);
+  const [defaultAuthor, setDefaultAuthor] = useState(() => localStorage.getItem('default_author') ?? '');
   const toggle = (id: string) => setOpenSection(prev => prev === id ? null : id);
 
   function handleExport() {
@@ -110,6 +111,27 @@ function SettingsModal({ onClose }: { onClose: () => void }) {
               <li>移动端点击左上角灯泡图标呼出</li>
             </ul>
           </div>
+        </div>
+      ),
+    },
+    {
+      id: 'author',
+      title: '署名',
+      content: (
+        <div className="text-sm text-[var(--text-secondary)] space-y-2 py-2">
+          <input
+            type="text"
+            value={defaultAuthor}
+            onChange={e => {
+              const v = e.target.value;
+              setDefaultAuthor(v);
+              if (v) localStorage.setItem('default_author', v);
+              else localStorage.removeItem('default_author');
+            }}
+            placeholder="输入默认署名"
+            className="w-full px-3 py-2 rounded-lg bg-[var(--bg)] border border-[var(--border)] text-sm text-[var(--text)] placeholder:text-[var(--text-muted)] outline-none focus:border-[var(--accent)] transition-colors"
+          />
+          <p className="text-xs text-[var(--text-muted)]">设置后，导出图片将自动显示署名。可在每个画板的元数据中单独修改。</p>
         </div>
       ),
     },
@@ -301,6 +323,8 @@ export function TopBar() {
     });
     if (metadata.preface) params.set('序', metadata.preface);
     if (metadata.footnote) params.set('脚注', metadata.footnote);
+    const author = metadata.author ?? localStorage.getItem('default_author') ?? '';
+    if (author) params.set('署名', author);
     window.open(`https://sjtuguoxue.space/submit/?${params.toString()}`, '_blank');
   };
 

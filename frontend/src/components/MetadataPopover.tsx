@@ -108,6 +108,18 @@ export function MetadataPopover({ onClose }: { onClose: () => void }) {
         onClick={e => e.stopPropagation()}
         onKeyDown={e => { if (e.key === 'Escape') onClose(); }}
       >
+        {/* 署名 */}
+        <div>
+          <label className="text-[10px] text-[var(--text-secondary)] mb-1 block">署名</label>
+          <input
+            type="text"
+            value={metadata.author ?? ''}
+            onChange={e => update('author', e.target.value)}
+            placeholder={localStorage.getItem('default_author') || '署名（可在设置中配置默认值）'}
+            className={inputClass}
+          />
+        </div>
+
         {/* 日期 */}
         <div>
           <label className="text-[10px] text-[var(--text-secondary)] mb-1 block">日期</label>

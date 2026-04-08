@@ -360,10 +360,11 @@ export interface ExportData {
   date?: string;
   preface?: string;
   footnote?: string;
+  author?: string;
 }
 
 export function renderToCanvas(data: ExportData): HTMLCanvasElement {
-  const { title, lines, charCount, genre, theme, date, preface, footnote } = data;
+  const { title, lines, charCount, genre, theme, date, preface, footnote, author } = data;
   const colors = THEMES[theme];
   const maxLineLen = genre === 'Ci' ? Math.max(...lines.map(l => [...l].length)) : 0;
   const { fontSize, lineHeight } =
@@ -386,7 +387,8 @@ export function renderToCanvas(data: ExportData): HTMLCanvasElement {
   const titleBlockH = measureTitleBlockHeight(title);
   const titleRegionH = TITLE_PAD_TOP + titleBlockH;
   const poemTotalH = lines.length * lineHeight;
-  const belowPoemPad = (genre === 'Shi' ? lineHeight : 40) + footerH + 70;
+  const authorH = author ? 40 : 0;  // 署名行高度
+  const belowPoemPad = lineHeight + footerH + authorH + 70;
   const contentH = prefaceH + poemTotalH + belowPoemPad;
   const minH = titleRegionH + MIN_GAP + contentH;
   const height = pickCanvasHeight(minH);
@@ -412,9 +414,7 @@ export function renderToCanvas(data: ExportData): HTMLCanvasElement {
   // ---- 计算诗句实际位置 ----
   const poemTopBound = titleRegionH + (height - titleRegionH - contentH);  // = height - contentH
   const watermarkY = height - 70;
-  const poemBottomLimit = genre === 'Shi'
-    ? watermarkY - lineHeight - footerH
-    : watermarkY - 40 - footerH;
+  const poemBottomLimit = watermarkY - lineHeight - footerH - authorH;
 
   // 诗：沉底；词：居中
   const poemStartY = genre === 'Shi'
@@ -439,36 +439,45 @@ export function renderToCanvas(data: ExportData): HTMLCanvasElement {
     drawFooter(ctx, date, footnote, colors, footerY, genre, metaCenterX, metaMaxW);
   }
 
-  // ---- 水印（logo + 文字） ----
+  // ---- 署名（底部，格式 "- 署名 -"；诗居中，词左对齐） ----
+  if (author) {
+    const authorFontSize = 32;
+    ctx.fillStyle = colors.muted;
+    ctx.font = `${authorFontSize}px "Noto Serif SC", "Source Han Serif SC", serif`;
+    ctx.textBaseline = 'middle';
+    if (genre === 'Ci') {
+      ctx.textAlign = 'left';
+      ctx.fillText(`${author} /`, PAD_X, watermarkY - 30);
+    } else {
+      ctx.textAlign = 'center';
+      ctx.fillText(`- ${author} -`, W / 2, watermarkY - 30);
+    }
+  }
+
+  // ---- 水印（右下角贴边，logo + 文字） ----
   const wmText = '方寸 · 诗词画布';
   const wmFontSize = 18;
   const logoSize = 22;
   const logoGap = 6;
   ctx.fillStyle = colors.muted;
   ctx.font = `${wmFontSize}px system-ui, -apple-system, "Helvetica Neue", sans-serif`;
-  ctx.textBaseline = 'middle';
+  ctx.textBaseline = 'bottom';
 
   const textW = ctx.measureText(wmText).width;
   const hasLogo = !!data.logo;
   const totalWmW = hasLogo ? logoSize + logoGap + textW : textW;
 
-  let wmX: number;
-  if (genre === 'Ci') {
-    wmX = PAD_X;
-  } else {
-    wmX = (W - totalWmW) / 2;
-  }
+  const wmX = W - 30 - totalWmW;
+  const wmY = height - 25;
 
   if (hasLogo) {
-    // 深色主题反色 logo（原 logo 主体为黑色）
     const isDark = theme === '墨韵';
     if (isDark) ctx.filter = 'invert(1) hue-rotate(180deg)';
-    ctx.drawImage(data.logo!, wmX, watermarkY - logoSize / 2, logoSize, logoSize);
+    ctx.drawImage(data.logo!, wmX, wmY - logoSize + 2, logoSize, logoSize);
     if (isDark) ctx.filter = 'none';
-    wmX += logoSize + logoGap;
   }
   ctx.textAlign = 'left';
-  ctx.fillText(wmText, wmX, watermarkY);
+  ctx.fillText(wmText, wmX + (hasLogo ? logoSize + logoGap : 0), wmY);
 
   return canvas;
 }

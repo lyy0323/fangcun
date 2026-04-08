@@ -118,6 +118,7 @@ export function ImportPoemModal({ onClose }: { onClose: () => void }) {
     const board = createBoard(genre, ruleName, charCount);
     board.title = poem.title;
     board.poemChars = chars;
+    board.metadata = { ...board.metadata, author: poem.author };
     dispatch({ type: 'ADD_BOARD', board });
   };
 

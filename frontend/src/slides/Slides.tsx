@@ -14,10 +14,16 @@ import {
   AlertCircle,
   Search,
   Replace,
+  Clock,
+  Image,
+  Calendar,
+  BookMarked,
+  Globe,
+  Download,
 } from 'lucide-react';
 
 /* ───────────── 常量 ───────────── */
-const TOTAL_SLIDES = 12;
+const TOTAL_SLIDES = 16;
 const TRANSITION_MS = 500;
 const SITE_URL = 'http://write.sjtuguoxue.space';
 const SOCIETY_URL = 'http://sjtuguoxue.space/';
@@ -635,6 +641,271 @@ function SlideCTA() {
   );
 }
 
+/** 12. 近期更新总览 (v1.2–v1.6) */
+function SlideRecentUpdates() {
+  const updates = [
+    { ver: 'v1.2', title: '开放 API & CLI', desc: '7 个 HTTP 端点 + fangcun 命令行工具', icon: <Globe size={16} /> },
+    { ver: 'v1.3', title: '图片导出', desc: 'Canvas 渲染诗词卡片，8 套配色方案', icon: <Image size={16} /> },
+    { ver: 'v1.4', title: '元数据 & 中华通韵', desc: '序·脚注·农历日期 + 第三套韵书接入', icon: <Calendar size={16} /> },
+    { ver: 'v1.5', title: '典故检索 & UI 统一', desc: '13,000 条典形词 + 全局样式统一', icon: <BookMarked size={16} /> },
+    { ver: 'v1.6', title: '导入前人作品', desc: '80 万首历代诗词库搜索导入', icon: <Download size={16} /> },
+  ];
+  return (
+    <div className="flex flex-col items-center justify-center h-full px-6">
+      <FadeUp>
+        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[var(--accent-light)] text-[var(--accent)] text-xs font-medium mb-4">
+          <Clock size={14} /> 近期更新
+        </div>
+      </FadeUp>
+      <FadeUp delay={150}>
+        <h2 className="text-xl sm:text-2xl font-bold text-[var(--text)] mb-8 text-center">v1.2 – v1.6 功能速览</h2>
+      </FadeUp>
+      <div className="flex flex-col gap-3 max-w-md w-full">
+        {updates.map((u, i) => (
+          <FadeUp key={i} delay={300 + i * 150}>
+            <div className="flex items-center gap-3 bg-[var(--bg-card)] border border-[var(--border)] rounded-xl px-4 py-3 shadow-sm hover:shadow-md transition-shadow">
+              <div className="w-8 h-8 rounded-lg bg-[var(--accent-light)] flex items-center justify-center text-[var(--accent)] shrink-0">
+                {u.icon}
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-mono text-[var(--accent)]">{u.ver}</span>
+                  <span className="text-sm font-semibold text-[var(--text)]">{u.title}</span>
+                </div>
+                <p className="text-xs text-[var(--text-secondary)] mt-0.5">{u.desc}</p>
+              </div>
+            </div>
+          </FadeUp>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/** 13. 诗词卡片导出 */
+function SlideExport() {
+  /* 复用 exportImage.ts 的 8 套真实配色 */
+  const themes: { name: string; bg: string }[] = [
+    { name: '素白', bg: '#FAFAF8' },
+    { name: '朱砂', bg: '#FDF6F0' },
+    { name: '墨韵', bg: '#1A1A1A' },
+    { name: '竹青', bg: '#F4F7F0' },
+    { name: '藏蓝', bg: '#F0F2F7' },
+    { name: '烟紫', bg: '#F5F0F7' },
+    { name: '秋棠', bg: '#FBF5EE' },
+    { name: '霜灰', bg: '#F2F2F0' },
+  ];
+  return (
+    <div className="flex flex-col items-center justify-center h-full px-6">
+      <FadeUp>
+        <h2 className="text-xl sm:text-2xl font-bold text-[var(--text)] mb-2 text-center">诗词卡片导出</h2>
+      </FadeUp>
+      <FadeUp delay={150}>
+        <p className="text-sm text-[var(--text-secondary)] mb-8 text-center max-w-md">
+          Canvas 渲染精美诗词卡片，一键导出，带 logo 水印。
+        </p>
+      </FadeUp>
+
+      <FadeUp delay={350}>
+        <div className="rounded-2xl overflow-hidden shadow-2xl border border-[var(--border)] max-w-[220px] sm:max-w-[260px]">
+          <img
+            src="/slides/export-demo.png"
+            alt="诗词卡片导出示例 — 破阵子"
+            className="w-full h-auto"
+          />
+        </div>
+      </FadeUp>
+
+      <FadeUp delay={700}>
+        <div className="mt-4 flex items-center gap-2 justify-center">
+          {themes.map((t, i) => (
+            <div
+              key={i}
+              className={`w-5 h-5 rounded-full border border-[var(--border)] cursor-pointer hover:scale-110 transition-transform ${i === 2 ? 'ring-2 ring-[var(--accent)] ring-offset-1 ring-offset-[var(--bg)]' : ''}`}
+              style={{ backgroundColor: t.bg }}
+              title={t.name}
+            />
+          ))}
+        </div>
+      </FadeUp>
+
+      <FadeUp delay={1100}>
+        <div className="mt-5 flex flex-wrap gap-3 justify-center text-xs">
+          <span className="px-3 py-1 rounded-full bg-[var(--accent-light)] text-[var(--accent)]">自适应画布比例</span>
+          <span className="px-3 py-1 rounded-full bg-[var(--accent-light)] text-[var(--accent)]">2x 高清输出</span>
+          <span className="px-3 py-1 rounded-full bg-[var(--accent-light)] text-[var(--accent)]">序 · 日期 · 脚注</span>
+        </div>
+      </FadeUp>
+    </div>
+  );
+}
+
+/** 14. 典故检索 */
+function SlideAllusion() {
+  /* 真实数据：搜索「柳」返回的典形词（按同源丰富度排序） */
+  const results = [
+    { w: '细柳营', d: '帝亲自劳军，至营，因无军令不得入' },
+    { w: '陶潜柳', d: '咏柳典故，亦比喻隐居之地或人' },
+    { w: '蒲柳姿', d: '体质衰弱或未老先衰的典故' },
+    { w: '折柳', d: '表示赠别或送别' },
+    { w: '张绪柳', d: '美称飘舞的垂柳' },
+    { w: '灵和柳', d: '指潇洒飘逸的垂柳' },
+  ];
+  /* 真实数据：「折柳」的同源典形词 */
+  const related = ['折杨柳', '灞桥柳', '灞陵柳', '攀柳'];
+  return (
+    <div className="flex flex-col items-center justify-center h-full px-6">
+      <FadeUp>
+        <h2 className="text-xl sm:text-2xl font-bold text-[var(--text)] mb-2 text-center">典故检索</h2>
+      </FadeUp>
+      <FadeUp delay={150}>
+        <p className="text-sm text-[var(--text-secondary)] mb-8 text-center max-w-md">
+          输入单字即可检索相关典形词，点击查看释义、典源出处与古诗例句。
+        </p>
+      </FadeUp>
+
+      <div className="flex flex-col sm:flex-row gap-4 max-w-xl w-full">
+        {/* 左：搜索结果列表 */}
+        <FadeUp delay={300} className="flex-1">
+          <div className="bg-[var(--bg-card)] border border-[var(--border)] rounded-xl p-4 shadow-sm h-full">
+            <div className="bg-[var(--bg)] rounded-lg px-3 py-2 border border-[var(--border)] mb-3 flex items-center gap-2">
+              <Search size={12} className="text-[var(--text-muted)]" />
+              <span className="text-xs text-[var(--text)]">柳</span>
+            </div>
+            <div className="space-y-1.5">
+              {results.map((r, i) => (
+                <FadeUp key={i} delay={450 + i * 100}>
+                  <div className={`flex items-baseline gap-2 px-2.5 py-1.5 rounded-lg text-xs transition-colors cursor-pointer ${i === 3 ? 'bg-[var(--accent-light)] border border-[var(--accent)]' : 'bg-[var(--bg)] border border-[var(--border)] hover:border-[var(--accent)]'}`}>
+                    <span className={`font-medium shrink-0 ${i === 3 ? 'text-[var(--accent)]' : 'text-[var(--text)]'}`}>{r.w}</span>
+                    <span className="text-[var(--text-muted)] truncate">{r.d}</span>
+                  </div>
+                </FadeUp>
+              ))}
+            </div>
+          </div>
+        </FadeUp>
+
+        {/* 右：典故详情卡片 */}
+        <FadeUp delay={800} className="flex-1">
+          <div className="bg-[var(--bg-card)] border border-[var(--border)] rounded-xl p-4 shadow-sm h-full">
+            <div className="text-sm font-semibold text-[var(--text)] mb-1">折柳</div>
+            <p className="text-xs text-[var(--text-secondary)] mb-3">表示赠别或送别。</p>
+            <div className="text-xs text-[var(--text-muted)] mb-1.5">典源</div>
+            <p className="text-xs text-[var(--text-secondary)] leading-relaxed mb-3 line-clamp-2">
+              《三辅黄图·桥》："灞桥在长安东，跨水作桥，汉人送客至此，折柳赠别。"
+            </p>
+            <div className="text-xs text-[var(--text-muted)] mb-1.5">同源典形词</div>
+            <div className="flex flex-wrap gap-1.5 mb-3">
+              {related.map((r, i) => (
+                <span key={i} className="px-2 py-0.5 rounded-md text-xs bg-[var(--bg)] border border-[var(--border)] text-[var(--text-secondary)] hover:border-[var(--accent)] hover:text-[var(--accent)] cursor-pointer transition-colors">
+                  {r}
+                </span>
+              ))}
+            </div>
+            <div className="text-xs text-[var(--text-muted)] mb-1">例句</div>
+            <p className="text-xs text-[var(--text-secondary)] italic leading-relaxed">
+              唐李白《春夜洛城闻笛》："此夜曲中闻折柳，何人不起故园情。"
+            </p>
+          </div>
+        </FadeUp>
+      </div>
+
+      <FadeUp delay={1300}>
+        <p className="mt-5 text-xs text-[var(--text-secondary)]">
+          收录 <strong className="text-[var(--text)]">13,000+</strong> 条典形词，点击可直接填入画布
+        </p>
+      </FadeUp>
+    </div>
+  );
+}
+
+/** 15. 导入前人作品 */
+function SlideImportPoem() {
+  /* 真实数据：搜索「登高」唐·诗 的结果 */
+  const results = [
+    { title: '九日登高', author: '王昌龄', dynasty: '唐' },
+    { title: '奉和九日幸临渭亭登高应制得月字', author: '韦元旦', dynasty: '唐' },
+    { title: '九月九日幸临渭亭登高得秋字', author: '李显', dynasty: '唐' },
+    { title: '九日幸临渭亭登高应制得酒字', author: '马怀素', dynasty: '唐' },
+  ];
+  const filters = [
+    { label: '标题', active: true },
+    { label: '作者', active: false },
+    { label: '内容', active: false },
+  ];
+  const dynastyFilters = ['唐', '宋', '明', '清'];
+  return (
+    <div className="flex flex-col items-center justify-center h-full px-6">
+      <FadeUp>
+        <h2 className="text-xl sm:text-2xl font-bold text-[var(--text)] mb-2 text-center">导入前人作品</h2>
+      </FadeUp>
+      <FadeUp delay={150}>
+        <p className="text-sm text-[var(--text-secondary)] mb-8 text-center max-w-md">
+          搜索 80 万首历代诗词，一键导入画板并自动触发格律校验。
+        </p>
+      </FadeUp>
+
+      <FadeUp delay={300}>
+        <div className="bg-[var(--bg-card)] border border-[var(--border)] rounded-xl p-4 sm:p-5 shadow-lg max-w-md w-full">
+          {/* 搜索框 */}
+          <div className="bg-[var(--bg)] rounded-lg px-3 py-2 border border-[var(--border)] mb-3 flex items-center gap-2">
+            <Search size={13} className="text-[var(--text-muted)]" />
+            <span className="text-sm text-[var(--text)]">登高</span>
+            <span className="ml-auto text-xs text-[var(--text-muted)]">48 首</span>
+          </div>
+
+          {/* 筛选条件 */}
+          <div className="flex items-center gap-2 mb-3">
+            <div className="flex gap-1.5">
+              {filters.map((f, i) => (
+                <FadeUp key={i} delay={400 + i * 60}>
+                  <span className={`px-2 py-0.5 rounded-md text-xs cursor-pointer transition-colors ${f.active ? 'bg-[var(--accent)] text-white' : 'bg-[var(--bg)] border border-[var(--border)] text-[var(--text-secondary)]'}`}>
+                    {f.label}
+                  </span>
+                </FadeUp>
+              ))}
+            </div>
+            <span className="text-[var(--border)]">|</span>
+            <div className="flex gap-1.5">
+              {dynastyFilters.map((d, i) => (
+                <FadeUp key={i} delay={500 + i * 60}>
+                  <span className={`px-2 py-0.5 rounded-md text-xs cursor-pointer transition-colors ${i === 0 ? 'bg-[var(--accent-light)] text-[var(--accent)] border border-[var(--accent)]' : 'bg-[var(--bg)] border border-[var(--border)] text-[var(--text-muted)]'}`}>
+                    {d}
+                  </span>
+                </FadeUp>
+              ))}
+            </div>
+          </div>
+
+          {/* 搜索结果 */}
+          <div className="space-y-1.5">
+            {results.map((r, i) => (
+              <FadeUp key={i} delay={650 + i * 120}>
+                <div className={`flex items-center justify-between px-3 py-2 rounded-lg text-xs border transition-all cursor-pointer ${i === 0 ? 'bg-[var(--accent-light)] border-[var(--accent)]' : 'bg-[var(--bg)] border-[var(--border)] hover:border-[var(--accent)]'}`}>
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span className={`font-medium truncate ${i === 0 ? 'text-[var(--accent)]' : 'text-[var(--text)]'}`}>{r.title}</span>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0 ml-2">
+                    <span className="text-[var(--text-muted)]">{r.dynasty}·{r.author}</span>
+                  </div>
+                </div>
+              </FadeUp>
+            ))}
+          </div>
+        </div>
+      </FadeUp>
+
+      <FadeUp delay={1200}>
+        <div className="mt-5 flex flex-wrap gap-3 justify-center text-xs">
+          <span className="px-3 py-1 rounded-full bg-[var(--accent-light)] text-[var(--accent)]">关键词 · 字段 · 朝代 · 体裁</span>
+          <span className="px-3 py-1 rounded-full bg-[var(--accent-light)] text-[var(--accent)]">自动匹配格律规则</span>
+          <span className="px-3 py-1 rounded-full bg-[var(--accent-light)] text-[var(--accent)]">导入即创建画板</span>
+        </div>
+      </FadeUp>
+    </div>
+  );
+}
+
 /* ───────────── 幻灯片列表 ───────────── */
 const SLIDES: (() => React.ReactNode)[] = [
   SlideCover,
@@ -648,6 +919,10 @@ const SLIDES: (() => React.ReactNode)[] = [
   SlideMultiBoard,
   SlideMobile,
   SlideTech,
+  SlideRecentUpdates,
+  SlideExport,
+  SlideAllusion,
+  SlideImportPoem,
   SlideCTA,
 ];
 

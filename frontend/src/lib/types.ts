@@ -10,6 +10,7 @@ export interface InspirationCard {
 }
 
 export interface BoardMetadata {
+  author?: string;            // 署名（undefined → 回退全局默认值）
   date?: string;              // 日期文本（用户输入，如"2024-04-04"或"甲辰年三月初一"）
   dateFormat?: 'Gregorian' | 'Lunar';  // 日期格式
   rhymeBook?: string;        // 韵书（平水韵/词林正韵/中华通韵，仅标注用途）
