@@ -1,9 +1,10 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useActiveBoard, useBoardContext } from '../context/BoardContext';
-import { charLookup, dictionarySearch } from '../lib/api';
+import { charLookup, dictionarySearch, allusionSearch, type AllusionEntry } from '../lib/api';
 import { SendHorizontal, ChevronsDown, ChevronsUp } from 'lucide-react';
+import { AllusionPopup } from './AllusionPopup';
 
-type TabId = 'rhyme' | 'head' | 'tail' | 'pair';
+type TabId = 'rhyme' | 'head' | 'tail' | 'allusion' | 'pair';
 
 const LENGTH_CONFIGS = [
   { value: '2', count: 2 },
@@ -40,6 +41,10 @@ const TONE_OPTIONS: { value: string; type: 'all' | 'P' | 'Z' }[] = [
   { value: 'Z', type: 'Z' },
 ];
 
+const TAB_LABELS: Record<TabId, string> = {
+  rhyme: '韵部', head: '词首', tail: '词末', allusion: '典故', pair: '对语',
+};
+
 export function Dictionary() {
   const { state, dispatch } = useBoardContext();
   const board = useActiveBoard();
@@ -52,11 +57,21 @@ export function Dictionary() {
   // 结果
   const [rhymeResult, setRhymeResult] = useState<{ tones: string[]; categories: { name: string; tone_type: string }[] } | null>(null);
   const [phraseResult, setPhraseResult] = useState<[string, number][]>([]);
+  const [allusionResult, setAllusionResult] = useState<AllusionEntry[]>([]);
   const [loading, setLoading] = useState(false);
+
+  // 典故弹窗
+  const [allusionPopup, setAllusionPopup] = useState<AllusionEntry | null>(null);
+
+  // 锚定填充: 记住从画布点击触发的查询字和光标位置
+  const [lastDictQuery, setLastDictQuery] = useState<string | null>(null);
+  const [lastDictCursor, setLastDictCursor] = useState<number | null>(null);
 
   const bookName = board?.rhymeBookName ?? 'Pingshuiyun';
   const isSingle = term.length <= 1;
-  const visibleTabs: TabId[] = isSingle ? ['rhyme', 'head', 'tail', 'pair'] : ['pair'];
+  const visibleTabs: TabId[] = isSingle
+    ? ['rhyme', 'head', 'tail', 'allusion', 'pair']
+    : ['allusion', 'pair'];
 
   // 当前 tab 不在可见列表中时，自动校正到第一个可见 tab
   const effectiveTab = visibleTabs.includes(tab) ? tab : visibleTabs[0];
@@ -73,11 +88,12 @@ export function Dictionary() {
     if (!q) {
       setRhymeResult(null);
       setPhraseResult([]);
+      setAllusionResult([]);
       setSearchedTerm('');
       return;
     }
-    // 根据输入长度决定实际使用的 tab
-    const curTab = (q.length > 1) ? 'pair' : tab;
+    // 根据输入长度决定实际使用的 tab（多字时只有 allusion 和 pair 可见）
+    const curTab = (q.length > 1 && tab !== 'allusion') ? 'pair' : tab;
     setSearchedTerm(q);
     setLoading(true);
     try {
@@ -85,14 +101,22 @@ export function Dictionary() {
         const r = await charLookup(q, bookName);
         setRhymeResult({ tones: r.tones, categories: r.rhyme_categories });
         setPhraseResult([]);
+        setAllusionResult([]);
+      } else if (curTab === 'allusion') {
+        const r = await allusionSearch(q);
+        setAllusionResult(r);
+        setRhymeResult(null);
+        setPhraseResult([]);
       } else if (curTab === 'pair') {
         const r = await dictionarySearch({ term: q, mode: 'pair' });
         setPhraseResult(r);
         setRhymeResult(null);
+        setAllusionResult([]);
       } else if (curTab === 'head' || curTab === 'tail') {
         const r = await dictionarySearch({ term: q, mode: curTab, length, tone });
         setPhraseResult(r);
         setRhymeResult(null);
+        setAllusionResult([]);
       }
     } catch { /* ignore */ }
     setLoading(false);
@@ -108,11 +132,13 @@ export function Dictionary() {
   useEffect(() => {
     if (state.dictQuery) {
       setTerm(state.dictQuery);
+      setLastDictQuery(state.dictQuery);
+      setLastDictCursor(state.dictQueryCursor);
       setTab('rhyme');
       pendingQuery.current = true;
       dispatch({ type: 'SET_DICT_QUERY', query: null });
     }
-  }, [state.dictQuery, dispatch]);
+  }, [state.dictQuery, state.dictQueryCursor, dispatch]);
 
   // 联动：多选对语查询
   useEffect(() => {
@@ -135,8 +161,31 @@ export function Dictionary() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [term]);
 
+  // 典故锚定填充
+  const handleAllusionClick = useCallback((word: string) => {
+    if (lastDictQuery && lastDictCursor !== null && word.includes(lastDictQuery)) {
+      // 锚定填充: 将查询字对齐到画布原位置
+      const charIdx = word.indexOf(lastDictQuery);
+      const startPos = lastDictCursor - charIdx;
+      const chars = [...word];
+      for (let i = 0; i < chars.length; i++) {
+        const pos = startPos + i;
+        if (pos >= 0 && pos < (board?.charCount ?? 0)) {
+          dispatch({ type: 'UPDATE_CHAR', index: pos, char: chars[i] });
+        }
+      }
+    } else {
+      // fallback: 从光标向后填充
+      state.insertCharFn?.(word, 'forward');
+    }
+  }, [lastDictQuery, lastDictCursor, board?.charCount, dispatch, state.insertCharFn]);
+
   const showFilters = effectiveTab === 'head' || effectiveTab === 'tail';
   const [expanded, setExpanded] = useState(true);
+  const hasAllusionResults = allusionResult.length > 0;
+  const noResult = !loading && term &&
+    tab !== 'rhyme' && tab !== 'allusion' && phraseResult.length === 0;
+  const noAllusionResult = !loading && term && tab === 'allusion' && !hasAllusionResults;
 
   return (
     <div className={`border-t border-[var(--border)] bg-[var(--bg-card)] flex flex-col overflow-hidden transition-[height] duration-200 ease-in-out ${expanded ? 'h-[255px]' : 'h-[65px]'}`}>
@@ -164,6 +213,9 @@ export function Dictionary() {
             } else {
               setTerm(filtered.slice(0, 4));
             }
+            // 手动编辑时清除锚定状态
+            setLastDictQuery(null);
+            setLastDictCursor(null);
           }}
           onCompositionEnd={e => {
             const val = (e.target as HTMLInputElement).value.replace(/[^\u4e00-\u9fff]/g, '').slice(0, 4);
@@ -190,7 +242,7 @@ export function Dictionary() {
             style={t === tab ? { background: 'var(--accent)' } : undefined}
             onClick={() => setTab(t)}
           >
-            {{ rhyme: '韵部', head: '词首', tail: '词末', pair: '对语' }[t]}
+            {TAB_LABELS[t]}
           </button>
         ))}
       </div>
@@ -256,7 +308,7 @@ export function Dictionary() {
         )}
 
         {/* 词首/词末/对语结果（可点击填入网格） */}
-        {tab !== 'rhyme' && phraseResult.length > 0 && (() => {
+        {tab !== 'rhyme' && tab !== 'allusion' && phraseResult.length > 0 && (() => {
           const isPairDisabled = effectiveTab === 'pair' && board?.genre === 'Ci';
           // 对语点击：如果有 pairQuery.insertAt，直接写入该位置
           const handlePairClick = (word: string) => {
@@ -293,15 +345,45 @@ export function Dictionary() {
           );
         })()}
 
-        {!loading && tab !== 'rhyme' && term && phraseResult.length === 0 && (
+        {/* 典故结果 */}
+        {tab === 'allusion' && hasAllusionResults && (
+          <div className="py-1 leading-7 text-sm break-all">
+            {allusionResult.map(entry => (
+              <span
+                key={entry.id}
+                className="inline mr-2 whitespace-nowrap rounded px-0.5 transition-colors cursor-pointer hover:text-[var(--accent)] hover:bg-[var(--accent-light)]"
+                onClick={() => setAllusionPopup(entry)}
+              >
+                {entry.w}
+                {entry.rc > 0 && (
+                  <span className="text-[11px] text-[var(--text-muted)] ml-0.5">{entry.rc}</span>
+                )}
+              </span>
+            ))}
+          </div>
+        )}
+
+        {(noResult || noAllusionResult) && (
           <div className="text-xs text-[var(--text-muted)] py-2 text-center">无结果</div>
         )}
 
-        {!term && !loading && !rhymeResult && phraseResult.length === 0 && (
+        {!term && !loading && !rhymeResult && phraseResult.length === 0 && !hasAllusionResults && (
           <div className="text-xs text-[var(--text-muted)] py-2 text-center">输入汉字后搜索</div>
         )}
       </div>
       </div>
+
+      {/* 典故详情弹窗 */}
+      {allusionPopup && (
+        <AllusionPopup
+          entry={allusionPopup}
+          onClose={() => setAllusionPopup(null)}
+          onClickWord={(w) => {
+            handleAllusionClick(w);
+            setAllusionPopup(null);
+          }}
+        />
+      )}
     </div>
   );
 }

@@ -214,6 +214,7 @@ export function TopBar() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [showExport, setShowExport] = useState(false);
   const [metaOpen, setMetaOpen] = useState(false);
+  const [exportMenuOpen, setExportMenuOpen] = useState(false);
   const [dark, setDark] = useState(() => {
     if (typeof window !== 'undefined') {
       return localStorage.getItem('theme') === 'dark' || document.documentElement.classList.contains('dark');
@@ -315,7 +316,7 @@ export function TopBar() {
         {dropOpen && (
           <>
             <div className="fixed inset-0" onClick={() => setDropOpen(false)} />
-            <div className="absolute top-full left-0 mt-1 bg-[var(--bg-card)] border border-[var(--border)] rounded-lg shadow-[var(--shadow)] min-w-[220px] max-w-[280px] py-1 z-40 max-h-[50vh] overflow-y-auto">
+            <div className="absolute top-10 left-0 bg-[var(--bg-card)] border border-[var(--border)] rounded-lg shadow-[var(--shadow)] min-w-[220px] max-w-[280px] py-1 z-40 max-h-[50vh] overflow-y-auto">
               {state.boards.map(b => (
                 <div key={b.id} className="relative">
                   <div
@@ -374,6 +375,8 @@ export function TopBar() {
         {dark ? <Sun size={15} /> : <Moon size={15} />}
       </button>
 
+      <div className="flex-1" />
+
       {/* 设置 */}
       <button
         className="w-8 h-8 rounded-lg border border-[var(--border)] flex items-center justify-center text-[var(--text-muted)] hover:bg-[var(--accent-light)] hover:text-[var(--accent)] transition-colors"
@@ -383,39 +386,49 @@ export function TopBar() {
         <Settings size={15} />
       </button>
 
-      <div className="flex-1" />
-
-      {/* 上传按钮（仅全文无空格时显示） */}
-      {board && !board.poemChars.includes(PLACEHOLDER) && (
-        <button
-          className="w-8 h-8 rounded-lg border border-[var(--grid-empty-border)] flex items-center justify-center text-[var(--text-secondary)] hover:bg-[var(--bg-card)] hover:text-[var(--text)] transition-colors"
-          onClick={handleUpload}
-          title="上传到南洋吟游"
-        >
-          <Upload size={15} />
-        </button>
-      )}
-
-      {/* 导出图片（仅全文无空格时显示） */}
-      {board && !board.poemChars.includes(PLACEHOLDER) && (
-        <button
-          className="w-8 h-8 rounded-lg border border-[var(--grid-empty-border)] flex items-center justify-center text-[var(--text-secondary)] hover:bg-[var(--bg-card)] hover:text-[var(--text)] transition-colors"
-          onClick={() => setShowExport(true)}
-          title="导出图片"
-        >
-          <ImageDown size={15} />
-        </button>
-      )}
-
-      {/* 复制文本 */}
+      {/* 导出菜单 */}
       {board && (
-        <button
-          className={`w-8 h-8 rounded-lg border flex items-center justify-center transition-colors ${copied ? 'bg-emerald-50 border-emerald-300 text-emerald-600' : 'border-[var(--grid-empty-border)] text-[var(--text-secondary)] hover:bg-[var(--bg-card)] hover:text-[var(--text)]'}`}
-          onClick={handleCopy}
-          title="复制文本"
-        >
-          {copied ? <Check size={15} /> : <ClipboardType size={15} />}
-        </button>
+        <div className="relative">
+          <button
+            className="w-8 h-8 rounded-lg border border-[var(--grid-empty-border)] flex items-center justify-center text-[var(--text-secondary)] hover:bg-[var(--bg-card)] hover:text-[var(--text)] transition-colors"
+            onClick={() => setExportMenuOpen(v => !v)}
+            title="导出"
+          >
+            <Download size={15} />
+          </button>
+          {exportMenuOpen && (
+            <>
+              <div className="fixed inset-0 z-40" onClick={() => setExportMenuOpen(false)} />
+              <div className="absolute right-0 top-10 z-50 w-40 border border-[var(--border)] rounded-lg overflow-hidden shadow-lg" style={{ backgroundColor: 'var(--bg-card)' }}>
+                <button
+                  className="w-full text-left px-3 py-2 text-sm flex items-center gap-2 hover:bg-[var(--accent-light)] transition-colors"
+                  onClick={() => { handleCopy(); setExportMenuOpen(false); }}
+                >
+                  {copied ? <Check size={14} className="text-emerald-600" /> : <ClipboardType size={14} />}
+                  <span>复制文字</span>
+                </button>
+                {!board.poemChars.includes(PLACEHOLDER) && (
+                  <>
+                    <button
+                      className="w-full text-left px-3 py-2 text-sm flex items-center gap-2 hover:bg-[var(--accent-light)] transition-colors"
+                      onClick={() => { setShowExport(true); setExportMenuOpen(false); }}
+                    >
+                      <ImageDown size={14} />
+                      <span>导出图片</span>
+                    </button>
+                    <button
+                      className="w-full text-left px-3 py-2 text-sm flex items-center gap-2 hover:bg-[var(--accent-light)] transition-colors"
+                      onClick={() => { handleUpload(); setExportMenuOpen(false); }}
+                    >
+                      <Upload size={14} />
+                      <span>上传南洋吟游</span>
+                    </button>
+                  </>
+                )}
+              </div>
+            </>
+          )}
+        </div>
       )}
 
       {/* 新建按钮 */}

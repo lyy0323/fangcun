@@ -74,4 +74,22 @@ export function dictionarySearch(params: {
   return get(url);
 }
 
+// --- 典故搜索 ---
+export interface AllusionEntry {
+  id: number;
+  w: string;
+  d: string;
+  src: string;
+  src_text: string;
+  related: { w: string; d: string }[];
+  examples: string[];
+  rc: number;
+}
+
+export function allusionSearch(term: string, limit?: number): Promise<AllusionEntry[]> {
+  let url = `/dictionary/allusion?term=${enc(term)}`;
+  if (limit) url += `&limit=${limit}`;
+  return get(url);
+}
+
 const enc = encodeURIComponent;

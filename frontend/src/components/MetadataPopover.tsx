@@ -3,12 +3,13 @@ import { Solar } from 'lunar-javascript';
 import { useBoardContext, useActiveBoard } from '../context/BoardContext';
 import { lunarToGregorian } from '../lib/dateConvert';
 import type { BoardMetadata } from '../lib/types';
+import { ChevronDown } from 'lucide-react';
 
 export function MetadataPopover({ onClose }: { onClose: () => void }) {
   const { dispatch } = useBoardContext();
   const board = useActiveBoard();
   const [dateError, setDateError] = useState<string>('');
-
+  const [dateFormatOpen, setDateFormatOpen] = useState(false);
   if (!board) return null;
 
   const metadata = board.metadata || {};
@@ -103,7 +104,7 @@ export function MetadataPopover({ onClose }: { onClose: () => void }) {
     <>
       <div className="fixed inset-0 z-30" onClick={onClose} />
       <div
-        className="absolute top-full left-0 mt-1 bg-[var(--bg-card)] border border-[var(--border)] rounded-lg shadow-lg w-72 py-3 px-3 z-40 space-y-3 max-h-[60vh] overflow-y-auto"
+        className="absolute top-10 left-0 bg-[var(--bg-card)] border border-[var(--border)] rounded-lg shadow-lg w-72 py-3 px-3 z-40 space-y-3 max-h-[60vh] overflow-y-auto"
         onClick={e => e.stopPropagation()}
         onKeyDown={e => { if (e.key === 'Escape') onClose(); }}
       >
@@ -119,20 +120,44 @@ export function MetadataPopover({ onClose }: { onClose: () => void }) {
                 update('date', value);
                 setDateError(validateDate(value));
               }}
+              onKeyDown={e => {
+                if (e.key === 'Tab' && !metadata.date) {
+                  e.preventDefault();
+                  const placeholder = dateFormat === 'Gregorian' ? todayStr : todayLunar;
+                  update('date', placeholder);
+                }
+              }}
               placeholder={dateFormat === 'Gregorian' ? todayStr : todayLunar}
               className={`flex-1 px-2 py-1.5 text-xs border rounded bg-[var(--bg-input)] focus:outline-none ${
                 dateError ? 'border-red-400 focus:border-red-400' : 'border-[var(--border)] focus:border-[var(--accent)]'
               }`}
             />
-            <select
-              value={dateFormat}
-              onChange={e => handleDateFormatChange(e.target.value as 'Gregorian' | 'Lunar')}
-              disabled={!!dateError}
-              className={`px-1.5 py-1.5 text-xs border border-[var(--border)] rounded bg-[var(--bg-input)] focus:outline-none focus:border-[var(--accent)] ${dateError ? 'opacity-40 cursor-not-allowed' : ''}`}
-            >
-              <option value="Gregorian">公历</option>
-              <option value="Lunar">农历</option>
-            </select>
+            <div className="relative">
+              <button
+                className={`flex items-center gap-1 px-1.5 py-1.5 text-xs border border-[var(--border)] rounded bg-[var(--bg-input)] hover:border-[var(--accent)] transition-colors ${dateError ? 'opacity-40 cursor-not-allowed' : ''}`}
+                onClick={() => { if (!dateError) setDateFormatOpen(v => !v); }}
+                disabled={!!dateError}
+              >
+                <span>{dateFormat === 'Gregorian' ? '公历' : '农历'}</span>
+                <ChevronDown size={10} className={`text-[var(--text-muted)] transition-transform ${dateFormatOpen ? 'rotate-180' : ''}`} />
+              </button>
+              {dateFormatOpen && (
+                <>
+                  <div className="fixed inset-0 z-40" onClick={() => setDateFormatOpen(false)} />
+                  <div className="absolute right-0 top-full mt-1 z-50 border border-[var(--border)] rounded-lg overflow-hidden shadow-lg" style={{ backgroundColor: 'var(--bg-card)' }}>
+                    {([['Gregorian', '公历'], ['Lunar', '农历']] as const).map(([val, label]) => (
+                      <button
+                        key={val}
+                        className={`w-full text-left px-3 py-1.5 text-sm whitespace-nowrap hover:bg-[var(--accent-light)] transition-colors ${val === dateFormat ? 'bg-[var(--accent-light)] text-[var(--accent)]' : ''}`}
+                        onClick={() => { handleDateFormatChange(val); setDateFormatOpen(false); }}
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
           </div>
           {dateError && <div className="text-[10px] text-red-500 mt-0.5">{dateError}</div>}
           {dateFormat === 'Lunar' && !dateError && !metadata.date && (

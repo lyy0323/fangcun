@@ -66,6 +66,16 @@ with open(f"{CFG}/ci_rules.json", "r") as f:
 with open(f"{CFG}/t2s_map.json", "r") as f:
     T2S_MAP = json.load(f)
 
+# --- 典故数据 ---
+try:
+    with open(f"{CFG}/allusion_index.json", "r") as f:
+        ALLUSION_INDEX = json.load(f)
+    with open(f"{CFG}/allusion_entries.json", "r") as f:
+        ALLUSION_ENTRIES = json.load(f)
+except FileNotFoundError:
+    ALLUSION_INDEX = {}
+    ALLUSION_ENTRIES = []
+
 # --- 通过 config_loader 加载结构化对象 (checker 用) ---
 char_dict = config_loader.load_char_dict()
 rhyme_books = config_loader.load_rhyme_books()
@@ -122,6 +132,7 @@ def rhyme_category_sort_key(book: str, cat_name: str) -> int | tuple:
 
 print(f"[App] 就绪: {len(CHAR_DICT)} 字, "
       f"{len(PHRASE_HEAD)} 首字, {len(PHRASE_TAIL)} 末字, {len(PHRASE_PAIRS)} 对语, "
+      f"{len(ALLUSION_ENTRIES)} 典故, "
       f"{len(SHI_RULES_RAW)} 诗规则, {len(CI_RULES_RAW)} 词规则")
 
 # ============================================================================
@@ -458,6 +469,45 @@ def dict_search():
         for w, c in len_data.get(t, []):
             merged[w] = max(merged.get(w, 0), c)
     return jsonify(sorted(merged.items(), key=lambda x: -x[1]))
+
+# ---------- 7. GET /api/dictionary/allusion ----------
+
+def _sort_allusion_results(entries: list, term: str) -> list:
+    """排序典故结果: 精确匹配 → 匹配位置 → 典形词长度 → 同源丰富度"""
+    def score(entry):
+        w = entry["w"]
+        exact = 0 if w == term else 1
+        pos = w.find(term) if term in w else len(w)
+        length = len(w) if len(w) <= 4 else len(w) + 2
+        rc = -min(entry.get("rc", 0), 20)
+        return (exact, pos, length, rc)
+    return sorted(entries, key=score)
+
+@app.route("/api/dictionary/allusion")
+@limiter.limit("120 per minute")
+def allusion_search():
+    term_raw = request.args.get("term", "")
+    term = ''.join(_t2s(c) for c in term_raw)
+    limit = min(int(request.args.get("limit", "60")), 200)
+
+    if not term:
+        return jsonify([])
+
+    if len(term) == 1:
+        entry_ids = ALLUSION_INDEX.get(term, [])
+        entries = [ALLUSION_ENTRIES[eid] for eid in entry_ids]
+    else:
+        char_sets = [set(ALLUSION_INDEX.get(c, [])) for c in term]
+        if not char_sets or any(len(s) == 0 for s in char_sets):
+            return jsonify([])
+        candidate_ids = char_sets[0]
+        for s in char_sets[1:]:
+            candidate_ids &= s
+        entries = [ALLUSION_ENTRIES[eid] for eid in candidate_ids
+                   if term in ALLUSION_ENTRIES[eid]["w"]]
+
+    entries = _sort_allusion_results(entries, term)
+    return jsonify(entries[:limit])
 
 # ============================================================================
 # 文档页面

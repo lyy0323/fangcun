@@ -15,6 +15,7 @@ export function RhymePanel() {
   const [allCategories, setAllCategories] = useState<{ name: string; tone_type: string; preview?: string }[]>([]);
   const [manualOpen, setManualOpen] = useState(false);
   const [manualOverride, setManualOverride] = useState<string | null>(null); // 手动选韵覆盖
+  const [bookOpen, setBookOpen] = useState(false); // 韵书下拉菜单
 
   const bookName = board?.rhymeBookName ?? 'Pingshuiyun';
   const rhymeName = validation?.rhyme_name ?? null;
@@ -38,6 +39,7 @@ export function RhymePanel() {
   useEffect(() => {
     setManualOverride(null);
     setManualOpen(false);
+    setBookOpen(false);
     setAllCategories([]);
     setRhymeCatName(null);
     setRhymeChars([]);
@@ -107,28 +109,39 @@ export function RhymePanel() {
       .catch(() => {});
   };
 
+  const bookOptions = board?.genre === 'Shi'
+    ? [{ value: 'Pingshuiyun', label: '平水韵' }, { value: 'Zhonghua_Tongyun', label: '中华通韵' }]
+    : [{ value: 'Cilinzhengyun', label: '词林正韵' }, { value: 'Zhonghua_Tongyun', label: '中华通韵' }];
+  const bookLabel = bookOptions.find(o => o.value === bookName)?.label ?? bookName;
+
   return (
     <div className="p-3 text-sm">
       {/* 韵书选择 */}
       <div className="mb-3 pb-3 border-b border-[var(--border)]">
         <div className="text-xs text-[var(--text-secondary)] mb-1">韵书</div>
-        <select
-          value={bookName}
-          onChange={e => dispatch({ type: 'UPDATE_METADATA', metadata: { rhymeBook: e.target.value } })}
-          className="w-full px-2 py-1.5 text-xs border border-[var(--border)] rounded bg-[var(--bg-input)] focus:outline-none focus:border-[var(--accent)]"
+        <button
+          className="w-full flex items-center justify-between px-2 py-1.5 text-xs border border-[var(--border)] rounded bg-[var(--bg-input)] hover:border-[var(--accent)] transition-colors"
+          onClick={() => setBookOpen(v => !v)}
         >
-          {board?.genre === 'Shi' ? (
-            <>
-              <option value="Pingshuiyun">平水韵</option>
-              <option value="Zhonghua_Tongyun">中华通韵</option>
-            </>
-          ) : (
-            <>
-              <option value="Cilinzhengyun">词林正韵</option>
-              <option value="Zhonghua_Tongyun">中华通韵</option>
-            </>
-          )}
-        </select>
+          <span>{bookLabel}</span>
+          <ChevronDown size={12} className={`text-[var(--text-muted)] transition-transform ${bookOpen ? 'rotate-180' : ''}`} />
+        </button>
+        {bookOpen && (
+          <div className="mt-1 border border-[var(--border)] rounded-lg overflow-hidden">
+            {bookOptions.map(o => (
+              <button
+                key={o.value}
+                className={`w-full text-left px-3 py-1.5 text-sm hover:bg-[var(--accent-light)] transition-colors ${o.value === bookName ? 'bg-[var(--accent-light)] text-[var(--accent)]' : ''}`}
+                onClick={() => {
+                  dispatch({ type: 'UPDATE_METADATA', metadata: { rhymeBook: o.value } });
+                  setBookOpen(false);
+                }}
+              >
+                {o.label}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* 韵部名 */}

@@ -196,7 +196,7 @@ class PoetryChecker:
                 best_match_rule
             )
             rhyme_name = self._find_one_rhyme(best_match_rule, chars, book)
-        rhyme_positions = sorted(list(get_rhyme_positions(best_match_rule.rhyme_rule)))
+        rhyme_positions = sorted(list(_get_break_positions(best_match_rule.rhyme_rule)))
         rhyme_chars = [chars[i] for i in range(len(chars)) if i in rhyme_positions]
 
         # 5. 重字检测 (叠词特赦)
@@ -529,6 +529,21 @@ def get_rhyme_positions(rule_node: Dict) -> Set[int]:
     # 'RELATION' 节点不计入主要韵脚
     return positions
 
+def _get_break_positions(rule_node: Dict) -> Set[int]:
+    """递归获取所有应当换行的位置: SAME_CATEGORY positions + RELATION pos2 (叶韵)"""
+    positions = set()
+    node_type = rule_node.get('type')
+    if not node_type:
+        return positions
+    if node_type == 'SAME_CATEGORY':
+        positions.update(rule_node.get('positions', []))
+    elif node_type == 'RELATION':
+        positions.add(rule_node['pos2'])
+    elif node_type in ('AND', 'OR'):
+        for sub_rule in rule_node.get('rules', []):
+            positions.update(_get_break_positions(sub_rule))
+    return positions
+
 def segment_for_display(chars: List[str], 
                         # [修改] 扁平化规则现在是 List[Dict]
                         flat_rule_pattern: List[Dict], 
@@ -555,14 +570,14 @@ def segment_for_display(chars: List[str],
     
     # --- 词 (Ci) 分行逻辑 ---
     if rule.genre == "Ci":
-        rhyme_positions = get_rhyme_positions(rule.rhyme_rule)
+        break_positions = _get_break_positions(rule.rhyme_rule)
         
         for i in range(N):
             current_text_chars.append(chars[i])
             current_rule_items.append(mapped_rule_items[i])
             
-            # 如果当前是韵脚, 且不是最后一个字, 则分行
-            if i in rhyme_positions and i < (N - 1):
+            # 如果当前是韵脚/叶韵, 且不是最后一个字, 则分行
+            if i in break_positions and i < (N - 1):
                 segments.append(DisplaySegment(current_text_chars, current_rule_items, current_start_index))
                 current_text_chars = []
                 current_rule_items = []

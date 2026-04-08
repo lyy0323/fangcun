@@ -293,10 +293,14 @@ function drawFooter(
     y += lines.length * META_FOOTER_LH;
   }
 
-  // 日期（始终居中，单行）
+  // 日期（诗居中，词左对齐）
   if (date) {
     const lineY = y + META_FOOTER_LH / 2;
-    drawTextCentered(ctx, date, centerX, lineY, spacing);
+    if (genre === 'Ci') {
+      drawTextLeft(ctx, date, PAD_X, lineY, spacing);
+    } else {
+      drawTextCentered(ctx, date, centerX, lineY, spacing);
+    }
   }
 }
 

@@ -480,7 +480,7 @@ export function GridEditor() {
                     focusInput();
                     const ch = poemChars[gi];
                     if (ch && ch !== PLACEHOLDER) {
-                      dispatch({ type: 'SET_DICT_QUERY', query: ch });
+                      dispatch({ type: 'SET_DICT_QUERY', query: ch, cursor: gi });
                     }
                   }
                 }}

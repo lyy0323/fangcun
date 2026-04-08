@@ -13,6 +13,7 @@ export interface AppState {
   validation: ValidationResult | null;
   showGenreSelector: boolean;
   dictQuery: string | null;       // 联动字典查询（由网格点击触发）
+  dictQueryCursor: number | null;  // 触发 dictQuery 时的光标位置
   insertCharFn: ((text: string, mode?: 'forward' | 'backward' | 'pair') => void) | null;
   rhymeOverride: string | null;   // 字典韵部点击 → 联动右侧面板切换韵部
   pairQuery: { text: string; insertAt: number } | null;  // 多选对语查询
@@ -24,6 +25,7 @@ const initialState: AppState = {
   validation: null,
   showGenreSelector: false,
   dictQuery: null,
+  dictQueryCursor: null,
   insertCharFn: null,
   rhymeOverride: null,
   pairQuery: null,
@@ -47,7 +49,7 @@ export type Action =
   | { type: 'SET_VALIDATION'; result: ValidationResult | null }
   | { type: 'SHOW_GENRE_SELECTOR'; show: boolean }
   | { type: 'SET_POEM_CHARS'; chars: string[] }
-  | { type: 'SET_DICT_QUERY'; query: string | null }
+  | { type: 'SET_DICT_QUERY'; query: string | null; cursor?: number | null }
   | { type: 'SET_RHYME_OVERRIDE'; category: string | null }
   | { type: 'SET_PAIR_QUERY'; payload: { text: string; insertAt: number } | null }
   | { type: 'SET_INSERT_FN'; fn: ((text: string, mode?: 'forward' | 'backward' | 'pair') => void) | null }
@@ -112,7 +114,7 @@ function reducer(state: AppState, action: Action): AppState {
     case 'SHOW_GENRE_SELECTOR':
       return { ...state, showGenreSelector: action.show };
     case 'SET_DICT_QUERY':
-      return { ...state, dictQuery: action.query };
+      return { ...state, dictQuery: action.query, dictQueryCursor: action.cursor ?? null };
     case 'SET_RHYME_OVERRIDE':
       return { ...state, rhymeOverride: action.category };
     case 'SET_PAIR_QUERY':
