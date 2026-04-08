@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useRef, useState, useEffect, useCallback } from 'react';
 import { useBoardContext, useActiveBoard } from '../context/BoardContext';
 import type { InspirationCard } from '../lib/types';
 import { Plus, Type, Image as ImageIcon, Clipboard } from 'lucide-react';
@@ -36,6 +36,56 @@ export function InspirationBoard() {
   const fileRef = useRef<HTMLInputElement>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+
+  // 处理粘贴图片的通用逻辑
+  const handleImagePaste = useCallback(async (items: DataTransferItemList) => {
+    for (const item of Array.from(items)) {
+      if (item.type.startsWith('image/')) {
+        const file = item.getAsFile();
+        if (!file) continue;
+        try {
+          const dataUrl = await compressImage(file);
+          const card: InspirationCard = {
+            id: crypto.randomUUID(),
+            type: 'image',
+            content: dataUrl,
+            createdAt: Date.now(),
+          };
+          dispatch({ type: 'ADD_INSPIRATION', card });
+          return true;
+        } catch { /* ignore */ }
+      }
+    }
+    return false;
+  }, [dispatch]);
+
+  // 监听 document 级别的粘贴事件，解决 div 无法获得焦点的问题
+  useEffect(() => {
+    const handleGlobalPaste = async (e: ClipboardEvent) => {
+      // 如果焦点在可编辑元素上（input/textarea/contentEditable），不拦截
+      const active = document.activeElement;
+      if (active && (
+        active.tagName === 'INPUT' ||
+        active.tagName === 'TEXTAREA' ||
+        (active as HTMLElement).isContentEditable
+      )) {
+        return;
+      }
+
+      const items = e.clipboardData?.items;
+      if (!items) return;
+
+      // 检查是否有图片
+      const hasImage = Array.from(items).some(item => item.type.startsWith('image/'));
+      if (!hasImage) return;
+
+      e.preventDefault();
+      await handleImagePaste(items);
+    };
+
+    document.addEventListener('paste', handleGlobalPaste);
+    return () => document.removeEventListener('paste', handleGlobalPaste);
+  }, [handleImagePaste]);
 
   if (!board) return null;
   const cards = board.inspirationCards;
@@ -80,34 +130,21 @@ export function InspirationBoard() {
         }
       }
       alert('剪贴板中没有图片。\n提示：先复制一张图片，或使用 Ctrl+V 直接粘贴。');
-    } catch (err) {
+    } catch {
       // Clipboard API 权限被拒绝时，提示用 Ctrl+V
       alert('无法读取剪贴板。\n请直接在灵感板区域使用 Ctrl+V / Cmd+V 粘贴图片。');
     }
   };
 
   // 监听粘贴事件（在灵感板区域内 Ctrl+V / Cmd+V 粘贴图片）
+  // 注：主要逻辑已移至 document 级别监听，此处保留作为备用
   const handlePaste = async (e: React.ClipboardEvent) => {
     const items = e.clipboardData?.items;
     if (!items) return;
-    for (const item of Array.from(items)) {
-      if (item.type.startsWith('image/')) {
-        e.preventDefault();
-        const file = item.getAsFile();
-        if (!file) continue;
-        try {
-          const dataUrl = await compressImage(file);
-          const card: InspirationCard = {
-            id: crypto.randomUUID(),
-            type: 'image',
-            content: dataUrl,
-            createdAt: Date.now(),
-          };
-          dispatch({ type: 'ADD_INSPIRATION', card });
-        } catch { /* ignore */ }
-        return;
-      }
-    }
+    const hasImage = Array.from(items).some(item => item.type.startsWith('image/'));
+    if (!hasImage) return;
+    e.preventDefault();
+    await handleImagePaste(items);
   };
 
   const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
