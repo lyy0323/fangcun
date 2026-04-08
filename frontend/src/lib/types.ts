@@ -119,3 +119,31 @@ export const SHI_CHAR_COUNTS: Record<string, number> = {
   '五律': 40,
   '七律': 56,
 };
+
+// ============================================================================
+// 外部诗词库 (shi.sjtuguoxue.space)
+// ============================================================================
+
+export interface PoemBrief {
+  id: number;
+  title: string;
+  author: string;
+  dynasty: string;
+  type: string;
+  content: string;
+  score?: number;
+}
+
+export interface PoemFull extends PoemBrief {
+  paragraphs: string[];
+  closest_rule: string | null;
+  error_count: number;
+  rhyme_name: string | null;
+  rhyme_chars: string[];
+}
+
+export interface PoemSearchResult {
+  total: number;
+  total_capped?: boolean;
+  results: PoemBrief[];
+}

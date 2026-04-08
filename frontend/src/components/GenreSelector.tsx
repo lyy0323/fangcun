@@ -3,6 +3,7 @@ import { useBoardContext, createBoard } from '../context/BoardContext';
 import { rulesList } from '../lib/api';
 import { SHI_CHAR_COUNTS, type RuleListItem } from '../lib/types';
 import { X, ArrowLeft } from 'lucide-react';
+import { ImportPoemModal } from './ImportPoemModal';
 
 export function GenreSelector() {
   const { state, dispatch } = useBoardContext();
@@ -10,6 +11,7 @@ export function GenreSelector() {
   const [ciRules, setCiRules] = useState<RuleListItem[]>([]);
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showImport, setShowImport] = useState(false);
 
   useEffect(() => {
     if (step === 'ci' && ciRules.length === 0) {
@@ -81,20 +83,28 @@ export function GenreSelector() {
         <div className="p-4 flex-1 overflow-y-auto">
           {/* 第一步: 诗/词 */}
           {step === 'genre' && (
-            <div className="flex gap-4 justify-center py-8">
+            <div className="flex flex-col items-center py-8">
+              <div className="flex gap-4 justify-center">
+                <button
+                  className="w-28 h-28 rounded-2xl border-2 border-[var(--border)] hover:border-[var(--accent)] hover:bg-[var(--accent-light)] flex flex-col items-center justify-center gap-2 transition-all"
+                  onClick={() => setStep('shi')}
+                >
+                  <span className="text-3xl">诗</span>
+                  <span className="text-xs text-[var(--text-secondary)]">绝句·律诗</span>
+                </button>
+                <button
+                  className="w-28 h-28 rounded-2xl border-2 border-[var(--border)] hover:border-[var(--accent)] hover:bg-[var(--accent-light)] flex flex-col items-center justify-center gap-2 transition-all"
+                  onClick={() => setStep('ci')}
+                >
+                  <span className="text-3xl">词</span>
+                  <span className="text-xs text-[var(--text-secondary)]">词牌</span>
+                </button>
+              </div>
               <button
-                className="w-28 h-28 rounded-2xl border-2 border-[var(--border)] hover:border-[var(--accent)] hover:bg-[var(--accent-light)] flex flex-col items-center justify-center gap-2 transition-all"
-                onClick={() => setStep('shi')}
+                className="mt-6 text-xs text-[var(--text-muted)] hover:text-[var(--accent)] transition-colors"
+                onClick={() => setShowImport(true)}
               >
-                <span className="text-3xl">诗</span>
-                <span className="text-xs text-[var(--text-secondary)]">绝句·律诗</span>
-              </button>
-              <button
-                className="w-28 h-28 rounded-2xl border-2 border-[var(--border)] hover:border-[var(--accent)] hover:bg-[var(--accent-light)] flex flex-col items-center justify-center gap-2 transition-all"
-                onClick={() => setStep('ci')}
-              >
-                <span className="text-3xl">词</span>
-                <span className="text-xs text-[var(--text-secondary)]">词牌</span>
+                导入前人作品
               </button>
             </div>
           )}
@@ -164,6 +174,7 @@ export function GenreSelector() {
           )}
         </div>
       </div>
+      {showImport && <ImportPoemModal onClose={() => setShowImport(false)} />}
     </div>
   );
 }

@@ -1,4 +1,4 @@
-import type { ValidationResult, RhymeLookupResult, RuleListItem } from './types';
+import type { ValidationResult, RhymeLookupResult, RuleListItem, PoemSearchResult, PoemFull } from './types';
 
 const BASE = '/api';
 
@@ -93,3 +93,30 @@ export function allusionSearch(term: string, limit?: number): Promise<AllusionEn
 }
 
 const enc = encodeURIComponent;
+
+// ============================================================================
+// 外部诗词库 (shi.sjtuguoxue.space)
+// ============================================================================
+
+const POEMS_API = 'https://shi.sjtuguoxue.space/api';
+
+export async function poemsSearchText(
+  q: string,
+  opts: { field?: string; dynasty?: string; type?: string; limit?: number; offset?: number } = {},
+): Promise<PoemSearchResult> {
+  const params = new URLSearchParams({ q });
+  if (opts.field && opts.field !== 'all') params.set('field', opts.field);
+  if (opts.dynasty) params.set('dynasty', opts.dynasty);
+  if (opts.type) params.set('type', opts.type);
+  if (opts.limit) params.set('limit', String(opts.limit));
+  if (opts.offset) params.set('offset', String(opts.offset));
+  const res = await fetch(`${POEMS_API}/search/text?${params}`);
+  if (!res.ok) throw new Error('搜索失败');
+  return res.json();
+}
+
+export async function poemsGetPoem(id: number): Promise<PoemFull> {
+  const res = await fetch(`${POEMS_API}/poems/${id}`);
+  if (!res.ok) throw new Error('获取详情失败');
+  return res.json();
+}
