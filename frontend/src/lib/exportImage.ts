@@ -98,11 +98,19 @@ function getTitleConfig(titleLen: number) {
 }
 
 // ============================================================================
-// 字体加载 (Google Fonts text 子集)
+// 字体加载（自托管 woff2 切片，unicode-range 按需加载）
 // ============================================================================
 
 // 使用隔离的字体名称，避免污染主界面
 const EXPORT_FONT = '__FangcunExport__';
+const EXPORT_TITLE_FONT = '__FangcunTitle__';
+
+// 自托管字体 CSS 路径（cn-font-split 产物）
+const FONT_CSS_PATHS: { path: string; weight: string; family: string }[] = [
+  { path: '/fonts/NotoSerifSC-Regular/result.css', weight: '400', family: EXPORT_FONT },
+  { path: '/fonts/NotoSerifSC-Bold/result.css', weight: '700', family: EXPORT_FONT },
+  { path: '/fonts/汇文明朝体/result.css', weight: '400', family: EXPORT_TITLE_FONT },
+];
 
 // 缓存 logo 图片
 let _logoImg: HTMLImageElement | null = null;
@@ -118,31 +126,67 @@ export async function loadLogo(): Promise<HTMLImageElement | null> {
 }
 let _fontsLoaded = false;
 
+/** 解析 unicode-range 值为码点集合 */
+function parseUnicodeRange(rangeStr: string): Set<number> {
+  const codepoints = new Set<number>();
+  for (const part of rangeStr.split(',')) {
+    const trimmed = part.trim().replace(/^U\+/i, '');
+    if (trimmed.includes('-')) {
+      const [startStr, endStr] = trimmed.split('-');
+      const start = parseInt(startStr, 16);
+      const end = parseInt(endStr, 16);
+      for (let cp = start; cp <= end; cp++) codepoints.add(cp);
+    } else if (trimmed.includes('?')) {
+      // 通配符：U+4E?? → 范围
+      const base = trimmed.replace(/\?/g, '0');
+      const top = trimmed.replace(/\?/g, 'F');
+      const start = parseInt(base, 16);
+      const end = parseInt(top, 16);
+      for (let cp = start; cp <= end; cp++) codepoints.add(cp);
+    } else {
+      codepoints.add(parseInt(trimmed, 16));
+    }
+  }
+  return codepoints;
+}
+
+/** 判断 @font-face 块的 unicode-range 是否命中任何文本字符 */
+function matchesUnicodeRange(block: string, charCodepoints: Set<number>): boolean {
+  const rangeMatch = block.match(/unicode-range:\s*([^;}]+)/);
+  if (!rangeMatch) return true; // 无 unicode-range 则全量加载
+  const rangeCps = parseUnicodeRange(rangeMatch[1]);
+  for (const cp of charCodepoints) {
+    if (rangeCps.has(cp)) return true;
+  }
+  return false;
+}
+
 export async function loadExportFonts(text: string): Promise<void> {
-  const chars = [...new Set(text)].join('');
-  const encoded = encodeURIComponent(chars);
-  const cssUrl = `https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;700&display=swap&text=${encoded}`;
+  const charCps = new Set([...new Set(text)].map(ch => ch.codePointAt(0)!));
 
   try {
-    const resp = await fetch(cssUrl);
-    const css = await resp.text();
+    for (const { path, weight, family } of FONT_CSS_PATHS) {
+      const resp = await fetch(path);
+      const css = await resp.text();
+      const blocks = css.match(/@font-face\{[^}]+\}/g) || [];
 
-    // 解析 @font-face 块，用隔离名称注册，不影响 UI
-    const blocks = css.match(/@font-face\s*\{[^}]+\}/g) || [];
-    const promises = blocks.map(async (block) => {
-      const urlMatch = block.match(/url\(([^)]+)\)/);
-      const weightMatch = block.match(/font-weight:\s*(\d+)/);
-      if (!urlMatch) return;
-      const url = urlMatch[1];
-      const weight = weightMatch?.[1] || '400';
-      const font = new FontFace(EXPORT_FONT, `url(${url})`, {
-        weight,
-        style: 'normal',
-      });
-      const loaded = await font.load();
-      document.fonts.add(loaded);
-    });
-    await Promise.all(promises);
+      const promises = blocks
+        .filter(block => matchesUnicodeRange(block, charCps))
+        .map(async (block) => {
+          // 提取 url，转为绝对路径
+          const urlMatch = block.match(/url\("\.\/([^"]+)"\)/);
+          if (!urlMatch) return;
+          const dir = path.substring(0, path.lastIndexOf('/'));
+          const url = `${dir}/${urlMatch[1]}`;
+          const font = new FontFace(family, `url(${url})`, {
+            weight,
+            style: 'normal',
+          });
+          const loaded = await font.load();
+          document.fonts.add(loaded);
+        });
+      await Promise.all(promises);
+    }
     _fontsLoaded = true;
   } catch {
     _fontsLoaded = false;
@@ -152,6 +196,13 @@ export async function loadExportFonts(text: string): Promise<void> {
 function serifFont(weight: number, size: number): string {
   const family = _fontsLoaded
     ? `"${EXPORT_FONT}"`
+    : '"Source Han Serif SC", "SimSun", "STSong", serif';
+  return `${weight} ${size}px ${family}`;
+}
+
+function titleFont(weight: number, size: number): string {
+  const family = _fontsLoaded
+    ? `"${EXPORT_TITLE_FONT}", "${EXPORT_FONT}"`
     : '"Source Han Serif SC", "SimSun", "STSong", serif';
   return `${weight} ${size}px ${family}`;
 }
@@ -443,7 +494,7 @@ export function renderToCanvas(data: ExportData): HTMLCanvasElement {
   if (author) {
     const authorFontSize = 32;
     ctx.fillStyle = colors.muted;
-    ctx.font = `${authorFontSize}px "Noto Serif SC", "Source Han Serif SC", serif`;
+    ctx.font = serifFont(400, authorFontSize);
     ctx.textBaseline = 'middle';
     if (genre === 'Ci') {
       ctx.textAlign = 'left';
@@ -535,7 +586,7 @@ function drawTitle(
   const titleX = W * 0.85;
   const startY = TITLE_PAD_TOP;
 
-  ctx.font = serifFont(700, config.fontSize);
+  ctx.font = titleFont(700, config.fontSize);
   const result = drawVerticalColumns(ctx, title, titleX, startY, config.fontSize, config.spacing);
   return {
     bottomY: result.maxBottom + config.fontSize * 0.5,
@@ -558,13 +609,13 @@ function drawCiTitle(
 
   // 词牌名右列（大字）
   ctx.fillStyle = colors.text;
-  ctx.font = serifFont(700, config.fontSize);
+  ctx.font = titleFont(700, config.fontSize);
   const cipaiResult = drawVerticalColumns(ctx, cipai, baseX, startY, config.fontSize, config.spacing);
 
   // 题目左列（略小）
   const subFontSize = Math.round(config.fontSize * 0.75);
   const subSpacing = Math.round(config.spacing * 0.78);
-  ctx.font = serifFont(400, subFontSize);
+  ctx.font = titleFont(400, subFontSize);
   ctx.fillStyle = colors.text;
   const subX = baseX - config.fontSize * 1.6;
   const subStartY = startY + config.spacing * 1.6;

@@ -34,3 +34,6 @@ Thumbs.db
 .env
 .env.*
 .vercel
+
+# Font source files (large, download locally)
+fonts/src/
