@@ -30,23 +30,65 @@ export const THEME_KEYS: ThemeKey[] = ['素白', '朱砂', '墨韵', '竹青', '
 
 const W = 1080;
 const PAD_X = 100;
+const TITLE_PAD_TOP = 150;   // 标题距画布顶部（固定，不随画布高度变化）
+const MIN_GAP = 50;          // 标题与内容之间最小间距
 
-function getShiLayout(charCount: number) {
-  if (charCount <= 70) return { height: 1440, fontSize: 44, lineHeight: 96 };
-  if (charCount <= 90) return { height: 1620, fontSize: 38, lineHeight: 84 };
-  if (charCount <= 150) return { height: 1800, fontSize: 32, lineHeight: 72 };
-  return { height: 1920, fontSize: 28, lineHeight: 62 };
+function getShiFontConfig(charCount: number) {
+  if (charCount <= 70)  return { fontSize: 44, lineHeight: 96 };
+  if (charCount <= 90)  return { fontSize: 38, lineHeight: 84 };
+  if (charCount <= 150) return { fontSize: 32, lineHeight: 72 };
+  return { fontSize: 28, lineHeight: 62 };
 }
 
-function getCiLayout(lineCount: number) {
-  if (lineCount <= 6) return { height: 1440, fontSize: 40, lineHeight: 88 };
-  if (lineCount <= 10) return { height: 1620, fontSize: 36, lineHeight: 76 };
-  if (lineCount <= 15) return { height: 1800, fontSize: 32, lineHeight: 66 };
-  return { height: 1920, fontSize: 28, lineHeight: 56 };
+function getCiFontConfig(lineCount: number, maxLineLen: number) {
+  // 每行不超过 15 字时，用律诗同等大字
+  if (maxLineLen < 16) return { fontSize: 44, lineHeight: 96 };
+  if (lineCount <= 6)  return { fontSize: 40, lineHeight: 88 };
+  if (lineCount <= 10) return { fontSize: 36, lineHeight: 76 };
+  if (lineCount <= 15) return { fontSize: 32, lineHeight: 66 };
+  return { fontSize: 28, lineHeight: 56 };
 }
 
 /** 每列最多显示的字数 */
 const MAX_COL_CHARS = 10;
+
+/** 标准画布比例（从小到大尝试） */
+const ASPECT_HEIGHTS = [
+  W * 4 / 3,    // 3:4  → 1440
+  W * 16 / 9,   // 9:16 → 1920
+  W * 2,        // 9:18 → 2160
+];
+
+/** 选择能容纳 minH 的最小标准比例画布高度 */
+function pickCanvasHeight(minH: number): number {
+  for (const h of ASPECT_HEIGHTS) {
+    if (h >= minH) return h;
+  }
+  return Math.ceil(minH / 60) * 60;
+}
+
+/** 测量标题竖排区域高度（不含顶部 padding） */
+function measureTitleBlockHeight(title: string): number {
+  const dotIdx = title.search(/[·•·]/);
+  const cipai = dotIdx > 0 ? title.slice(0, dotIdx) : title;
+  const subtitle = dotIdx > 0 ? title.slice(dotIdx + 1) : '';
+  const configKey = dotIdx > 0 ? Math.max(cipai.length, subtitle.length) : cipai.length;
+  const config = getTitleConfig(configKey);
+
+  const visibleChars = Math.min(cipai.length, MAX_COL_CHARS);
+  let h = (visibleChars - 1) * config.spacing + config.fontSize;
+
+  if (subtitle) {
+    const subSpacing = Math.round(config.spacing * 0.78);
+    const subFontSize = Math.round(config.fontSize * 0.75);
+    const subChars = Math.min(subtitle.length, MAX_COL_CHARS);
+    const subStartOffset = config.spacing * 1.6;
+    const subH = subStartOffset + (subChars - 1) * subSpacing + subFontSize;
+    h = Math.max(h, subH);
+  }
+
+  return h;
+}
 
 function getTitleConfig(titleLen: number) {
   if (titleLen <= 4) return { fontSize: 72, spacing: 97 };
@@ -323,8 +365,9 @@ export interface ExportData {
 export function renderToCanvas(data: ExportData): HTMLCanvasElement {
   const { title, lines, charCount, genre, theme, date, preface, footnote } = data;
   const colors = THEMES[theme];
-  const { height: baseHeight, fontSize, lineHeight } =
-    genre === 'Ci' ? getCiLayout(lines.length) : getShiLayout(charCount);
+  const maxLineLen = genre === 'Ci' ? Math.max(...lines.map(l => [...l].length)) : 0;
+  const { fontSize, lineHeight } =
+    genre === 'Ci' ? getCiFontConfig(lines.length, maxLineLen) : getShiFontConfig(charCount);
 
   // ---- 元数据折行宽度：诗按正文行宽，词用默认边距 ----
   let metaMaxW = META_MAX_W;
@@ -335,11 +378,18 @@ export function renderToCanvas(data: ExportData): HTMLCanvasElement {
     metaMaxW = charsPerLine * fontSize + (charsPerLine - 1) * letterSpacing;
   }
 
-  // ---- 测量元数据额外高度 ----
+  // ---- 测量各区域高度 ----
   const measureCanvas = document.createElement('canvas');
   const measureCtx = measureCanvas.getContext('2d')!;
   const { prefaceH, footerH } = measureMetaHeight(measureCtx, { date, preface, footnote }, metaMaxW);
-  const height = baseHeight + prefaceH + footerH;
+
+  const titleBlockH = measureTitleBlockHeight(title);
+  const titleRegionH = TITLE_PAD_TOP + titleBlockH;
+  const poemTotalH = lines.length * lineHeight;
+  const belowPoemPad = (genre === 'Shi' ? lineHeight : 40) + footerH + 70;
+  const contentH = prefaceH + poemTotalH + belowPoemPad;
+  const minH = titleRegionH + MIN_GAP + contentH;
+  const height = pickCanvasHeight(minH);
 
   const scale = 2;
   const canvas = document.createElement('canvas');
@@ -353,27 +403,23 @@ export function renderToCanvas(data: ExportData): HTMLCanvasElement {
   ctx.fillRect(0, 0, W, height);
 
   // ---- 标题色块（先画，标题文字叠在上面） ----
-  const titleInfo = measureTitle(title, height);
+  const titleInfo = measureTitle(title);
   drawTitleBlock(ctx, colors, titleInfo);
 
   // ---- 标题文字 ----
-  const titleResult = drawTitle(ctx, title, colors, height);
+  drawTitle(ctx, title, colors);
 
   // ---- 计算诗句实际位置 ----
-  const poemTopBound = Math.max(titleResult.bottomY + 80, height * 0.48);
+  const poemTopBound = titleRegionH + (height - titleRegionH - contentH);  // = height - contentH
   const watermarkY = height - 70;
   const poemBottomLimit = genre === 'Shi'
     ? watermarkY - lineHeight - footerH
     : watermarkY - 40 - footerH;
 
-  const totalPoemH = lines.length * lineHeight;
-  const availableH = poemBottomLimit - poemTopBound;
-  const actualLineH = totalPoemH > availableH ? availableH / lines.length : lineHeight;
-  const actualTotalH = lines.length * actualLineH;
   // 诗：沉底；词：居中
   const poemStartY = genre === 'Shi'
-    ? poemBottomLimit - actualTotalH
-    : poemTopBound + (availableH - actualTotalH) / 2;
+    ? poemBottomLimit - poemTotalH
+    : poemTopBound + prefaceH + (poemBottomLimit - poemTopBound - prefaceH - poemTotalH) / 2;
 
   // 元数据居中点：诗略右偏（比正文偏移量小，因为元数据无末尾标点），词用画布中心
   const metaCenterX = genre === 'Shi' ? W / 2 + fontSize * 0.2 : W / 2;
@@ -385,7 +431,7 @@ export function renderToCanvas(data: ExportData): HTMLCanvasElement {
   }
 
   // ---- 诗句 ----
-  drawPoemLines(ctx, lines, colors, fontSize, lineHeight, poemTopBound, poemBottomLimit, genre);
+  drawPoemLines(ctx, lines, colors, fontSize, lineHeight, poemTopBound + prefaceH, poemBottomLimit, genre);
 
   // ---- 日期 / 脚注（作品下方） ----
   if (date || footnote) {
@@ -465,7 +511,6 @@ function drawTitle(
   ctx: CanvasRenderingContext2D,
   title: string,
   colors: ColorTheme,
-  canvasHeight: number,
 ): { bottomY: number; leftX: number } {
   ctx.fillStyle = colors.text;
 
@@ -474,12 +519,12 @@ function drawTitle(
   const hasDot = dotIdx > 0;
 
   if (hasDot) {
-    return drawCiTitle(ctx, title, dotIdx, colors, canvasHeight);
+    return drawCiTitle(ctx, title, dotIdx, colors);
   }
 
   const config = getTitleConfig(title.length);
   const titleX = W * 0.85;
-  const startY = canvasHeight * 0.13;
+  const startY = TITLE_PAD_TOP;
 
   ctx.font = serifFont(700, config.fontSize);
   const result = drawVerticalColumns(ctx, title, titleX, startY, config.fontSize, config.spacing);
@@ -494,14 +539,13 @@ function drawCiTitle(
   title: string,
   dotIdx: number,
   colors: ColorTheme,
-  canvasHeight: number,
 ): { bottomY: number; leftX: number } {
   const cipai = title.slice(0, dotIdx);
   const subtitle = title.slice(dotIdx + 1);
   const config = getTitleConfig(Math.max(cipai.length, subtitle.length));
 
   const baseX = W * 0.85;
-  const startY = canvasHeight * 0.13;
+  const startY = TITLE_PAD_TOP;
 
   // 词牌名右列（大字）
   ctx.fillStyle = colors.text;
@@ -533,7 +577,7 @@ interface TitleMeasure {
 }
 
 /** 预计算标题位置（不绘制），用于色块定位 */
-function measureTitle(title: string, canvasHeight: number): TitleMeasure {
+function measureTitle(title: string): TitleMeasure {
   const dotIdx = title.search(/[·•·]/);
   const cipai = dotIdx > 0 ? title.slice(0, dotIdx) : title;
   // Ci 标题时 config 由 max(cipai, subtitle) 决定，与 drawCiTitle 一致
@@ -543,7 +587,7 @@ function measureTitle(title: string, canvasHeight: number): TitleMeasure {
   const config = getTitleConfig(configKey);
 
   const titleX = W * 0.85;
-  const startY = canvasHeight * 0.13;
+  const startY = TITLE_PAD_TOP;
   // 色块只覆盖词牌名（右列）高度，不含题目
   const visibleChars = Math.min(cipai.length, MAX_COL_CHARS);
   const bottomY = startY + (visibleChars - 1) * config.spacing + config.fontSize * 0.5;
