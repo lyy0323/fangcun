@@ -31,7 +31,11 @@
 - [x] 上传南洋吟游时脚注字段未能正确解析
 
 ### 待开发
-- [ ] 韵书支持周行新韵
+- [ ] 韵书支持周行新韵、中原音韵、先秦上古韵
+- [ ] 词谱增加换头位置参数（section_starts），用于排版分阕
+  - **需求**：词分单调/双调/三叠等多段，每个词牌体例需记录各阕的起始字符位置，以支持前端分阕排版
+  - **方案**：在 `ci_rules.json` 每条记录中增加 `"section_starts": [N1, N2, ...]`（0-based，指第 2/3/… 阕在 tone_pattern 中的起始 index）；同步更新 `config_loader.py`（RuleSet 增加字段）、`app.py`（API 序列化）、`types.ts`（ClosestRule 接口）
+  - **踩坑**：源数据 `ci_data/*.json` 的 `paragraphs` 数组并非按阕划分，部分 paragraph 是句内分段而非换头分阕，因此不能简单按 paragraph 累计字数得到换头位置。需要额外解析 `description` 字段（如"双调xx字，前段xx句…后段xx句…"）或人工标注，才能准确提取阕边界
 
 ## v1.4 ✅ (2026-04-06)
 
