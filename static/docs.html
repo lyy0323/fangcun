@@ -164,6 +164,7 @@
     <a href="#rhyme-list">韵部列表</a>
     <a href="#rules">格律规则列表</a>
     <a href="#dictionary">词语联想</a>
+    <a href="#allusion">典故检索</a>
 
   </nav>
 </aside>
@@ -203,6 +204,7 @@
   <tr><th>端点</th><th>限制</th></tr>
   <tr><td>/api/validate_meter</td><td>60 次/分钟</td></tr>
   <tr><td>/api/dictionary/search</td><td>120 次/分钟</td></tr>
+  <tr><td>/api/dictionary/allusion</td><td>120 次/分钟</td></tr>
   <tr><td>其他</td><td>60 次/分钟</td></tr>
 </table>
 <p>超限返回 <code>429 Too Many Requests</code>。</p>
@@ -517,6 +519,56 @@
 ]</code></pre>
 
 <div class="callout">对仗模式返回与查询字在古诗中常对仗的字及频次。</div>
+
+<hr>
+
+<!-- ==================== 7. 典故检索 ==================== -->
+<h2 id="allusion">典故检索</h2>
+<p>检索包含指定字/词的典形词（文学典故），返回释义、典源、同源典形词和古诗例句。数据约 13,000 条。</p>
+
+<div class="endpoint-line">
+  <span class="method method-get">GET</span>
+  <span class="endpoint">/api/dictionary/allusion</span>
+</div>
+
+<table>
+  <tr><th>参数</th><th>类型</th><th></th><th>说明</th></tr>
+  <tr><td>term</td><td>string</td><td><span class="badge badge-required">必填</span></td><td>1-4 个汉字（支持繁体）</td></tr>
+  <tr><td>limit</td><td>int</td><td><span class="badge badge-optional">可选</span></td><td>最多返回条数，默认 <code>60</code>，上限 <code>200</code></td></tr>
+</table>
+
+<h3>示例</h3>
+<pre><code>curl <span class="string">"https://write.sjtuguoxue.space/api/dictionary/allusion?term=月&amp;limit=5"</span> \
+  -H <span class="string">"X-API-Key: fc_xxx"</span></code></pre>
+<pre><code>[
+  {
+    <span class="key">"id"</span>: <span class="number">42</span>,
+    <span class="key">"w"</span>: <span class="string">"月桂"</span>,
+    <span class="key">"d"</span>: <span class="string">"借指月中桂树，喻科举及第"</span>,
+    <span class="key">"src"</span>: <span class="string">"月中桂"</span>,
+    <span class="key">"src_text"</span>: <span class="string">"《酉阳杂俎》载……"</span>,
+    <span class="key">"related"</span>: [
+      { <span class="key">"w"</span>: <span class="string">"折桂"</span>, <span class="key">"d"</span>: <span class="string">"比喻科举登第"</span> },
+      { <span class="key">"w"</span>: <span class="string">"蟾宫"</span>, <span class="key">"d"</span>: <span class="string">"借指月宫"</span> }
+    ],
+    <span class="key">"examples"</span>: [<span class="string">"昔年曾向嫦娥妒，今日相逢恐未真"</span>],
+    <span class="key">"rc"</span>: <span class="number">5</span>
+  }
+]</code></pre>
+
+<h3>响应字段说明</h3>
+<table>
+  <tr><th>字段</th><th>说明</th></tr>
+  <tr><td>w</td><td>典形词</td></tr>
+  <tr><td>d</td><td>释义</td></tr>
+  <tr><td>src</td><td>典源词（典故名）</td></tr>
+  <tr><td>src_text</td><td>典源内容（截断 ≤300 字）</td></tr>
+  <tr><td>related[]</td><td>同源典形词列表（含 <code>w</code> 和 <code>d</code>）</td></tr>
+  <tr><td>examples[]</td><td>包含该典故的古诗例句</td></tr>
+  <tr><td>rc</td><td>同源典形词数量（related count）</td></tr>
+</table>
+
+<div class="callout">排序策略：精确匹配优先 → 匹配位置靠前 → 短词优先（2-4 字适合入诗）→ 同源越多越经典。<br>单字搜索走倒排索引，多字搜索对各字的 ID 集合取交集后过滤子串匹配。</div>
 
 <hr>
 
