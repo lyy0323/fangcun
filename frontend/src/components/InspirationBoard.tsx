@@ -60,8 +60,14 @@ export function InspirationBoard() {
   }, [dispatch]);
 
   // 监听 document 级别的粘贴事件，解决 div 无法获得焦点的问题
+  // 注意：组件可能被渲染多次（桌面端+移动端），用 _inspirationPasteHandled 防止重复处理
   useEffect(() => {
     const handleGlobalPaste = async (e: ClipboardEvent) => {
+      // 防止多个实例重复处理同一事件
+      if ((e as ClipboardEvent & { _inspirationPasteHandled?: boolean })._inspirationPasteHandled) {
+        return;
+      }
+
       // 如果焦点在可编辑元素上（input/textarea/contentEditable），不拦截
       const active = document.activeElement;
       if (active && (
@@ -79,6 +85,8 @@ export function InspirationBoard() {
       const hasImage = Array.from(items).some(item => item.type.startsWith('image/'));
       if (!hasImage) return;
 
+      // 标记事件已处理，防止其他实例重复处理
+      (e as ClipboardEvent & { _inspirationPasteHandled?: boolean })._inspirationPasteHandled = true;
       e.preventDefault();
       await handleImagePaste(items);
     };
@@ -136,17 +144,6 @@ export function InspirationBoard() {
     }
   };
 
-  // 监听粘贴事件（在灵感板区域内 Ctrl+V / Cmd+V 粘贴图片）
-  // 注：主要逻辑已移至 document 级别监听，此处保留作为备用
-  const handlePaste = async (e: React.ClipboardEvent) => {
-    const items = e.clipboardData?.items;
-    if (!items) return;
-    const hasImage = Array.from(items).some(item => item.type.startsWith('image/'));
-    if (!hasImage) return;
-    e.preventDefault();
-    await handleImagePaste(items);
-  };
-
   const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -178,7 +175,7 @@ export function InspirationBoard() {
   };
 
   return (
-    <div className="h-full flex flex-col" onPaste={handlePaste}>
+    <div className="h-full flex flex-col">
       {/* 卡片列表 */}
       <div className="flex-1 overflow-y-auto space-y-2 min-h-0">
         {cards.map(card => (
