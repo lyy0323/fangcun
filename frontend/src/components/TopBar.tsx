@@ -174,6 +174,7 @@ function SettingsModal({ onClose }: { onClose: () => void }) {
           </a>
           <p className="font-medium text-[var(--text)] pt-1">更新日志</p>
           <ul className="list-disc pl-4 space-y-1">
+            <li>v1.6.3 (04-09) — 修复剪贴板粘贴图片、移动端候选字长按删除</li>
             <li>v1.6.2 (04-09) — 自建字体服务，引入汇文明朝体标题字体，移除 Google Fonts 依赖</li>
             <li>v1.6.1 (04-08) — 署名功能（三层优先级），产品介绍幻灯片扩展</li>
             <li>v1.6 (04-08) — 新建画板支持搜索并导入历代诗词（80万首），自动匹配格律</li>
