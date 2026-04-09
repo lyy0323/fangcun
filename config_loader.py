@@ -41,7 +41,10 @@ class RuleSet:
 # 2. JSON 加载函数
 # ----------------------------------------------------------------------------
 
-CONFIG_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "static", "config")
+CONFIG_DIR = os.environ.get(
+    "FANGCUN_CONFIG_DIR",
+    os.path.join(os.path.dirname(os.path.abspath(__file__)), "static", "config"),
+)
 
 def _load_json(filename: str) -> Any:
     """通用的 JSON 加载辅助函数"""

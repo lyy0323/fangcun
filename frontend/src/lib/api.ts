@@ -98,7 +98,10 @@ const enc = encodeURIComponent;
 // 外部诗词库 (shi.sjtuguoxue.space)
 // ============================================================================
 
-const POEMS_API = 'https://shi.sjtuguoxue.space/api';
+// Android WebView 走本地代理（外部 API 需要正确 Referer），Web 端直连
+const POEMS_API = navigator.userAgent.includes('FangcunAndroid')
+  ? '/proxy/poems'
+  : 'https://shi.sjtuguoxue.space/api';
 
 export async function poemsSearchText(
   q: string,

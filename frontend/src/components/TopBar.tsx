@@ -169,11 +169,16 @@ function SettingsModal({ onClose }: { onClose: () => void }) {
           <p className="font-medium text-[var(--text)] pt-1">联系方式</p>
           <p>guoxue_sjtu@163.com</p>
           <p className="font-medium text-[var(--text)] pt-1">开发者文档</p>
-          <a href="/docs" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-[var(--accent)] hover:underline">
+          <a
+            href={navigator.userAgent.includes('FangcunAndroid') ? 'https://write.sjtuguoxue.space/docs' : '/docs'}
+            target="_blank" rel="noopener noreferrer"
+            className="inline-flex items-center gap-1 text-[var(--accent)] hover:underline"
+          >
             API 文档 <ExternalLink size={12} />
           </a>
           <p className="font-medium text-[var(--text)] pt-1">更新日志</p>
           <ul className="list-disc pl-4 space-y-1">
+            <li>v1.6.4 (04-09) — Android 适配（格律修复、图片保存、外部链接），导出下载动画优化</li>
             <li>v1.6.3 (04-09) — 修复剪贴板粘贴图片、移动端候选字长按删除</li>
             <li>v1.6.2 (04-09) — 自建字体服务，引入汇文明朝体标题字体，移除 Google Fonts 依赖</li>
             <li>v1.6.1 (04-08) — 署名功能（三层优先级），产品介绍幻灯片扩展</li>
@@ -306,7 +311,7 @@ export function TopBar() {
     const full = `${board.title}\n${buildText()}`;
     navigator.clipboard.writeText(full).then(() => {
       setCopied(true);
-      setTimeout(() => setCopied(false), 1500);
+      setTimeout(() => { setCopied(false); setExportMenuOpen(false); }, 1000);
     });
   };
 
@@ -431,7 +436,7 @@ export function TopBar() {
               <div className="absolute right-0 top-10 z-50 w-40 border border-[var(--border)] rounded-lg overflow-hidden shadow-lg" style={{ backgroundColor: 'var(--bg-card)' }}>
                 <button
                   className="w-full text-left px-3 py-2 text-sm flex items-center gap-2 hover:bg-[var(--accent-light)] transition-colors"
-                  onClick={() => { handleCopy(); setExportMenuOpen(false); }}
+                  onClick={() => { handleCopy(); }}
                 >
                   {copied ? <Check size={14} className="text-emerald-600" /> : <ClipboardType size={14} />}
                   <span>复制文字</span>
@@ -445,13 +450,15 @@ export function TopBar() {
                       <ImageDown size={14} />
                       <span>导出图片</span>
                     </button>
-                    <button
-                      className="w-full text-left px-3 py-2 text-sm flex items-center gap-2 hover:bg-[var(--accent-light)] transition-colors"
-                      onClick={() => { handleUpload(); setExportMenuOpen(false); }}
-                    >
-                      <Upload size={14} />
-                      <span>上传南洋吟游</span>
-                    </button>
+                    {!navigator.userAgent.includes('FangcunAndroid') && (
+                      <button
+                        className="w-full text-left px-3 py-2 text-sm flex items-center gap-2 hover:bg-[var(--accent-light)] transition-colors"
+                        onClick={() => { handleUpload(); setExportMenuOpen(false); }}
+                      >
+                        <Upload size={14} />
+                        <span>上传南洋吟游</span>
+                      </button>
+                    )}
                   </>
                 )}
               </div>

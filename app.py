@@ -44,7 +44,7 @@ VALID_MODES = {"head", "tail", "pair"}
 VALID_TONES = {"P", "Z"}
 MAX_PARAM_LENGTH = 2000
 
-CFG = "static/config"
+CFG = os.environ.get("FANGCUN_CONFIG_DIR", "static/config")
 
 print("[App] 加载数据 ...")
 
@@ -212,10 +212,11 @@ def add_security_headers(response):
     response.headers["X-Frame-Options"] = "DENY"
     response.headers["X-XSS-Protection"] = "1; mode=block"
     response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
-    if request.path in ("/docs", "/dashboard"):
-        response.headers["Content-Security-Policy"] = "default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'"
-    else:
-        response.headers["Content-Security-Policy"] = "default-src 'self'"
+    if not os.environ.get("FANGCUN_AUTH_DISABLED"):
+        if request.path in ("/docs", "/dashboard"):
+            response.headers["Content-Security-Policy"] = "default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'"
+        else:
+            response.headers["Content-Security-Policy"] = "default-src 'self'"
     return response
 
 

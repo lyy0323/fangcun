@@ -11,7 +11,7 @@ import {
 } from '../lib/exportImage';
 import type { ThemeKey } from '../lib/exportImage';
 import type { Board, ValidationResult } from '../lib/types';
-import { X, Download, Loader } from 'lucide-react';
+import { X, Download, Loader, Check } from 'lucide-react';
 
 // ============================================================================
 // 从 Board 构建诗句行
@@ -154,6 +154,7 @@ export function ExportPreview({ onClose }: { onClose: () => void }) {
   const [theme, setTheme] = useState<ThemeKey>('素白');
   const [loading, setLoading] = useState(true);
   const [canvasEl, setCanvasEl] = useState<HTMLCanvasElement | null>(null);
+  const [downloadState, setDownloadState] = useState<'idle' | 'saving' | 'done'>('idle');
   const previewRef = useRef<HTMLDivElement>(null);
 
   const lines = board ? buildPoemLines(board, state.validation) : [];
@@ -203,8 +204,12 @@ export function ExportPreview({ onClose }: { onClose: () => void }) {
     previewRef.current.appendChild(img);
   }, [canvasEl]);
 
-  const handleDownload = () => {
-    if (canvasEl && board) downloadCanvas(canvasEl, board.title);
+  const handleDownload = async () => {
+    if (!canvasEl || !board || downloadState !== 'idle') return;
+    setDownloadState('saving');
+    await downloadCanvas(canvasEl, board.title);
+    setDownloadState('done');
+    setTimeout(() => setDownloadState('idle'), 1500);
   };
 
   return (
@@ -261,11 +266,18 @@ export function ExportPreview({ onClose }: { onClose: () => void }) {
           </div>
           <button
             onClick={handleDownload}
-            disabled={!canvasEl}
-            className="shrink-0 w-8 h-8 rounded-lg flex items-center justify-center bg-[var(--accent-light)] text-[var(--accent)] hover:opacity-80 transition-opacity disabled:opacity-40"
+            disabled={!canvasEl || loading || downloadState === 'saving'}
+            className={[
+              'shrink-0 w-8 h-8 rounded-lg flex items-center justify-center transition-all disabled:opacity-40',
+              downloadState === 'done'
+                ? 'bg-emerald-100 text-emerald-600'
+                : 'bg-[var(--accent-light)] text-[var(--accent)] hover:opacity-80',
+            ].join(' ')}
             title="下载"
           >
-            <Download size={16} />
+            {downloadState === 'saving' ? <Loader size={16} className="animate-spin" /> :
+             downloadState === 'done' ? <Check size={16} /> :
+             <Download size={16} />}
           </button>
         </div>
       </div>

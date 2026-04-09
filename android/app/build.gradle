@@ -25,6 +25,7 @@ android {
                 install "flask"
                 install "flask-cors"
                 install "flask-limiter"
+                install "certifi"
             }
         }
     }

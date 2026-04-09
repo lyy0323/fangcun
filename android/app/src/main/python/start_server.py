@@ -11,6 +11,7 @@ Android 端 Flask 启动脚本
 import os
 import sys
 import types
+import ssl
 
 
 def start(base_dir):
@@ -31,11 +32,20 @@ def start(base_dir):
     stub.list_keys_summary = lambda: []
     sys.modules["api_keys"] = stub
 
-    # 3. 导入 Flask app（触发数据加载）
+    # 3. 禁用限流（Android 本地不需要）
+    os.environ["RATELIMIT_ENABLED"] = "0"
+
+    # 4. 导入 Flask app（触发数据加载）
     from app import app
 
+    # 禁用 limiter
+    from app import limiter
+    limiter.enabled = False
+
     # 4. 添加前端静态文件服务
-    from flask import send_from_directory
+    from flask import send_from_directory, request, Response
+    import urllib.request
+    import urllib.parse
 
     # 覆盖 CSP：Android 端允许 data: URL（canvas 导出预览）和 blob:
     @app.after_request
@@ -47,6 +57,31 @@ def start(base_dir):
             "img-src 'self' data: blob:"
         )
         return response
+
+    # 代理外部诗词库 API（Android WebView 无法携带正确 Referer）
+    _ssl_ctx = ssl.create_default_context()
+    try:
+        import certifi
+        _ssl_ctx.load_verify_locations(certifi.where())
+    except Exception:
+        _ssl_ctx.check_hostname = False
+        _ssl_ctx.verify_mode = ssl.CERT_NONE
+
+    @app.route("/proxy/poems/<path:subpath>")
+    def _proxy_poems(subpath):
+        url = f"https://shi.sjtuguoxue.space/api/{subpath}"
+        if request.query_string:
+            url += f"?{request.query_string.decode()}"
+        req = urllib.request.Request(url, headers={
+            "Referer": "https://write.sjtuguoxue.space/",
+        })
+        try:
+            with urllib.request.urlopen(req, timeout=10, context=_ssl_ctx) as resp:
+                data = resp.read()
+                return Response(data, status=resp.status,
+                                content_type=resp.headers.get("Content-Type", "application/json"))
+        except Exception as e:
+            return Response(str(e), status=502)
 
     @app.route("/")
     def _android_index():

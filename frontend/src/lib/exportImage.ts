@@ -745,14 +745,33 @@ function drawPoemLines(
 // 下载
 // ============================================================================
 
-export function downloadCanvas(canvas: HTMLCanvasElement, title: string): void {
-  canvas.toBlob((blob) => {
-    if (!blob) return;
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${title || '诗'}.png`;
-    a.click();
-    URL.revokeObjectURL(url);
-  }, 'image/png');
+declare global {
+  interface Window {
+    AndroidBridge?: { saveImage(base64: string, fileName: string): void };
+  }
+}
+
+export function downloadCanvas(canvas: HTMLCanvasElement, title: string): Promise<void> {
+  const fileName = `${title || '诗'}.png`;
+
+  // Android: 通过 JS Bridge 保存到相册
+  if (window.AndroidBridge?.saveImage) {
+    const base64 = canvas.toDataURL('image/png').replace(/^data:image\/png;base64,/, '');
+    window.AndroidBridge.saveImage(base64, fileName);
+    return Promise.resolve();
+  }
+
+  // Web: 触发浏览器下载
+  return new Promise<void>((resolve) => {
+    canvas.toBlob((blob) => {
+      if (!blob) { resolve(); return; }
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = fileName;
+      a.click();
+      URL.revokeObjectURL(url);
+      resolve();
+    }, 'image/png');
+  });
 }

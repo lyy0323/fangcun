@@ -78,7 +78,8 @@ class MainActivity : Activity() {
                     val url = request?.url?.toString() ?: return false
                     // 只允许本地 Flask 服务的请求
                     if (url.startsWith("http://127.0.0.1:5050")) return false
-                    // 拦截所有外部链接
+                    // 外部链接用系统浏览器打开
+                    startActivity(android.content.Intent(android.content.Intent.ACTION_VIEW, request.url))
                     return true
                 }
             }
