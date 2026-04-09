@@ -114,6 +114,9 @@ export function InspirationBoard() {
     setMenuOpen(false);
   };
 
+  // 「剪贴板图片」按钮 → 进入等待粘贴状态，提示用户 Ctrl+V
+  const [awaitingPaste, setAwaitingPaste] = useState(false);
+
   const addImageFromClipboard = async () => {
     setMenuOpen(false);
     try {
@@ -137,12 +140,19 @@ export function InspirationBoard() {
           }
         }
       }
-      alert('剪贴板中没有图片。\n提示：先复制一张图片，或使用 Ctrl+V 直接粘贴。');
-    } catch {
-      // Clipboard API 权限被拒绝时，提示用 Ctrl+V
-      alert('无法读取剪贴板。\n请直接在灵感板区域使用 Ctrl+V / Cmd+V 粘贴图片。');
-    }
+    } catch { /* Clipboard API 不可用，回退到等待粘贴 */ }
+    // Clipboard API 未读到图片时，进入等待粘贴状态
+    setAwaitingPaste(true);
   };
+
+  // 等待粘贴模式：监听一次粘贴事件后自动退出
+  useEffect(() => {
+    if (!awaitingPaste) return;
+    const handler = () => setAwaitingPaste(false);
+    document.addEventListener('paste', handler, { once: true });
+    const timer = setTimeout(() => setAwaitingPaste(false), 10000);
+    return () => { document.removeEventListener('paste', handler); clearTimeout(timer); };
+  }, [awaitingPaste]);
 
   const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -176,6 +186,12 @@ export function InspirationBoard() {
 
   return (
     <div className="h-full flex flex-col">
+      {/* 等待粘贴提示 */}
+      {awaitingPaste && (
+        <div className="mx-2 mb-2 px-3 py-2 rounded-lg bg-[var(--accent-light)] text-sm text-[var(--text-secondary)] text-center animate-pulse">
+          请按 Ctrl+V / Cmd+V 粘贴图片
+        </div>
+      )}
       {/* 卡片列表 */}
       <div className="flex-1 overflow-y-auto space-y-2 min-h-0">
         {cards.map(card => (
@@ -284,9 +300,11 @@ export function InspirationBoard() {
               <button className="w-full text-left px-3 py-2 text-sm hover:bg-[var(--accent-light)] flex items-center gap-2" onClick={addImage}>
                 <ImageIcon size={14} className="text-[var(--text-secondary)]" /> 选择图片
               </button>
-              <button className="w-full text-left px-3 py-2 text-sm hover:bg-[var(--accent-light)] flex items-center gap-2" onClick={addImageFromClipboard}>
-                <Clipboard size={14} className="text-[var(--text-secondary)]" /> 剪贴板图片
-              </button>
+              {!('ontouchstart' in window) && (
+                <button className="w-full text-left px-3 py-2 text-sm hover:bg-[var(--accent-light)] flex items-center gap-2" onClick={addImageFromClipboard}>
+                  <Clipboard size={14} className="text-[var(--text-secondary)]" /> 剪贴板图片
+                </button>
+              )}
             </div>
           </>
         )}
