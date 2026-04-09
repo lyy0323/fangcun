@@ -4,12 +4,16 @@ import { PLACEHOLDER } from '../lib/types';
 import {
   renderToCanvas,
   loadExportFonts,
+  loadFontPreviews,
+  previewFontFamily,
   loadLogo,
   downloadCanvas,
   THEME_KEYS,
   THEMES,
+  FONT_OPTIONS,
+  DEFAULT_FONT,
 } from '../lib/exportImage';
-import type { ThemeKey } from '../lib/exportImage';
+import type { ThemeKey, FontKey } from '../lib/exportImage';
 import type { Board, ValidationResult } from '../lib/types';
 import { X, Download, Loader, Check } from 'lucide-react';
 
@@ -152,12 +156,16 @@ export function ExportPreview({ onClose }: { onClose: () => void }) {
   const { state } = useBoardContext();
   const board = useActiveBoard();
   const [theme, setTheme] = useState<ThemeKey>('素白');
+  const [fontKey, setFontKey] = useState<FontKey>(DEFAULT_FONT);
   const [loading, setLoading] = useState(true);
   const [canvasEl, setCanvasEl] = useState<HTMLCanvasElement | null>(null);
   const [downloadState, setDownloadState] = useState<'idle' | 'saving' | 'done'>('idle');
   const previewRef = useRef<HTMLDivElement>(null);
 
   const lines = board ? buildPoemLines(board, state.validation) : [];
+
+  // 预加载各字体的"文"字用于选择器预览
+  useEffect(() => { loadFontPreviews(); }, []);
 
   const render = useCallback(async () => {
     if (!board || lines.length === 0) return;
@@ -172,13 +180,14 @@ export function ExportPreview({ onClose }: { onClose: () => void }) {
     const date = rawDate ? convertGregorianToChinese(rawDate) : '';
 
     const allText = board.title + lines.join('') + date + preface + footnote + author;
-    const [, logo] = await Promise.all([loadExportFonts(allText), loadLogo()]);
+    const [, logo] = await Promise.all([loadExportFonts(allText, fontKey), loadLogo()]);
     const canvas = renderToCanvas({
       title: board.title,
       lines,
       charCount: board.charCount,
       genre: board.genre,
       theme,
+      fontKey,
       logo,
       date,
       preface,
@@ -187,7 +196,7 @@ export function ExportPreview({ onClose }: { onClose: () => void }) {
     });
     setCanvasEl(canvas);
     setLoading(false);
-  }, [board, theme]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [board, theme, fontKey]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     render();
@@ -245,8 +254,29 @@ export function ExportPreview({ onClose }: { onClose: () => void }) {
           )}
         </div>
 
-        {/* 底栏：配色 + 下载 */}
-        <div className="px-4 py-3 border-t border-[var(--border)] flex items-center justify-between gap-3">
+        {/* 底栏：字体 + 配色 + 下载 */}
+        <div className="px-4 py-3 border-t border-[var(--border)] flex flex-col gap-2.5">
+          {/* 字体选择 */}
+          <div className="flex flex-wrap gap-1.5">
+            {FONT_OPTIONS.map((f) => (
+              <button
+                key={f.key}
+                onClick={() => setFontKey(f.key)}
+                className="w-7 h-7 rounded-full flex items-center justify-center text-xs transition-all shrink-0"
+                style={{
+                  fontFamily: previewFontFamily(f.cssDir),
+                  boxShadow: fontKey === f.key
+                    ? '0 0 0 2px var(--bg-card), 0 0 0 3.5px var(--accent)'
+                    : 'inset 0 0 0 1px rgba(0,0,0,0.12)',
+                }}
+                title={f.label}
+              >
+                文
+              </button>
+            ))}
+          </div>
+          {/* 配色 + 下载 */}
+          <div className="flex items-center justify-between gap-3">
           <div className="flex flex-wrap gap-1.5">
             {THEME_KEYS.map((k) => (
               <button
@@ -279,6 +309,7 @@ export function ExportPreview({ onClose }: { onClose: () => void }) {
              downloadState === 'done' ? <Check size={16} /> :
              <Download size={16} />}
           </button>
+          </div>
         </div>
       </div>
     </div>

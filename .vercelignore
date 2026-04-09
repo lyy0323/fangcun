@@ -6,3 +6,4 @@ node_modules
 android
 tests
 /fonts
+frontend/public/fonts

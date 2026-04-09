@@ -101,19 +101,72 @@ function getTitleConfig(titleLen: number) {
 // 字体加载（自托管 woff2 切片，unicode-range 按需加载）
 // ============================================================================
 
-// 使用隔离的字体名称，避免污染主界面
-const EXPORT_FONT = '__FangcunExport__';
-const EXPORT_TITLE_FONT = '__FangcunTitle__';
+import { signCdnUrl } from './cdnSign';
 
-// 自托管字体 CSS 路径（cn-font-split 产物）
-const FONT_CSS_PATHS: { path: string; weight: string; family: string }[] = [
-  { path: '/fonts/NotoSerifSC-Regular/result.css', weight: '400', family: EXPORT_FONT },
-  { path: '/fonts/NotoSerifSC-Bold/result.css', weight: '700', family: EXPORT_FONT },
-  { path: '/fonts/汇文明朝体/result.css', weight: '400', family: EXPORT_TITLE_FONT },
+// CDN 配置（生产环境通过 Vite env 注入）
+const FONT_CDN_BASE = (import.meta.env.VITE_FONT_CDN_BASE as string | undefined)?.trim();
+const FONT_CDN_KEY = (import.meta.env.VITE_FONT_CDN_KEY as string | undefined)?.trim();
+
+// 使用隔离的字体名称，避免污染主界面
+const EXPORT_FONT_FAMILY = '__FangcunExport__';
+
+// 字体注册表
+export type FontKey = 'NotoSerifSC' | 'NotoSansSC' | 'HuiwenMincho' | 'SongKeBenXiuKai' | 'LXGWWenKai' | 'ML';
+
+export interface FontOption {
+  key: FontKey;
+  label: string;
+  cssDir: string;        // cn-font-split 输出目录名
+  boldDir?: string;      // Bold 版本目录名（可选）
+}
+
+export const FONT_OPTIONS: FontOption[] = [
+  { key: 'NotoSerifSC', label: '思源宋体', cssDir: 'NotoSerifSC-Regular', boldDir: 'NotoSerifSC-Bold' },
+  { key: 'NotoSansSC', label: '思源黑体', cssDir: 'NotoSansSC-Regular' },
+  { key: 'HuiwenMincho', label: '汇文明朝体', cssDir: '汇文明朝体' },
+  { key: 'SongKeBenXiuKai', label: '宋刻本秀楷', cssDir: '方正宋刻本秀楷简体' },
+  { key: 'LXGWWenKai', label: '霞鹜文楷', cssDir: 'LXGWWenKaiLite-Regular' },
+  { key: 'ML', label: '沐瓴体', cssDir: 'ml' },
 ];
+
+export const DEFAULT_FONT: FontKey = 'NotoSerifSC';
 
 // 缓存 logo 图片
 let _logoImg: HTMLImageElement | null = null;
+
+/** 为字体选择器预加载各字体的"文"字，使预览圆圈能正确显示 */
+export async function loadFontPreviews(): Promise<void> {
+  const charCps = new Set(['文'.codePointAt(0)!]);
+  const previewFamily = (dir: string) => `__Preview_${dir}__`;
+
+  await Promise.all(FONT_OPTIONS.map(async (f) => {
+    const family = previewFamily(f.cssDir);
+    // 已加载则跳过
+    let exists = false;
+    document.fonts.forEach(ff => { if (ff.family === family) exists = true; });
+    if (exists) return;
+
+    try {
+      const cssUrl = fontCssUrl(f.cssDir);
+      const resp = await fetch(cssUrl);
+      const css = await resp.text();
+      const blocks = css.match(/@font-face\{[^}]+\}/g) || [];
+      const matched = blocks.filter(b => matchesUnicodeRange(b, charCps));
+      await Promise.all(matched.map(async (block) => {
+        const urlMatch = block.match(/url\("\.\/([^"]+)"\)/);
+        if (!urlMatch) return;
+        const url = fontFileUrl(f.cssDir, urlMatch[1]);
+        const font = new FontFace(family, `url("${url}")`, { weight: '400', style: 'normal' });
+        document.fonts.add(await font.load());
+      }));
+    } catch { /* ignore preview load failures */ }
+  }));
+}
+
+/** 获取预览字体 family 名 */
+export function previewFontFamily(dir: string): string {
+  return `"__Preview_${dir}__", serif`;
+}
 
 export async function loadLogo(): Promise<HTMLImageElement | null> {
   if (_logoImg) return _logoImg;
@@ -124,7 +177,6 @@ export async function loadLogo(): Promise<HTMLImageElement | null> {
     img.src = '/favicon.ico';
   });
 }
-let _fontsLoaded = false;
 
 /** 解析 unicode-range 值为码点集合 */
 function parseUnicodeRange(rangeStr: string): Set<number> {
@@ -137,7 +189,6 @@ function parseUnicodeRange(rangeStr: string): Set<number> {
       const end = parseInt(endStr, 16);
       for (let cp = start; cp <= end; cp++) codepoints.add(cp);
     } else if (trimmed.includes('?')) {
-      // 通配符：U+4E?? → 范围
       const base = trimmed.replace(/\?/g, '0');
       const top = trimmed.replace(/\?/g, 'F');
       const start = parseInt(base, 16);
@@ -153,7 +204,7 @@ function parseUnicodeRange(rangeStr: string): Set<number> {
 /** 判断 @font-face 块的 unicode-range 是否命中任何文本字符 */
 function matchesUnicodeRange(block: string, charCodepoints: Set<number>): boolean {
   const rangeMatch = block.match(/unicode-range:\s*([^;}]+)/);
-  if (!rangeMatch) return true; // 无 unicode-range 则全量加载
+  if (!rangeMatch) return true;
   const rangeCps = parseUnicodeRange(rangeMatch[1]);
   for (const cp of charCodepoints) {
     if (rangeCps.has(cp)) return true;
@@ -161,48 +212,75 @@ function matchesUnicodeRange(block: string, charCodepoints: Set<number>): boolea
   return false;
 }
 
-export async function loadExportFonts(text: string): Promise<void> {
+let _fontsLoaded = false;
+let _loadedFontKey: FontKey | null = null;
+
+/** 构造字体文件 URL（CDN 签名 或 本地路径） */
+function fontFileUrl(dir: string, file: string): string {
+  if (FONT_CDN_BASE && FONT_CDN_KEY) {
+    const url = `${FONT_CDN_BASE}/${encodeURIComponent(dir)}/${file}`;
+    return signCdnUrl(url, FONT_CDN_KEY, 3600);
+  }
+  return `/fonts/${dir}/${file}`;
+}
+
+/** 构造字体 CSS URL */
+function fontCssUrl(dir: string): string {
+  return fontFileUrl(dir, 'result.css');
+}
+
+export async function loadExportFonts(text: string, fontKey: FontKey = DEFAULT_FONT): Promise<void> {
+  // 已加载相同字体则跳过
+  if (_fontsLoaded && _loadedFontKey === fontKey) return;
+
+  // 切换字体时清除旧 FontFace
+  if (_loadedFontKey !== fontKey) {
+    document.fonts.forEach(f => {
+      if (f.family === EXPORT_FONT_FAMILY) document.fonts.delete(f);
+    });
+    _fontsLoaded = false;
+  }
+
   const charCps = new Set([...new Set(text)].map(ch => ch.codePointAt(0)!));
+  const option = FONT_OPTIONS.find(o => o.key === fontKey) ?? FONT_OPTIONS[0];
+  const dirs = [option.cssDir];
+  if (option.boldDir) dirs.push(option.boldDir);
 
   try {
-    for (const { path, weight, family } of FONT_CSS_PATHS) {
-      const resp = await fetch(path);
+    for (const dir of dirs) {
+      const cssUrl = fontCssUrl(dir);
+      const resp = await fetch(cssUrl);
+      if (!resp.ok) { console.warn('[Font] CSS fetch failed:', resp.status, dir); continue; }
       const css = await resp.text();
       const blocks = css.match(/@font-face\{[^}]+\}/g) || [];
+      const weight = dir === option.boldDir ? '700' : '400';
+      const matched = blocks.filter(block => matchesUnicodeRange(block, charCps));
 
-      const promises = blocks
-        .filter(block => matchesUnicodeRange(block, charCps))
-        .map(async (block) => {
-          // 提取 url，转为绝对路径
-          const urlMatch = block.match(/url\("\.\/([^"]+)"\)/);
-          if (!urlMatch) return;
-          const dir = path.substring(0, path.lastIndexOf('/'));
-          const url = `${dir}/${urlMatch[1]}`;
-          const font = new FontFace(family, `url(${url})`, {
-            weight,
-            style: 'normal',
-          });
-          const loaded = await font.load();
-          document.fonts.add(loaded);
+      const results = await Promise.allSettled(matched.map(async (block) => {
+        const urlMatch = block.match(/url\("\.\/([^"]+)"\)/);
+        if (!urlMatch) return;
+        const url = fontFileUrl(dir, urlMatch[1]);
+        const font = new FontFace(EXPORT_FONT_FAMILY, `url("${url}")`, {
+          weight,
+          style: 'normal',
         });
-      await Promise.all(promises);
+        const loaded = await font.load();
+        document.fonts.add(loaded);
+      }));
+      const failed = results.filter(r => r.status === 'rejected');
+      if (failed.length) console.warn(`[Font] ${failed.length}/${results.length} chunks failed:`, (failed[0] as PromiseRejectedResult).reason);
     }
     _fontsLoaded = true;
-  } catch {
+    _loadedFontKey = fontKey;
+  } catch (e) {
+    console.error('[Font] load error:', e);
     _fontsLoaded = false;
   }
 }
 
-function serifFont(weight: number, size: number): string {
+function exportFont(weight: number, size: number): string {
   const family = _fontsLoaded
-    ? `"${EXPORT_FONT}"`
-    : '"Source Han Serif SC", "SimSun", "STSong", serif';
-  return `${weight} ${size}px ${family}`;
-}
-
-function titleFont(weight: number, size: number): string {
-  const family = _fontsLoaded
-    ? `"${EXPORT_TITLE_FONT}", "${EXPORT_FONT}"`
+    ? `"${EXPORT_FONT_FAMILY}"`
     : '"Source Han Serif SC", "SimSun", "STSong", serif';
   return `${weight} ${size}px ${family}`;
 }
@@ -309,13 +387,13 @@ function measureMetaHeight(
   let footerH = 0;
 
   if (metadata.preface) {
-    ctx.font = serifFont(400, META_PREFACE_FONT);
+    ctx.font = exportFont(400, META_PREFACE_FONT);
     const lines = wrapText(ctx, metadata.preface, maxW, META_PREFACE_FONT * 0.08);
     prefaceH = lines.length * META_PREFACE_LH + META_GAP;
   }
 
   if (metadata.date || metadata.footnote) {
-    ctx.font = serifFont(400, META_FOOTER_FONT);
+    ctx.font = exportFont(400, META_FOOTER_FONT);
     let lines = 0;
     if (metadata.date) lines += 1;
     if (metadata.footnote) {
@@ -338,7 +416,7 @@ function drawPreface(
   maxW: number,
 ) {
   ctx.fillStyle = colors.muted;
-  ctx.font = serifFont(400, META_PREFACE_FONT);
+  ctx.font = exportFont(400, META_PREFACE_FONT);
   const spacing = META_PREFACE_FONT * 0.08;
   const lines = wrapText(ctx, text, maxW, spacing);
   // 诗：始终居中（与正文对齐）；词：单行居中、多行左对齐
@@ -366,7 +444,7 @@ function drawFooter(
   maxW: number,
 ) {
   ctx.fillStyle = colors.muted;
-  ctx.font = serifFont(400, META_FOOTER_FONT);
+  ctx.font = exportFont(400, META_FOOTER_FONT);
   const spacing = META_FOOTER_FONT * 0.08;
   let y = startY;
 
@@ -407,6 +485,7 @@ export interface ExportData {
   charCount: number;
   genre: 'Shi' | 'Ci';
   theme: ThemeKey;
+  fontKey?: FontKey;
   logo?: HTMLImageElement | null;
   date?: string;
   preface?: string;
@@ -494,7 +573,7 @@ export function renderToCanvas(data: ExportData): HTMLCanvasElement {
   if (author) {
     const authorFontSize = 32;
     ctx.fillStyle = colors.muted;
-    ctx.font = serifFont(400, authorFontSize);
+    ctx.font = exportFont(400, authorFontSize);
     ctx.textBaseline = 'middle';
     if (genre === 'Ci') {
       ctx.textAlign = 'left';
@@ -586,7 +665,7 @@ function drawTitle(
   const titleX = W * 0.85;
   const startY = TITLE_PAD_TOP;
 
-  ctx.font = titleFont(700, config.fontSize);
+  ctx.font = exportFont(700, config.fontSize);
   const result = drawVerticalColumns(ctx, title, titleX, startY, config.fontSize, config.spacing);
   return {
     bottomY: result.maxBottom + config.fontSize * 0.5,
@@ -609,13 +688,13 @@ function drawCiTitle(
 
   // 词牌名右列（大字）
   ctx.fillStyle = colors.text;
-  ctx.font = titleFont(700, config.fontSize);
+  ctx.font = exportFont(700, config.fontSize);
   const cipaiResult = drawVerticalColumns(ctx, cipai, baseX, startY, config.fontSize, config.spacing);
 
   // 题目左列（略小）
   const subFontSize = Math.round(config.fontSize * 0.75);
   const subSpacing = Math.round(config.spacing * 0.78);
-  ctx.font = titleFont(400, subFontSize);
+  ctx.font = exportFont(400, subFontSize);
   ctx.fillStyle = colors.text;
   const subX = baseX - config.fontSize * 1.6;
   const subStartY = startY + config.spacing * 1.6;
@@ -721,7 +800,7 @@ function drawPoemLines(
     : topY + (available - actualTotalH) / 2;
 
   ctx.fillStyle = colors.text;
-  ctx.font = serifFont(400, fontSize);
+  ctx.font = exportFont(400, fontSize);
 
   const letterSpacing = fontSize * 0.12;
 

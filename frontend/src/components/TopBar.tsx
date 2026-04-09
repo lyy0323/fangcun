@@ -178,6 +178,7 @@ function SettingsModal({ onClose }: { onClose: () => void }) {
           </a>
           <p className="font-medium text-[var(--text)] pt-1">更新日志</p>
           <ul className="list-disc pl-4 space-y-1">
+            <li>v1.6.5 (04-09) — 导出字体 CDN 化，新增 6 款字体选择器</li>
             <li>v1.6.4 (04-09) — Android 适配（格律修复、图片保存、外部链接），导出下载动画优化</li>
             <li>v1.6.3 (04-09) — 修复剪贴板粘贴图片、移动端候选字长按删除</li>
             <li>v1.6.2 (04-09) — 自建字体服务，引入汇文明朝体标题字体，移除 Google Fonts 依赖</li>
