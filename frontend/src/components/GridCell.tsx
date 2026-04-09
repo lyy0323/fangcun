@@ -89,9 +89,8 @@ export function GridCell({
                   className="flex items-center justify-center text-[var(--text-muted)] cursor-pointer hover:text-[var(--text)] transition-colors"
                   style={{ width: candidateSize, height: candidateSize, fontSize: Math.max(10, fontSize - 2) }}
                   onClick={e => { e.stopPropagation(); onClickCandidate?.(c); }}
-                  onContextMenu={e => { e.preventDefault(); e.stopPropagation(); onRemoveCandidate?.(c); }}
                   onTouchStart={e => {
-                    const timer = setTimeout(() => { e.preventDefault(); onRemoveCandidate?.(c); }, 500);
+                    const timer = setTimeout(() => { onRemoveCandidate?.(c); }, 500);
                     const el = e.currentTarget;
                     const clear = () => { clearTimeout(timer); el.removeEventListener('touchend', clear); el.removeEventListener('touchmove', clear); };
                     el.addEventListener('touchend', clear, { once: true });
