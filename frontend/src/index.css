@@ -38,3 +38,13 @@ body {
   font-family: -apple-system, "Noto Serif SC", "Noto Sans SC", "PingFang SC", serif;
   color: var(--text);
 }
+
+/* 触摸设备：显示候选字删除按钮（桌面端依赖 hover） */
+@media (hover: none) {
+  .candidate-remove-btn {
+    opacity: 0.5 !important;
+  }
+  .candidate-remove-btn:active {
+    opacity: 1 !important;
+  }
+}
