@@ -94,7 +94,7 @@ export function GridCell({
                   {c}
                 </div>
                 <button
-                  className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-gray-400 text-white text-[8px] leading-3 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                  className="candidate-remove-btn absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-gray-400 text-white text-[10px] leading-5 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
                   onClick={e => { e.stopPropagation(); onRemoveCandidate?.(c); }}
                 >
                   ✕
