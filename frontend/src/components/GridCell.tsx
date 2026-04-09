@@ -89,12 +89,20 @@ export function GridCell({
                   className="flex items-center justify-center text-[var(--text-muted)] cursor-pointer hover:text-[var(--text)] transition-colors"
                   style={{ width: candidateSize, height: candidateSize, fontSize: Math.max(10, fontSize - 2) }}
                   onClick={e => { e.stopPropagation(); onClickCandidate?.(c); }}
-                  title="点击替换正文"
+                  onContextMenu={e => { e.preventDefault(); e.stopPropagation(); onRemoveCandidate?.(c); }}
+                  onTouchStart={e => {
+                    const timer = setTimeout(() => { e.preventDefault(); onRemoveCandidate?.(c); }, 500);
+                    const el = e.currentTarget;
+                    const clear = () => { clearTimeout(timer); el.removeEventListener('touchend', clear); el.removeEventListener('touchmove', clear); };
+                    el.addEventListener('touchend', clear, { once: true });
+                    el.addEventListener('touchmove', clear, { once: true });
+                  }}
+                  title="点击替换正文 / 长按删除"
                 >
                   {c}
                 </div>
                 <button
-                  className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-gray-400 text-white text-[8px] leading-3 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                  className="candidate-remove-btn absolute -top-1 -right-1 w-3 h-3 rounded-full bg-gray-400 text-white text-[8px] leading-3 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity max-touch:hidden"
                   onClick={e => { e.stopPropagation(); onRemoveCandidate?.(c); }}
                 >
                   ✕

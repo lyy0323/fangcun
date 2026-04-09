@@ -38,3 +38,10 @@ body {
   font-family: -apple-system, "Noto Serif SC", "Noto Sans SC", "PingFang SC", serif;
   color: var(--text);
 }
+
+/* 触摸设备：隐藏候选字叉号按钮（改用长按删除） */
+@media (hover: none) {
+  .max-touch\:hidden {
+    display: none !important;
+  }
+}
