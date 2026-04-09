@@ -39,12 +39,9 @@ body {
   color: var(--text);
 }
 
-/* 触摸设备：显示候选字删除按钮（桌面端依赖 hover） */
+/* 触摸设备：隐藏候选字叉号按钮（改用长按删除） */
 @media (hover: none) {
-  .candidate-remove-btn {
-    opacity: 0.5 !important;
-  }
-  .candidate-remove-btn:active {
-    opacity: 1 !important;
+  .max-touch\:hidden {
+    display: none !important;
   }
 }
