@@ -10,6 +10,14 @@ import { useBoardContext, useActiveBoard } from './context/BoardContext';
 import { Lightbulb, BookOpen, PanelLeftClose, PanelRightClose } from 'lucide-react';
 import Slides from './slides/Slides';
 
+// Android WebView 始终走移动端布局（部分设备 viewport >= 1024px 会误触桌面模式）
+const isAndroid = navigator.userAgent.includes('FangcunAndroid');
+// 桌面端断点 class：Android 上禁用，强制移动布局
+const lgShow = isAndroid ? '' : 'lg:flex';
+const lgBlock = isAndroid ? '' : 'lg:block';
+const lgHide = isAndroid ? '' : 'lg:hidden';
+const lgPad = isAndroid ? 'p-4' : 'p-4 lg:p-6';
+
 function MobileDrawer({ side, open, onClose, title, children }: {
   side: 'left' | 'right';
   open: boolean;
@@ -22,12 +30,12 @@ function MobileDrawer({ side, open, onClose, title, children }: {
     <>
       {/* 半透明遮罩 */}
       <div
-        className={`lg:hidden fixed inset-0 bg-[var(--overlay)] z-40 transition-opacity duration-200 ${open ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
+        className={`${lgHide} fixed inset-0 bg-[var(--overlay)] z-40 transition-opacity duration-200 ${open ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
         onClick={onClose}
       />
       {/* 抽屉面板 */}
       <div
-        className={`lg:hidden fixed top-12 bottom-0 z-50 w-[55%] max-w-[280px] bg-[var(--bg-card)] shadow-[var(--shadow)] flex flex-col transition-transform duration-250 ease-out
+        className={`${lgHide} fixed top-12 bottom-0 z-50 w-[55%] max-w-[280px] bg-[var(--bg-card)] shadow-[var(--shadow)] flex flex-col transition-transform duration-250 ease-out
           ${isLeft ? 'left-0 rounded-r-xl' : 'right-0 rounded-l-xl'}
           ${open
             ? 'translate-x-0'
@@ -69,7 +77,7 @@ function Layout() {
       {board && (
         <div className="flex flex-1 min-h-0 relative">
           {/* 左侧栏 — 桌面端常驻 */}
-          <aside className="w-[20%] border-r border-[var(--border)] p-3 hidden lg:flex flex-col shrink-0">
+          <aside className={`w-[20%] border-r border-[var(--border)] p-3 hidden ${lgShow} flex-col shrink-0`}>
             <h3 className="text-xs font-medium text-[var(--text-secondary)] mb-2">灵感板</h3>
             <div className="flex-1 overflow-hidden min-h-0">
               <InspirationBoard />
@@ -79,17 +87,17 @@ function Layout() {
           {/* 中栏 */}
           <main className="flex-1 flex flex-col min-h-0 min-w-0">
             {/* 正文网格区 */}
-            <div className="flex-1 flex flex-col items-center overflow-y-auto p-4 lg:p-6 relative">
+            <div className={`flex-1 flex flex-col items-center overflow-y-auto ${lgPad} relative`}>
               {/* 移动端侧边触发按钮 */}
               <button
-                className="lg:hidden fixed left-3 top-14 z-20 w-8 h-8 rounded-lg bg-[var(--bg-card)] border border-[var(--border)]  flex items-center justify-center text-[var(--text-secondary)] hover:bg-[var(--accent-light)] hover:text-[var(--accent)]"
+                className={`${lgHide} fixed left-3 top-14 z-20 w-8 h-8 rounded-lg bg-[var(--bg-card)] border border-[var(--border)]  flex items-center justify-center text-[var(--text-secondary)] hover:bg-[var(--accent-light)] hover:text-[var(--accent)]`}
                 onClick={() => togglePanel('left')}
                 title="灵感板"
               >
                 <Lightbulb size={16} />
               </button>
               <button
-                className="lg:hidden fixed right-3 top-14 z-20 w-8 h-8 rounded-lg bg-[var(--bg-card)] border border-[var(--border)]  flex items-center justify-center text-[var(--text-secondary)] hover:bg-[var(--accent-light)] hover:text-[var(--accent)]"
+                className={`${lgHide} fixed right-3 top-14 z-20 w-8 h-8 rounded-lg bg-[var(--bg-card)] border border-[var(--border)]  flex items-center justify-center text-[var(--text-secondary)] hover:bg-[var(--accent-light)] hover:text-[var(--accent)]`}
                 onClick={() => togglePanel('right')}
                 title="韵部"
               >
@@ -101,17 +109,21 @@ function Layout() {
           </main>
 
           {/* 右侧栏 — 桌面端常驻 */}
-          <aside className="w-[30%] border-l border-[var(--border)] overflow-y-auto hidden lg:block shrink-0">
+          <aside className={`w-[30%] border-l border-[var(--border)] overflow-y-auto hidden ${lgBlock} shrink-0`}>
             <RhymePanel />
           </aside>
 
-          {/* 移动端侧滑抽屉 */}
-          <MobileDrawer side="left" open={mobilePanel === 'left'} onClose={() => setMobilePanel(null)} title="灵感板">
-            <InspirationBoard />
-          </MobileDrawer>
-          <MobileDrawer side="right" open={mobilePanel === 'right'} onClose={() => setMobilePanel(null)} title="韵部">
-            <RhymePanel />
-          </MobileDrawer>
+          {/* 移动端侧滑抽屉 — Android 上仅激活时渲染，避免部分 WebView transform 不生效 */}
+          {(!isAndroid || mobilePanel === 'left') && (
+            <MobileDrawer side="left" open={mobilePanel === 'left'} onClose={() => setMobilePanel(null)} title="灵感板">
+              <InspirationBoard />
+            </MobileDrawer>
+          )}
+          {(!isAndroid || mobilePanel === 'right') && (
+            <MobileDrawer side="right" open={mobilePanel === 'right'} onClose={() => setMobilePanel(null)} title="韵部">
+              <RhymePanel />
+            </MobileDrawer>
+          )}
         </div>
       )}
       {!board && !state.showGenreSelector && (

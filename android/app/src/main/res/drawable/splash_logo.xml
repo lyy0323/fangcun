@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  方寸 Logo (开屏用): 解构"寸"字三元素
+  使用 SVG 原始 512×512 坐标，便于大尺寸渲染
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="120dp"
+    android:height="120dp"
+    android:viewportWidth="512"
+    android:viewportHeight="512">
+
+    <!-- 横 — 平声 x=116 y=168 w=280 h=32 rx=4 -->
+    <path
+        android:fillColor="#559977"
+        android:pathData="M120,168 L392,168 A4,4 0 0 1 396,172 L396,196 A4,4 0 0 1 392,200 L120,200 A4,4 0 0 1 116,196 L116,172 A4,4 0 0 1 120,168 Z" />
+
+    <!-- 竖 — 仄声 x=296 y=100 w=32 h=308 rx=4 -->
+    <path
+        android:fillColor="#557799"
+        android:pathData="M300,100 L324,100 A4,4 0 0 1 328,104 L328,404 A4,4 0 0 1 324,408 L300,408 A4,4 0 0 1 296,404 L296,104 A4,4 0 0 1 300,100 Z" />
+
+    <!-- 点 — 字/格子 x=176 y=272 w=48 h=48 rx=6 -->
+    <path
+        android:fillColor="#995577"
+        android:pathData="M182,272 L218,272 A6,6 0 0 1 224,278 L224,314 A6,6 0 0 1 218,320 L182,320 A6,6 0 0 1 176,314 L176,278 A6,6 0 0 1 182,272 Z" />
+
+</vector>
