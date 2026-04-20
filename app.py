@@ -38,7 +38,7 @@ limiter = Limiter(
 AUTH_DISABLED = os.environ.get("FANGCUN_AUTH_DISABLED", "0") == "1"
 
 # --- 合法枚举值 ---
-VALID_GENRES = {"Shi", "Ci"}
+VALID_GENRES = {"Shi", "Ci", "Free"}
 VALID_BOOKS = {"Pingshuiyun", "Cilinzhengyun", "Zhonghua_Tongyun"}
 VALID_MODES = {"head", "tail", "pair"}
 VALID_TONES = {"P", "Z"}
@@ -65,6 +65,14 @@ with open(f"{CFG}/ci_rules.json", "r") as f:
     CI_RULES_RAW = json.load(f)
 with open(f"{CFG}/t2s_map.json", "r") as f:
     T2S_MAP = json.load(f)
+
+# --- 释义数据（可选） ---
+_def_path = f"{CFG}/char_definitions.json"
+if os.path.exists(_def_path):
+    with open(_def_path, "r") as f:
+        CHAR_DEFS = json.load(f)
+else:
+    CHAR_DEFS = {}
 
 # --- 典故数据 ---
 try:
@@ -328,6 +336,65 @@ def validate_meter():
     )
     return jsonify(serialize_check_result(result))
 
+# ---------- 1b. POST /api/free_rhyme ----------
+
+import re as _re
+_CJK_RE = _re.compile(r'[\u4e00-\u9fff\u3400-\u4dbf]')
+_PUNCT_SET = set('，。！？、；：')
+
+@app.route("/api/free_rhyme", methods=["POST"])
+@limiter.limit("60 per minute")
+def free_rhyme():
+    data = request.get_json(force=True)
+    lines = data.get("lines", [])
+    book = data.get("rhyme_book_name", "Zhonghua_Tongyun")
+
+    if not isinstance(lines, list) or len(lines) > 100:
+        return jsonify({"error": "lines must be a list (max 100)"}), 400
+    if book not in VALID_BOOKS:
+        return jsonify({"error": f"invalid rhyme_book_name, options: {', '.join(sorted(VALID_BOOKS))}"}), 400
+
+    candidates = []
+    for li, line in enumerate(lines):
+        if not isinstance(line, str):
+            continue
+        chars = list(line)
+        for ci, ch in enumerate(chars):
+            if not _CJK_RE.match(ch):
+                continue
+            nxt = chars[ci + 1] if ci + 1 < len(chars) else None
+            is_before_punct = nxt in _PUNCT_SET
+            is_before_space = nxt == ' '
+            is_line_end = ci == len(chars) - 1 or all(
+                not _CJK_RE.match(c) for c in chars[ci + 1:]
+            )
+            if is_before_punct or is_before_space or is_line_end:
+                info = _lookup_char_dict(ch)
+                cats = list(info.get("rhymes", {}).get(book, [])) if info else []
+                candidates.append({
+                    "line": li, "pos": ci, "char": ch, "categories": cats,
+                })
+
+    # forward-greedy grouping
+    assigned = [False] * len(candidates)
+    groups = []
+    for i, cand in enumerate(candidates):
+        if assigned[i] or not cand["categories"]:
+            continue
+        anchor = set(cand["categories"])
+        group_positions = [{"line": cand["line"], "pos": cand["pos"]}]
+        assigned[i] = True
+        for j in range(i + 1, len(candidates)):
+            if assigned[j] or not candidates[j]["categories"]:
+                continue
+            if anchor & set(candidates[j]["categories"]):
+                group_positions.append({"line": candidates[j]["line"], "pos": candidates[j]["pos"]})
+                assigned[j] = True
+        if len(group_positions) >= 2:
+            groups.append({"positions": group_positions})
+
+    return jsonify({"candidates": candidates, "groups": groups})
+
 # ---------- 2. GET /api/char/lookup ----------
 
 def _t2s(ch: str) -> str:
@@ -344,17 +411,27 @@ def _lookup_char_dict(ch: str):
         return CHAR_DICT.get(simplified)
     return None
 
+def _lookup_definitions(ch: str):
+    """查释义，查不到时尝试繁→简"""
+    defs = CHAR_DEFS.get(ch)
+    if defs:
+        return defs
+    simplified = _t2s(ch)
+    if simplified != ch:
+        return CHAR_DEFS.get(simplified)
+    return None
+
 @app.route("/api/char/lookup")
 def char_lookup():
     ch = request.args.get("char", "")
     book = request.args.get("book", "")
     info = _lookup_char_dict(ch)
+    defs = _lookup_definitions(ch)
     if not info:
-        return jsonify({"char": ch, "tones": [], "rhyme_categories": {} if not book else []})
+        return jsonify({"char": ch, "tones": [], "rhyme_categories": {} if not book else [], "definitions": defs or []})
 
     if not book:
-        # 不指定韵书时，返回所有韵书的韵部
-        return jsonify({"char": ch, "tones": info.get("tones", []), "rhyme_categories": info.get("rhymes", {})})
+        return jsonify({"char": ch, "tones": info.get("tones", []), "rhyme_categories": info.get("rhymes", {}), "definitions": defs or []})
 
     cats_raw = info.get("rhymes", {}).get(book, [])
     seen = set()
@@ -365,7 +442,7 @@ def char_lookup():
             bk = RHYME_BOOKS_RAW.get(book, {}).get("categories", {}).get(c, {})
             cats.append({"name": c, "tone_type": bk.get("tone_type", "")})
     cats.sort(key=lambda x: rhyme_category_sort_key(book, x["name"]))
-    return jsonify({"char": ch, "tones": info.get("tones", []), "rhyme_categories": cats})
+    return jsonify({"char": ch, "tones": info.get("tones", []), "rhyme_categories": cats, "definitions": defs or []})
 
 # ---------- 3. GET /api/rhyme/lookup ----------
 

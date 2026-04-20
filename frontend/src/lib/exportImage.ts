@@ -411,7 +411,7 @@ function drawPreface(
   text: string,
   colors: ColorTheme,
   startY: number,
-  genre: 'Shi' | 'Ci',
+  genre: 'Shi' | 'Ci' | 'Free',
   centerX: number,
   maxW: number,
 ) {
@@ -439,7 +439,7 @@ function drawFooter(
   footnote: string | undefined,
   colors: ColorTheme,
   startY: number,
-  genre: 'Shi' | 'Ci',
+  genre: 'Shi' | 'Ci' | 'Free',
   centerX: number,
   maxW: number,
 ) {
@@ -483,7 +483,7 @@ export interface ExportData {
   title: string;
   lines: string[];
   charCount: number;
-  genre: 'Shi' | 'Ci';
+  genre: 'Shi' | 'Ci' | 'Free' | 'Free';
   theme: ThemeKey;
   fontKey?: FontKey;
   logo?: HTMLImageElement | null;
@@ -491,14 +491,16 @@ export interface ExportData {
   preface?: string;
   footnote?: string;
   author?: string;
+  sectionCount?: number;
+  titleLines?: Set<number>;
 }
 
 export function renderToCanvas(data: ExportData): HTMLCanvasElement {
   const { title, lines, charCount, genre, theme, date, preface, footnote, author } = data;
   const colors = THEMES[theme];
-  const maxLineLen = genre === 'Ci' ? Math.max(...lines.map(l => [...l].length)) : 0;
+  const maxLineLen = genre !== 'Shi' ? Math.max(...lines.map(l => [...l].length)) : 0;
   const { fontSize, lineHeight } =
-    genre === 'Ci' ? getCiFontConfig(lines.length, maxLineLen) : getShiFontConfig(charCount);
+    genre !== 'Shi' ? getCiFontConfig(lines.length, maxLineLen) : getShiFontConfig(charCount);
 
   // ---- 元数据折行宽度：诗按正文行宽，词用默认边距 ----
   let metaMaxW = META_MAX_W;
@@ -520,7 +522,8 @@ export function renderToCanvas(data: ExportData): HTMLCanvasElement {
   const authorH = author ? 40 : 0;  // 署名行高度
   const belowPoemPad = lineHeight + footerH + authorH + 70;
   const contentH = prefaceH + poemTotalH + belowPoemPad;
-  const minH = titleRegionH + MIN_GAP + contentH;
+  const minGap = MIN_GAP + ((data.sectionCount ?? 1) > 1 ? lineHeight * 2 : 0);
+  const minH = titleRegionH + minGap + contentH;
   const height = pickCanvasHeight(minH);
 
   const scale = 2;
@@ -561,7 +564,7 @@ export function renderToCanvas(data: ExportData): HTMLCanvasElement {
   }
 
   // ---- 诗句 ----
-  drawPoemLines(ctx, lines, colors, fontSize, lineHeight, poemTopBound + prefaceH, poemBottomLimit, genre);
+  drawPoemLines(ctx, lines, colors, fontSize, lineHeight, poemTopBound + prefaceH, poemBottomLimit, genre, data.titleLines);
 
   // ---- 日期 / 脚注（作品下方） ----
   if (date || footnote) {
@@ -783,7 +786,8 @@ function drawPoemLines(
   lineHeight: number,
   topY: number,
   bottomLimit: number,
-  genre: 'Shi' | 'Ci',
+  genre: 'Shi' | 'Ci' | 'Free',
+  titleLines?: Set<number>,
 ) {
   if (lines.length === 0) return;
 
@@ -810,12 +814,23 @@ function drawPoemLines(
       const y = startY + i * actualLineH + actualLineH / 2;
       drawTextLeft(ctx, line, PAD_X, y, letterSpacing);
     });
+  } else if (genre === 'Free') {
+    // 自由诗：居中，逐行判断末尾标点决定偏移
+    lines.forEach((line, i) => {
+      if (!line) return;
+      const y = startY + i * actualLineH + actualLineH / 2;
+      const hasPunct = /[，。！？、；：""''…—]$/.test(line);
+      const cx = hasPunct ? W / 2 + fontSize * 0.5 : W / 2;
+      drawTextCentered(ctx, line, cx, y, letterSpacing);
+    });
   } else {
-    // 诗：居中，右移半字宽补偿末尾标点
+    // 诗：居中，右移半字宽补偿末尾标点；小标题严格居中
     const centerX = W / 2 + fontSize * 0.5;
     lines.forEach((line, i) => {
+      if (!line) return;
       const y = startY + i * actualLineH + actualLineH / 2;
-      drawTextCentered(ctx, line, centerX, y, letterSpacing);
+      const cx = titleLines?.has(i) ? W / 2 : centerX;
+      drawTextCentered(ctx, line, cx, y, letterSpacing);
     });
   }
 }

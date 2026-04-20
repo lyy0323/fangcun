@@ -104,20 +104,30 @@ export function ImportPoemModal({ onClose }: { onClose: () => void }) {
     const chars = [...poem.content].filter(c => c >= '\u4e00' && c <= '\u9fff');
     const charCount = chars.length;
 
+    if (!poem.closest_rule) {
+      const board = createBoard('Free', '古体诗', 0, '古体诗');
+      board.title = poem.title;
+      const lines = poem.content.split(/\n/).map(s => s.trim()).filter(Boolean);
+      board.sections[0].lines = lines.length > 0 ? lines : [''];
+      board.metadata = { ...board.metadata, author: poem.author };
+      dispatch({ type: 'ADD_BOARD', board });
+      return;
+    }
+
     let genre: 'Shi' | 'Ci';
     let ruleName: string;
     if (poem.type === '词') {
       genre = 'Ci';
-      ruleName = poem.closest_rule!;
+      ruleName = poem.closest_rule;
     } else {
       genre = 'Shi';
       const shiLabel = Object.entries(SHI_CHAR_COUNTS).find(([, c]) => c === charCount)?.[0];
-      ruleName = shiLabel ?? poem.closest_rule!;
+      ruleName = shiLabel ?? poem.closest_rule;
     }
 
     const board = createBoard(genre, ruleName, charCount);
     board.title = poem.title;
-    board.poemChars = chars;
+    board.sections[0].poemChars = chars;
     board.metadata = { ...board.metadata, author: poem.author };
     dispatch({ type: 'ADD_BOARD', board });
   };
@@ -202,18 +212,12 @@ export function ImportPoemModal({ onClose }: { onClose: () => void }) {
 
               {/* 导入按钮 */}
               <div className="pt-2">
-                {selectedPoem.closest_rule ? (
-                  <button
-                    className="w-full rounded-lg bg-[var(--accent)] px-4 py-2.5 text-sm font-medium text-white transition-opacity hover:opacity-80"
-                    onClick={() => doImport(selectedPoem)}
-                  >
-                    导入此作品
-                  </button>
-                ) : (
-                  <p className="text-center text-sm text-[var(--text-muted)] py-2">
-                    此作品未匹配到格律规则，无法导入
-                  </p>
-                )}
+                <button
+                  className="w-full rounded-lg bg-[var(--accent)] px-4 py-2.5 text-sm font-medium text-white transition-opacity hover:opacity-80"
+                  onClick={() => doImport(selectedPoem)}
+                >
+                  {selectedPoem.closest_rule ? '导入此作品' : '作为古体诗导入'}
+                </button>
               </div>
             </div>
           ) : (

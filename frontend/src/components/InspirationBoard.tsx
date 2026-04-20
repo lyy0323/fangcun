@@ -36,6 +36,7 @@ export function InspirationBoard() {
   const fileRef = useRef<HTMLInputElement>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const pendingFocusId = useRef<string | null>(null);
 
   // 处理粘贴图片的通用逻辑
   const handleImagePaste = useCallback(async (items: DataTransferItemList) => {
@@ -106,6 +107,7 @@ export function InspirationBoard() {
       createdAt: Date.now(),
     };
     dispatch({ type: 'ADD_INSPIRATION', card });
+    pendingFocusId.current = card.id;
     setMenuOpen(false);
   };
 
@@ -214,6 +216,12 @@ export function InspirationBoard() {
                   ].join(' ')}
                   contentEditable
                   suppressContentEditableWarning
+                  ref={el => {
+                    if (el && pendingFocusId.current === card.id) {
+                      pendingFocusId.current = null;
+                      requestAnimationFrame(() => el.focus());
+                    }
+                  }}
                   onFocus={e => {
                     if (!card.content) {
                       e.currentTarget.innerText = '';

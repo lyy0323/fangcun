@@ -39,6 +39,10 @@ body {
   color: var(--text);
 }
 
+/* 全局隐藏滚动条但保留滚动 */
+* { scrollbar-width: none; }
+*::-webkit-scrollbar { display: none; }
+
 /* 触摸设备：隐藏候选字叉号按钮（改用长按删除） */
 @media (hover: none) {
   .max-touch\:hidden {

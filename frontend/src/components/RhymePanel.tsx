@@ -7,7 +7,7 @@ import { RefreshCw, RotateCcw, ChevronDown } from 'lucide-react';
 export function RhymePanel() {
   const { state, dispatch } = useBoardContext();
   const board = useActiveBoard();
-  const validation = state.validation;
+  const validation = state.validations[state.activeSectionIndex] ?? null;
 
   const [rhymeChars, setRhymeChars] = useState<string[]>([]);
   const [rhymeCatName, setRhymeCatName] = useState<string | null>(null);
@@ -111,7 +111,9 @@ export function RhymePanel() {
 
   const bookOptions = board?.genre === 'Shi'
     ? [{ value: 'Pingshuiyun', label: '平水韵' }, { value: 'Zhonghua_Tongyun', label: '中华通韵' }]
-    : [{ value: 'Cilinzhengyun', label: '词林正韵' }, { value: 'Zhonghua_Tongyun', label: '中华通韵' }];
+    : board?.genre === 'Ci'
+    ? [{ value: 'Cilinzhengyun', label: '词林正韵' }, { value: 'Zhonghua_Tongyun', label: '中华通韵' }]
+    : [{ value: 'Zhonghua_Tongyun', label: '中华通韵' }, { value: 'Pingshuiyun', label: '平水韵' }];
   const bookLabel = bookOptions.find(o => o.value === bookName)?.label ?? bookName;
 
   return (

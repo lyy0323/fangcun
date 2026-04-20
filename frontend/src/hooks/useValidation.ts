@@ -9,46 +9,46 @@ import { validateMeter } from '../lib/api';
  * 切换画板时中止旧请求，防止竞态覆盖。
  */
 export function useValidation() {
-  const { dispatch } = useBoardContext();
+  const { state, dispatch } = useBoardContext();
   const board = useActiveBoard();
+  const si = state.activeSectionIndex;
+  const sec = board?.sections[si];
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const abortRef = useRef<AbortController | null>(null);
   const boardIdRef = useRef(board?.id ?? '');
 
-  const charsKey = board?.poemChars.join('') ?? '';
+  const charsKey = sec?.poemChars.join('') ?? '';
   const boardId = board?.id ?? '';
   const rhymeBookName = board?.rhymeBookName ?? '';
 
-  // 始终跟踪最新 boardId
   boardIdRef.current = boardId;
 
+  // Active section: debounced validation on content/section changes
   useEffect(() => {
-    if (!board) return;
+    if (!board || !sec || board.genre === 'Free') return;
 
-    // 清除之前的 timer
     if (timerRef.current) clearTimeout(timerRef.current);
-    // 中止之前的请求
     if (abortRef.current) abortRef.current.abort();
 
     const currentBoardId = board.id;
+    const currentSi = si;
 
     timerRef.current = setTimeout(async () => {
       abortRef.current = new AbortController();
 
       try {
         const result = await validateMeter({
-          poem_text: board.poemChars.join(''),
+          poem_text: sec.poemChars.join(''),
           genre: board.genre,
           rhyme_book_name: board.rhymeBookName,
-          rule_name: board.ruleName,
+          rule_name: sec.ruleName,
           ensure_longpu: board.genre === 'Ci',
         });
-        // 仅当仍在同一个画板时才更新，防止竞态
         if (boardIdRef.current === currentBoardId) {
-          dispatch({ type: 'SET_VALIDATION', result });
+          dispatch({ type: 'SET_VALIDATION', sectionIndex: currentSi, result });
         }
       } catch {
-        // 忽略 abort 错误
+        // ignore abort
       }
     }, 500);
 
@@ -56,5 +56,30 @@ export function useValidation() {
       if (timerRef.current) clearTimeout(timerRef.current);
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [charsKey, boardId, rhymeBookName]);
+  }, [charsKey, boardId, rhymeBookName, si]);
+
+  // Non-active sections: validate on board load or rhyme book change
+  useEffect(() => {
+    if (!board || board.sections.length <= 1 || board.genre === 'Free') return;
+    const currentBoardId = board.id;
+    const abort = new AbortController();
+
+    board.sections.forEach((s, idx) => {
+      if (idx === si) return;
+      validateMeter({
+        poem_text: s.poemChars.join(''),
+        genre: board.genre,
+        rhyme_book_name: board.rhymeBookName,
+        rule_name: s.ruleName,
+        ensure_longpu: board.genre === 'Ci',
+      }).then(result => {
+        if (!abort.signal.aborted && boardIdRef.current === currentBoardId) {
+          dispatch({ type: 'SET_VALIDATION', sectionIndex: idx, result });
+        }
+      }).catch(() => {});
+    });
+
+    return () => { abort.abort(); };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [boardId, rhymeBookName]);
 }

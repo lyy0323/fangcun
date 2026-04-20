@@ -6,7 +6,7 @@ interface Props {
   isCursor: boolean;
   isError: boolean;
   isRhyme: boolean;
-  rhymeColor?: string;   // 韵脚颜色（平/仄/叶韵分色）
+  rhymeColor?: string;
   ruleItem: RuleItem | null;
   hasSepAfter?: boolean;
   sepWidth?: number;
@@ -18,6 +18,7 @@ interface Props {
   punctW?: number;
   candidateSize?: number;
   isSelected?: boolean;
+  immersive?: boolean;
   onClickCell: (e: React.MouseEvent) => void;
   onClickCandidate?: (char: string) => void;
   onAddCandidate?: () => void;
@@ -31,7 +32,7 @@ const TONE_SYMBOL: Record<string, string> = {
 };
 
 export function GridCell({
-  char, globalIndex, isCursor, isError, isRhyme, rhymeColor, isSelected,
+  char, globalIndex, isCursor, isError, isRhyme, rhymeColor, isSelected, immersive,
   ruleItem,
   hasSepAfter, sepWidth = 12, punctuation, candidates,
   cellW = 30, charBoxSize = 28, fontSize = 14, punctW = 14, candidateSize = 24,
@@ -48,10 +49,11 @@ export function GridCell({
       data-gi={globalIndex}
     >
       <div className="flex flex-col items-center" style={{ width: cellW, marginBottom: 2 }}>
-        {/* 平仄符号（平=#559977 仄=#557799） */}
+        {/* 平仄符号 */}
         <div className="font-mono leading-none" style={{
           height: toneSize + 4, fontSize: toneSize,
-          color: ruleItem?.tone === 'P' ? '#559977' : ruleItem?.tone === 'Z' ? '#557799' : 'var(--text-muted)',
+          color: immersive ? 'transparent'
+            : ruleItem?.tone === 'P' ? '#559977' : ruleItem?.tone === 'Z' ? '#557799' : 'var(--text-muted)',
         }}>
           {ruleItem ? TONE_SYMBOL[ruleItem.tone] ?? '' : ''}
         </div>
@@ -59,28 +61,29 @@ export function GridCell({
         <div
           className={[
             'flex items-center justify-center rounded transition-all cursor-pointer',
-            isEmpty ? 'bg-[var(--grid-empty)] border border-dashed border-[var(--grid-empty-border)]' : '',
-            isCursor ? 'ring-2 ring-offset-1' : '',
-            isError && !isEmpty ? 'font-bold' : '',
+            !immersive && isEmpty ? 'bg-[var(--grid-empty)] border border-dashed border-[var(--grid-empty-border)]' : '',
+            isCursor ? (immersive ? 'ring-1' : 'ring-2 ring-offset-1') : '',
+            !immersive && isError && !isEmpty ? 'font-bold' : '',
           ].join(' ')}
           style={{
             width: charBoxSize, height: charBoxSize, fontSize,
-            ...(isCursor ? { '--tw-ring-color': 'var(--accent)' } as React.CSSProperties : {}),
-            ...(!isEmpty && isSelected ? { backgroundColor: 'var(--accent-light)' } : {}),
-            ...(isError && !isEmpty ? { color: '#E11D48' } : {}),
-            ...(isRhyme && !isEmpty && !isError && rhymeColor ? { color: rhymeColor, fontWeight: 600 } : {}),
+            ...(isCursor ? { '--tw-ring-color': immersive ? 'var(--text-muted)' : 'var(--accent)' } as React.CSSProperties : {}),
+            ...(!immersive && !isEmpty && isSelected ? { backgroundColor: 'var(--accent-light)' } : {}),
+            ...(!immersive && isError && !isEmpty ? { color: '#E11D48' } : {}),
+            ...(!immersive && isRhyme && !isEmpty && !isError && rhymeColor ? { color: rhymeColor, fontWeight: 600 } : {}),
           }}
           onClick={(e) => onClickCell(e)}
         >
           {isEmpty ? '' : char}
         </div>
         {/* 韵脚标记 */}
-        {isRhyme && (
+        {!immersive && isRhyme && (
           <div className="rounded-full mt-px" style={{ width: Math.max(6, charBoxSize * 0.35), height: 2, background: rhymeColor ?? '#559977' }} />
         )}
-        {!isRhyme && <div style={{ height: 2 }} className="mt-px" />}
+        {(!isRhyme || immersive) && <div style={{ height: 2 }} className="mt-px" />}
 
-        {/* 候选项：灰色无框 */}
+        {/* 候选项 */}
+        {!immersive && (
         <div className="flex flex-col items-center gap-0.5 mt-1" style={{ minHeight: candidateSize + 4 }}>
         {(hasCandidates || isCursor) && (<>
             {hasCandidates && candidates!.map(c => (
@@ -120,6 +123,7 @@ export function GridCell({
             )}
           </>)}
         </div>
+        )}
       </div>
 
       {/* 标点 */}

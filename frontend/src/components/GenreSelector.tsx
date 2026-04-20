@@ -84,20 +84,30 @@ export function GenreSelector() {
           {/* 第一步: 诗/词 */}
           {step === 'genre' && (
             <div className="flex flex-col items-center py-8">
-              <div className="flex gap-4 justify-center">
+              <div className="flex gap-3 justify-center flex-wrap">
                 <button
-                  className="w-28 h-28 rounded-2xl border-2 border-[var(--border)] hover:border-[var(--accent)] hover:bg-[var(--accent-light)] flex flex-col items-center justify-center gap-2 transition-all"
+                  className="w-24 h-24 sm:w-28 sm:h-28 rounded-2xl border-2 border-[var(--border)] hover:border-[var(--accent)] hover:bg-[var(--accent-light)] flex flex-col items-center justify-center gap-2 transition-all"
                   onClick={() => setStep('shi')}
                 >
                   <span className="text-3xl">诗</span>
                   <span className="text-xs text-[var(--text-secondary)]">绝句·律诗</span>
                 </button>
                 <button
-                  className="w-28 h-28 rounded-2xl border-2 border-[var(--border)] hover:border-[var(--accent)] hover:bg-[var(--accent-light)] flex flex-col items-center justify-center gap-2 transition-all"
+                  className="w-24 h-24 sm:w-28 sm:h-28 rounded-2xl border-2 border-[var(--border)] hover:border-[var(--accent)] hover:bg-[var(--accent-light)] flex flex-col items-center justify-center gap-2 transition-all"
                   onClick={() => setStep('ci')}
                 >
                   <span className="text-3xl">词</span>
                   <span className="text-xs text-[var(--text-secondary)]">词牌</span>
+                </button>
+                <button
+                  className="w-24 h-24 sm:w-28 sm:h-28 rounded-2xl border-2 border-[var(--border)] hover:border-[var(--accent)] hover:bg-[var(--accent-light)] flex flex-col items-center justify-center gap-2 transition-all"
+                  onClick={() => {
+                    const board = createBoard('Free', '自由', 0);
+                    dispatch({ type: 'ADD_BOARD', board });
+                  }}
+                >
+                  <span className="text-3xl">文</span>
+                  <span className="text-xs text-[var(--text-secondary)]">自由诗</span>
                 </button>
               </div>
               <button
@@ -122,6 +132,16 @@ export function GenreSelector() {
                   <span className="text-xs text-[var(--text-muted)]">{count}字</span>
                 </button>
               ))}
+              <button
+                className="h-16 rounded-xl border-2 border-dashed border-[var(--border)] hover:border-[var(--accent)] hover:bg-[var(--accent-light)] flex flex-col items-center justify-center transition-all"
+                onClick={() => {
+                  const board = createBoard('Free', '古体诗', 0, '古体诗');
+                  dispatch({ type: 'ADD_BOARD', board });
+                }}
+              >
+                <span className="font-semibold">古体诗</span>
+                <span className="text-xs text-[var(--text-muted)]">不限格律</span>
+              </button>
             </div>
           )}
 

@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useReducer, useEffect, type Dispatch } from 'react';
-import type { Board, ValidationResult, BoardMetadata } from '../lib/types';
+import type { Board, Folder, ValidationResult, BoardMetadata, PoemSection, FreeRhymeResult } from '../lib/types';
 import { PLACEHOLDER } from '../lib/types';
-import { loadBoards, saveBoards, loadActiveBoardId, saveActiveBoardId } from '../lib/storage';
+import { loadBoards, saveBoards, loadActiveBoardId, saveActiveBoardId, loadFolders, saveFolders } from '../lib/storage';
 
 // ============================================================================
 // State
@@ -9,26 +9,32 @@ import { loadBoards, saveBoards, loadActiveBoardId, saveActiveBoardId } from '..
 
 export interface AppState {
   boards: Board[];
+  folders: Folder[];
   activeBoardId: string | null;
-  validation: ValidationResult | null;
+  activeSectionIndex: number;
+  validations: (ValidationResult | null)[];
   showGenreSelector: boolean;
-  dictQuery: string | null;       // 联动字典查询（由网格点击触发）
-  dictQueryCursor: number | null;  // 触发 dictQuery 时的光标位置
+  dictQuery: string | null;
+  dictQueryCursor: number | null;
   insertCharFn: ((text: string, mode?: 'forward' | 'backward' | 'pair') => void) | null;
-  rhymeOverride: string | null;   // 字典韵部点击 → 联动右侧面板切换韵部
-  pairQuery: { text: string; insertAt: number } | null;  // 多选对语查询
+  rhymeOverride: string | null;
+  pairQuery: { text: string; insertAt: number } | null;
+  freeRhymeResult: FreeRhymeResult | null;
 }
 
 const initialState: AppState = {
   boards: loadBoards(),
+  folders: loadFolders(),
   activeBoardId: loadActiveBoardId(),
-  validation: null,
+  activeSectionIndex: 0,
+  validations: [],
   showGenreSelector: false,
   dictQuery: null,
   dictQueryCursor: null,
   insertCharFn: null,
   rhymeOverride: null,
   pairQuery: null,
+  freeRhymeResult: null,
 };
 
 // 首次打开没有画板时，自动弹出体裁选择
@@ -46,7 +52,7 @@ export type Action =
   | { type: 'SWITCH_BOARD'; id: string }
   | { type: 'UPDATE_TITLE'; title: string }
   | { type: 'UPDATE_CHAR'; index: number; char: string }
-  | { type: 'SET_VALIDATION'; result: ValidationResult | null }
+  | { type: 'SET_VALIDATION'; sectionIndex: number; result: ValidationResult | null }
   | { type: 'SHOW_GENRE_SELECTOR'; show: boolean }
   | { type: 'SET_POEM_CHARS'; chars: string[] }
   | { type: 'SET_DICT_QUERY'; query: string | null; cursor?: number | null }
@@ -60,17 +66,37 @@ export type Action =
   | { type: 'DELETE_INSPIRATION'; cardId: string }
   | { type: 'UPDATE_INSPIRATION'; cardId: string; content: string }
   | { type: 'UPDATE_METADATA'; metadata: Partial<BoardMetadata> }
-  | { type: 'IMPORT_BOARDS'; boards: Board[] };
+  | { type: 'IMPORT_BOARDS'; boards: Board[] }
+  | { type: 'ADD_SECTION' }
+  | { type: 'DELETE_SECTION'; sectionIndex: number }
+  | { type: 'MOVE_SECTION'; sectionIndex: number; direction: 'up' | 'down' }
+  | { type: 'UPDATE_SECTION_TITLE'; sectionIndex: number; title: string }
+  | { type: 'SET_ACTIVE_SECTION'; sectionIndex: number }
+  | { type: 'SET_FREE_LINES'; lines: string[] }
+  | { type: 'SET_FREE_RHYME'; result: FreeRhymeResult | null }
+  | { type: 'TOGGLE_IMMERSIVE'; sectionIndex: number }
+  | { type: 'ADD_FOLDER'; name: string; parentId: string | null }
+  | { type: 'RENAME_FOLDER'; id: string; name: string }
+  | { type: 'DELETE_FOLDER'; id: string }
+  | { type: 'TOGGLE_FOLDER'; id: string }
+  | { type: 'MOVE_FOLDER'; id: string; direction: 'up' | 'down' }
+  | { type: 'MOVE_BOARD'; boardId: string; folderId: string | null };
 
 // ============================================================================
 // Reducer
 // ============================================================================
 
+// 不可变更新指定 section
+function updateSection(b: Board, si: number, patch: Partial<PoemSection>): Board {
+  const sections = b.sections.map((s, i) => i === si ? { ...s, ...patch } : s);
+  return { ...b, sections, updatedAt: Date.now() };
+}
+
 function reducer(state: AppState, action: Action): AppState {
   switch (action.type) {
     case 'ADD_BOARD': {
       const boards = [...state.boards, action.board];
-      return { ...state, boards, activeBoardId: action.board.id, showGenreSelector: false, validation: null };
+      return { ...state, boards, activeBoardId: action.board.id, activeSectionIndex: 0, showGenreSelector: false, validations: [] };
     }
     case 'DELETE_BOARD': {
       const boards = state.boards.filter(b => b.id !== action.id);
@@ -82,12 +108,13 @@ function reducer(state: AppState, action: Action): AppState {
         ...state,
         boards,
         activeBoardId,
-        validation: activeBoardId !== state.activeBoardId ? null : state.validation,
+        activeSectionIndex: activeBoardId !== state.activeBoardId ? 0 : state.activeSectionIndex,
+        validations: activeBoardId !== state.activeBoardId ? [] : state.validations,
         showGenreSelector: boards.length === 0,
       };
     }
     case 'SWITCH_BOARD':
-      return { ...state, activeBoardId: action.id, validation: null };
+      return { ...state, activeBoardId: action.id, activeSectionIndex: 0, validations: [], freeRhymeResult: null };
     case 'UPDATE_TITLE': {
       const boards = state.boards.map(b =>
         b.id === state.activeBoardId ? { ...b, title: action.title, updatedAt: Date.now() } : b,
@@ -95,22 +122,28 @@ function reducer(state: AppState, action: Action): AppState {
       return { ...state, boards };
     }
     case 'UPDATE_CHAR': {
+      const si = state.activeSectionIndex;
       const boards = state.boards.map(b => {
         if (b.id !== state.activeBoardId) return b;
-        const poemChars = [...b.poemChars];
+        const sec = b.sections[si];
+        const poemChars = [...sec.poemChars];
         poemChars[action.index] = action.char;
-        return { ...b, poemChars, updatedAt: Date.now() };
+        return updateSection(b, si, { poemChars });
       });
       return { ...state, boards };
     }
     case 'SET_POEM_CHARS': {
+      const si = state.activeSectionIndex;
       const boards = state.boards.map(b =>
-        b.id === state.activeBoardId ? { ...b, poemChars: action.chars, updatedAt: Date.now() } : b,
+        b.id === state.activeBoardId ? updateSection(b, si, { poemChars: action.chars }) : b,
       );
       return { ...state, boards };
     }
-    case 'SET_VALIDATION':
-      return { ...state, validation: action.result };
+    case 'SET_VALIDATION': {
+      const vs = [...state.validations];
+      vs[action.sectionIndex] = action.result;
+      return { ...state, validations: vs };
+    }
     case 'SHOW_GENRE_SELECTOR':
       return { ...state, showGenreSelector: action.show };
     case 'SET_DICT_QUERY':
@@ -122,38 +155,41 @@ function reducer(state: AppState, action: Action): AppState {
     case 'SET_INSERT_FN':
       return { ...state, insertCharFn: action.fn };
     case 'ADD_CANDIDATE': {
+      const si = state.activeSectionIndex;
       const boards = state.boards.map(b => {
         if (b.id !== state.activeBoardId) return b;
-        const cm = { ...b.candidatesMap };
+        const sec = b.sections[si];
+        const cm = { ...sec.candidatesMap };
         const existing = cm[action.index] ?? [];
         if (existing.length >= 5 || existing.includes(action.char)) return b;
         cm[action.index] = [...existing, action.char];
-        return { ...b, candidatesMap: cm, updatedAt: Date.now() };
+        return updateSection(b, si, { candidatesMap: cm });
       });
       return { ...state, boards };
     }
     case 'REMOVE_CANDIDATE': {
+      const si = state.activeSectionIndex;
       const boards = state.boards.map(b => {
         if (b.id !== state.activeBoardId) return b;
-        const cm = { ...b.candidatesMap };
+        const sec = b.sections[si];
+        const cm = { ...sec.candidatesMap };
         const existing = cm[action.index] ?? [];
         cm[action.index] = existing.filter(c => c !== action.char);
         if (cm[action.index].length === 0) delete cm[action.index];
-        return { ...b, candidatesMap: cm, updatedAt: Date.now() };
+        return updateSection(b, si, { candidatesMap: cm });
       });
       return { ...state, boards };
     }
     case 'REPLACE_WITH_CANDIDATE': {
-      // 将候选字替换为正文，原正文字移入候选
+      const si = state.activeSectionIndex;
       const boards = state.boards.map(b => {
         if (b.id !== state.activeBoardId) return b;
-        const poemChars = [...b.poemChars];
-        const cm = { ...b.candidatesMap };
+        const sec = b.sections[si];
+        const poemChars = [...sec.poemChars];
+        const cm = { ...sec.candidatesMap };
         const oldChar = poemChars[action.index];
         const existing = cm[action.index] ?? [];
-        // 新正文 = 候选字
         poemChars[action.index] = action.char;
-        // 候选列表: 去掉选中的候选字，加入原正文字（如果不是占位符且不重复）
         let newCandidates = existing.filter(c => c !== action.char);
         if (oldChar && oldChar !== '\u25a1' && !newCandidates.includes(oldChar)) {
           newCandidates = [oldChar, ...newCandidates];
@@ -163,7 +199,7 @@ function reducer(state: AppState, action: Action): AppState {
         } else {
           delete cm[action.index];
         }
-        return { ...b, poemChars, candidatesMap: cm, updatedAt: Date.now() };
+        return updateSection(b, si, { poemChars, candidatesMap: cm });
       });
       return { ...state, boards };
     }
@@ -223,6 +259,137 @@ function reducer(state: AppState, action: Action): AppState {
       const boards = [...state.boards, ...newBoards];
       return { ...state, boards };
     }
+    case 'ADD_SECTION': {
+      const boards = state.boards.map(b => {
+        if (b.id !== state.activeBoardId) return b;
+        const ref = b.sections[0];
+        const newSec: PoemSection = {
+          id: crypto.randomUUID(),
+          title: '',
+          ruleName: ref.ruleName,
+          charCount: ref.charCount,
+          poemChars: Array(ref.charCount).fill(PLACEHOLDER),
+          candidatesMap: {},
+        };
+        return { ...b, sections: [...b.sections, newSec], updatedAt: Date.now() };
+      });
+      const board = boards.find(b => b.id === state.activeBoardId);
+      const newIdx = board ? board.sections.length - 1 : 0;
+      const validations = [...state.validations, null];
+      return { ...state, boards, activeSectionIndex: newIdx, validations };
+    }
+    case 'DELETE_SECTION': {
+      const boards = state.boards.map(b => {
+        if (b.id !== state.activeBoardId || b.sections.length <= 1) return b;
+        const sections = b.sections.filter((_, i) => i !== action.sectionIndex);
+        return { ...b, sections, updatedAt: Date.now() };
+      });
+      const newSi = Math.min(state.activeSectionIndex, (boards.find(b => b.id === state.activeBoardId)?.sections.length ?? 1) - 1);
+      const validations = state.validations.filter((_, i) => i !== action.sectionIndex);
+      return { ...state, boards, activeSectionIndex: newSi, validations };
+    }
+    case 'MOVE_SECTION': {
+      const { sectionIndex: from, direction } = action;
+      const to = direction === 'up' ? from - 1 : from + 1;
+      const boards = state.boards.map(b => {
+        if (b.id !== state.activeBoardId) return b;
+        if (to < 0 || to >= b.sections.length) return b;
+        const sections = [...b.sections];
+        [sections[from], sections[to]] = [sections[to], sections[from]];
+        return { ...b, sections, updatedAt: Date.now() };
+      });
+      const board = boards.find(b => b.id === state.activeBoardId);
+      if (!board || to < 0 || to >= board.sections.length) return state;
+      const validations = [...state.validations];
+      [validations[from], validations[to]] = [validations[to], validations[from]];
+      const newSi = state.activeSectionIndex === from ? to : state.activeSectionIndex === to ? from : state.activeSectionIndex;
+      return { ...state, boards, validations, activeSectionIndex: newSi };
+    }
+    case 'UPDATE_SECTION_TITLE': {
+      const boards = state.boards.map(b =>
+        b.id === state.activeBoardId ? updateSection(b, action.sectionIndex, { title: action.title }) : b,
+      );
+      return { ...state, boards };
+    }
+    case 'SET_ACTIVE_SECTION':
+      return { ...state, activeSectionIndex: action.sectionIndex };
+    case 'SET_FREE_LINES': {
+      const boards = state.boards.map(b => {
+        if (b.id !== state.activeBoardId || b.genre !== 'Free') return b;
+        const sections = [...b.sections];
+        sections[0] = { ...sections[0], lines: action.lines };
+        return { ...b, sections, updatedAt: Date.now() };
+      });
+      return { ...state, boards };
+    }
+    case 'SET_FREE_RHYME':
+      return { ...state, freeRhymeResult: action.result };
+    case 'TOGGLE_IMMERSIVE': {
+      const boards = state.boards.map(b => {
+        if (b.id !== state.activeBoardId) return b;
+        return updateSection(b, action.sectionIndex, { immersive: !b.sections[action.sectionIndex]?.immersive });
+      });
+      return { ...state, boards };
+    }
+    case 'ADD_FOLDER': {
+      const siblings = state.folders.filter(f => f.parentId === action.parentId);
+      const maxOrder = siblings.length > 0 ? Math.max(...siblings.map(f => f.order)) : -1;
+      const folder: Folder = {
+        id: crypto.randomUUID(),
+        name: action.name,
+        parentId: action.parentId,
+        order: maxOrder + 1,
+        createdAt: Date.now(),
+      };
+      return { ...state, folders: [...state.folders, folder] };
+    }
+    case 'RENAME_FOLDER': {
+      const folders = state.folders.map(f => f.id === action.id ? { ...f, name: action.name } : f);
+      return { ...state, folders };
+    }
+    case 'DELETE_FOLDER': {
+      const toDelete = new Set<string>();
+      const collect = (id: string) => {
+        toDelete.add(id);
+        state.folders.filter(f => f.parentId === id).forEach(f => collect(f.id));
+      };
+      collect(action.id);
+      const target = state.folders.find(f => f.id === action.id);
+      const parentId = target?.parentId ?? null;
+      const folders = state.folders.filter(f => !toDelete.has(f.id));
+      const boards = state.boards.map(b =>
+        b.folderId && toDelete.has(b.folderId) ? { ...b, folderId: parentId ?? undefined } : b,
+      );
+      return { ...state, folders, boards };
+    }
+    case 'TOGGLE_FOLDER': {
+      const folders = state.folders.map(f => f.id === action.id ? { ...f, collapsed: !f.collapsed } : f);
+      return { ...state, folders };
+    }
+    case 'MOVE_FOLDER': {
+      const folder = state.folders.find(f => f.id === action.id);
+      if (!folder) return state;
+      const siblings = state.folders
+        .filter(f => f.parentId === folder.parentId)
+        .sort((a, b) => a.order - b.order);
+      const idx = siblings.findIndex(f => f.id === action.id);
+      const swapIdx = action.direction === 'up' ? idx - 1 : idx + 1;
+      if (swapIdx < 0 || swapIdx >= siblings.length) return state;
+      const orderA = siblings[idx].order;
+      const orderB = siblings[swapIdx].order;
+      const folders = state.folders.map(f => {
+        if (f.id === siblings[idx].id) return { ...f, order: orderB };
+        if (f.id === siblings[swapIdx].id) return { ...f, order: orderA };
+        return f;
+      });
+      return { ...state, folders };
+    }
+    case 'MOVE_BOARD': {
+      const boards = state.boards.map(b =>
+        b.id === action.boardId ? { ...b, folderId: action.folderId ?? undefined, updatedAt: Date.now() } : b,
+      );
+      return { ...state, boards };
+    }
     default:
       return state;
   }
@@ -241,6 +408,10 @@ export function BoardProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     saveBoards(state.boards);
   }, [state.boards]);
+
+  useEffect(() => {
+    saveFolders(state.folders);
+  }, [state.folders]);
 
   useEffect(() => {
     if (state.activeBoardId) saveActiveBoardId(state.activeBoardId);
@@ -262,17 +433,44 @@ export function useActiveBoard(): Board | null {
 }
 
 // 工具: 创建新画板
-export function createBoard(genre: 'Shi' | 'Ci', ruleName: string, charCount: number): Board {
+export function createBoard(genre: 'Shi' | 'Ci' | 'Free', ruleName: string, charCount: number, subGenre?: string): Board {
+  if (genre === 'Free') {
+    const isGuTi = subGenre === '古体诗';
+    return {
+      id: crypto.randomUUID(),
+      title: isGuTi ? '新建·古体诗' : '新建·自由诗',
+      genre: 'Free',
+      subGenre,
+      rhymeBookName: isGuTi ? 'Pingshuiyun' : 'Zhonghua_Tongyun',
+      sections: [{
+        id: crypto.randomUUID(),
+        title: '',
+        ruleName: subGenre ?? '自由',
+        charCount: 0,
+        poemChars: [],
+        candidatesMap: {},
+        lines: isGuTi ? ['', ''] : [''],
+      }],
+      inspirationCards: [],
+      metadata: { rhymeBook: isGuTi ? 'Pingshuiyun' : 'Zhonghua_Tongyun', dateFormat: 'Gregorian' },
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+    };
+  }
   const defaultRhymeBook = genre === 'Shi' ? 'Pingshuiyun' : 'Cilinzhengyun';
   return {
     id: crypto.randomUUID(),
     title: `新建·${ruleName}`,
     genre,
-    ruleName,
-    charCount,
     rhymeBookName: defaultRhymeBook,
-    poemChars: Array(charCount).fill(PLACEHOLDER),
-    candidatesMap: {},
+    sections: [{
+      id: crypto.randomUUID(),
+      title: '',
+      ruleName,
+      charCount,
+      poemChars: Array(charCount).fill(PLACEHOLDER),
+      candidatesMap: {},
+    }],
     inspirationCards: [],
     metadata: {
       rhymeBook: defaultRhymeBook,
