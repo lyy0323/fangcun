@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useBoardContext, useActiveBoard } from '../context/BoardContext';
-import { PLACEHOLDER } from '../lib/types';
+import { PLACEHOLDER, resolveAuthor } from '../lib/types';
+import type { PoemSection, ValidationResult } from '../lib/types';
 import {
   renderToCanvas,
   loadExportFonts,
@@ -14,22 +15,25 @@ import {
   DEFAULT_FONT,
 } from '../lib/exportImage';
 import type { ThemeKey, FontKey } from '../lib/exportImage';
-import type { Board, ValidationResult } from '../lib/types';
+import type { Board } from '../lib/types';
 import { X, Download, Loader, Check } from 'lucide-react';
+
 
 // ============================================================================
 // 从 Board 构建诗句行
 // ============================================================================
 
-function buildPoemLines(board: Board, validation: ValidationResult | null): string[] {
-  const chars = board.poemChars;
+function buildSectionLines(genre: 'Shi' | 'Ci' | 'Free', sec: PoemSection, validation: ValidationResult | null): string[] {
+  if (genre === 'Free') {
+    return sec.lines ?? [];
+  }
+  const chars = sec.poemChars;
   const rhymeSet = new Set(validation?.rhyme_positions ?? []);
   const sentenceLen =
-    board.genre === 'Shi' ? (board.charCount % 7 === 0 ? 7 : 5) : 0;
+    genre === 'Shi' ? (sec.charCount % 7 === 0 ? 7 : 5) : 0;
 
-  // 获取标点
   const getPunct = (gi: number): string => {
-    if (board.genre === 'Shi') {
+    if (genre === 'Shi') {
       const posInCouplet = gi % (sentenceLen * 2);
       const isSentenceEnd =
         posInCouplet === sentenceLen - 1 ||
@@ -37,7 +41,6 @@ function buildPoemLines(board: Board, validation: ValidationResult | null): stri
       if (!isSentenceEnd) return '';
       return rhymeSet.has(gi) ? '。' : '，';
     }
-    // Ci: 依赖 validation
     if (!validation?.display_segments) return '';
     for (const seg of validation.display_segments) {
       const offset = gi - seg.start_index;
@@ -53,8 +56,7 @@ function buildPoemLines(board: Board, validation: ValidationResult | null): stri
     return '';
   };
 
-  if (board.genre === 'Shi') {
-    // 诗：每联（出句+对句）一行，与前端保持一致
+  if (genre === 'Shi') {
     const coupletLen = sentenceLen * 2;
     const lines: string[] = [];
     for (let start = 0; start < chars.length; start += coupletLen) {
@@ -69,7 +71,6 @@ function buildPoemLines(board: Board, validation: ValidationResult | null): stri
     return lines;
   }
 
-  // 词：按 。拆行
   let fullText = '';
   for (let i = 0; i < chars.length; i++) {
     fullText += chars[i] === PLACEHOLDER ? '□' : chars[i];
@@ -89,8 +90,22 @@ function buildPoemLines(board: Board, validation: ValidationResult | null): stri
     }
   }
   if (cur.trim()) lines.push(cur);
-
   return lines;
+}
+
+function buildAllPoemLines(board: Board, validations: (ValidationResult | null)[]): { lines: string[]; titleLines: Set<number> } {
+  const allLines: string[] = [];
+  const titleLines = new Set<number>();
+  board.sections.forEach((sec, idx) => {
+    const v = validations[idx] ?? null;
+    if (idx > 0) allLines.push('');
+    if (sec.title) {
+      titleLines.add(allLines.length);
+      allLines.push(sec.title);
+    }
+    allLines.push(...buildSectionLines(board.genre, sec, v));
+  });
+  return { lines: allLines, titleLines };
 }
 
 // ============================================================================
@@ -162,19 +177,22 @@ export function ExportPreview({ onClose }: { onClose: () => void }) {
   const [downloadState, setDownloadState] = useState<'idle' | 'saving' | 'done'>('idle');
   const previewRef = useRef<HTMLDivElement>(null);
 
-  const lines = board ? buildPoemLines(board, state.validation) : [];
+  const { lines, titleLines } = board ? buildAllPoemLines(board, state.validations) : { lines: [] as string[], titleLines: new Set<number>() };
 
   // 预加载各字体的"文"字用于选择器预览
   useEffect(() => { loadFontPreviews(); }, []);
 
   const render = useCallback(async () => {
     if (!board || lines.length === 0) return;
+    const sectionCharCount = board.genre === 'Free'
+      ? Math.max(...lines.map(l => [...l].length), 1)
+      : board.sections[0].charCount;
     setLoading(true);
     const metadata = board.metadata || {};
     const rawDate = metadata.date || '';
     const preface = metadata.preface || '';
     const footnote = metadata.footnote || '';
-    const author = metadata.author ?? localStorage.getItem('default_author') ?? '';
+    const author = resolveAuthor(metadata);
 
     // 转换公历日期为中文数字格式
     const date = rawDate ? convertGregorianToChinese(rawDate) : '';
@@ -184,7 +202,7 @@ export function ExportPreview({ onClose }: { onClose: () => void }) {
     const canvas = renderToCanvas({
       title: board.title,
       lines,
-      charCount: board.charCount,
+      charCount: sectionCharCount,
       genre: board.genre,
       theme,
       fontKey,
@@ -193,6 +211,8 @@ export function ExportPreview({ onClose }: { onClose: () => void }) {
       preface,
       footnote,
       author,
+      sectionCount: board.sections.length,
+      titleLines,
     });
     setCanvasEl(canvas);
     setLoading(false);

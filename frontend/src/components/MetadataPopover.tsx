@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Solar } from 'lunar-javascript';
 import { useBoardContext, useActiveBoard } from '../context/BoardContext';
 import { lunarToGregorian } from '../lib/dateConvert';
+import { resolveAuthor } from '../lib/types';
 import type { BoardMetadata } from '../lib/types';
 import { ChevronDown } from 'lucide-react';
 
@@ -111,13 +112,41 @@ export function MetadataPopover({ onClose }: { onClose: () => void }) {
         {/* 署名 */}
         <div>
           <label className="text-[10px] text-[var(--text-secondary)] mb-1 block">署名</label>
-          <input
-            type="text"
-            value={metadata.author ?? ''}
-            onChange={e => update('author', e.target.value)}
-            placeholder={localStorage.getItem('default_author') || '署名（可在设置中配置默认值）'}
-            className={inputClass}
-          />
+          {metadata.author === '' ? (
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-[var(--text-muted)] italic">不署名</span>
+              <button
+                className="text-[10px] text-[var(--accent)] hover:underline"
+                onClick={() => dispatch({ type: 'UPDATE_METADATA', metadata: { author: undefined } })}
+              >
+                恢复默认
+              </button>
+            </div>
+          ) : (
+            <div className="flex gap-1.5">
+              <input
+                type="text"
+                value={metadata.author ?? ''}
+                onChange={e => update('author', e.target.value)}
+                onBlur={e => {
+                  if (e.target.value === '') {
+                    dispatch({ type: 'UPDATE_METADATA', metadata: { author: undefined } });
+                  }
+                }}
+                placeholder={resolveAuthor() || '署名（可在设置中配置默认值）'}
+                className={inputClass}
+              />
+              {resolveAuthor(metadata) && (
+                <button
+                  className="shrink-0 text-[10px] text-[var(--text-muted)] hover:text-[var(--text-secondary)] transition-colors"
+                  onClick={() => dispatch({ type: 'UPDATE_METADATA', metadata: { author: '' } })}
+                  title="出图时不显示署名"
+                >
+                  不署名
+                </button>
+              )}
+            </div>
+          )}
         </div>
 
         {/* 日期 */}

@@ -1,4 +1,4 @@
-import type { ValidationResult, RhymeLookupResult, RuleListItem, PoemSearchResult, PoemFull } from './types';
+import type { ValidationResult, RhymeLookupResult, RuleListItem, PoemSearchResult, PoemFull, FreeRhymeResult } from './types';
 
 const BASE = '/api';
 
@@ -27,6 +27,14 @@ export function validateMeter(params: {
   ensure_longpu?: boolean;
 }): Promise<ValidationResult> {
   return post('/validate_meter', params);
+}
+
+// --- 自由韵脚检测 ---
+export function freeRhyme(params: {
+  lines: string[];
+  rhyme_book_name: string;
+}): Promise<FreeRhymeResult> {
+  return post('/free_rhyme', params);
 }
 
 // --- 韵部同韵字 ---
@@ -58,6 +66,7 @@ export function charLookup(char: string, book: string) {
     char: string;
     tones: string[];
     rhyme_categories: { name: string; tone_type: string }[];
+    definitions: { py: string; defs: { d: string; c?: string }[] }[];
   }>(`/char/lookup?char=${enc(char)}&book=${enc(book)}`);
 }
 

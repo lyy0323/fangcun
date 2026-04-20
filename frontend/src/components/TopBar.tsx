@@ -1,8 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useBoardContext, useActiveBoard } from '../context/BoardContext';
-import { PLACEHOLDER } from '../lib/types';
+import { PLACEHOLDER, resolveAuthor } from '../lib/types';
 import { ensureGregorianDate } from '../lib/dateConvert';
-import { Layers, Plus, ClipboardType, Check, Upload, Sun, Moon, Settings, ChevronRight, X, BookOpen, Lightbulb, SendHorizontal, ExternalLink, Download, FolderUp, ImageDown, ScrollText } from 'lucide-react';
+import { Layers, Plus, ClipboardType, Check, Upload, Sun, Moon, Settings, ChevronRight, ChevronDown, X, BookOpen, Lightbulb, SendHorizontal, ExternalLink, Download, FolderUp, ImageDown, ScrollText, FolderPlus, Pencil, FolderInput, ChevronUp } from 'lucide-react';
 import type { Board } from '../lib/types';
 import { ExportPreview } from './ExportPreview';
 import { MetadataPopover } from './MetadataPopover';
@@ -178,6 +178,7 @@ function SettingsModal({ onClose }: { onClose: () => void }) {
           </a>
           <p className="font-medium text-[var(--text)] pt-1">更新日志</p>
           <ul className="list-disc pl-4 space-y-1">
+            <li>v2.0 (04-20) — 组诗创作，自由诗与古体诗，沉浸模式，画板文件夹管理，署名逻辑统一</li>
             <li>v1.6.7 (04-14) — 韵书数据清洗：移除无法渲染的生僻字及污染字</li>
             <li>v1.6.6 (04-10) — Logo 品牌升级，Android 开屏诗句动画，修复部分设备面板常开</li>
             <li>v1.6.5 (04-09) — 导出字体 CDN 化，新增 6 款字体选择器</li>
@@ -263,50 +264,198 @@ export function TopBar() {
   }, [dark]);
   
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [renamingFolderId, setRenamingFolderId] = useState<string | null>(null);
+  const [movingBoardId, setMovingBoardId] = useState<string | null>(null);
+  const renameRef = useRef<HTMLInputElement>(null);
+  const newFolderRef = useRef<HTMLInputElement>(null);
+  const [newFolderMode, setNewFolderMode] = useState(false);
+
+  const fmt = useCallback((ts: number) => new Date(ts).toLocaleDateString('zh-CN', { month: 'numeric', day: 'numeric' }), []);
+
+  const renderBoardItem = useCallback((b: typeof state.boards[0]) => {
+    const created = fmt(b.createdAt);
+    const modified = fmt(b.updatedAt);
+    const timeLabel = created === modified ? `${created}创建` : `${modified}修改`;
+    return (
+      <div key={b.id} className="relative group">
+        <div
+          className={`flex items-center justify-between px-3 py-1.5 text-sm cursor-pointer hover:bg-[var(--accent-light)] transition-colors ${b.id === state.activeBoardId ? 'bg-[var(--accent-light)] text-[var(--accent)]' : ''}`}
+          onClick={() => { dispatch({ type: 'SWITCH_BOARD', id: b.id }); setDropOpen(false); setConfirmDeleteId(null); }}
+        >
+          <div className="truncate flex-1 mr-2">
+            <div className="truncate text-[13px]">{b.title}</div>
+            <div className="text-[11px] text-[var(--text-muted)]">{b.sections.length > 1 ? `${b.sections.length}首·` : ''}{b.sections[0].ruleName} · {timeLabel}</div>
+          </div>
+          <div className="flex items-center gap-0.5 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+            {state.folders.length > 0 && (
+              <button
+                className="w-5 h-5 rounded flex items-center justify-center text-[var(--text-muted)] hover:text-[var(--accent)]"
+                onClick={e => { e.stopPropagation(); setMovingBoardId(movingBoardId === b.id ? null : b.id); }}
+                title="移至文件夹"
+              >
+                <FolderInput size={11} />
+              </button>
+            )}
+            <button
+              className="w-5 h-5 rounded flex items-center justify-center text-[var(--text-muted)] hover:text-red-500"
+              onClick={e => { e.stopPropagation(); setConfirmDeleteId(b.id); }}
+            >
+              <X size={11} />
+            </button>
+          </div>
+        </div>
+        {movingBoardId === b.id && (
+          <div className="mx-2 mb-1 border border-[var(--border)] rounded-md overflow-hidden text-[12px]">
+            <button
+              className={`w-full text-left px-2 py-1 hover:bg-[var(--accent-light)] ${!b.folderId ? 'text-[var(--accent)]' : ''}`}
+              onClick={e => { e.stopPropagation(); dispatch({ type: 'MOVE_BOARD', boardId: b.id, folderId: null }); setMovingBoardId(null); }}
+            >
+              根目录
+            </button>
+            {state.folders.map(f => (
+              <button
+                key={f.id}
+                className={`w-full text-left px-2 py-1 hover:bg-[var(--accent-light)] ${b.folderId === f.id ? 'text-[var(--accent)]' : ''}`}
+                style={{ paddingLeft: `${8 + (f.parentId ? 16 : 0)}px` }}
+                onClick={e => { e.stopPropagation(); dispatch({ type: 'MOVE_BOARD', boardId: b.id, folderId: f.id }); setMovingBoardId(null); }}
+              >
+                {f.name}
+              </button>
+            ))}
+          </div>
+        )}
+        {confirmDeleteId === b.id && (
+          <div className="absolute inset-0 backdrop-blur-sm flex items-center justify-center gap-3 z-10 rounded" style={{ backgroundColor: 'color-mix(in srgb, var(--bg-card) 80%, transparent)' }}>
+            <button className="px-3 py-1 text-xs rounded-md border border-[var(--grid-empty-border)] text-[var(--text-secondary)] hover:bg-[var(--accent-light)]"
+              onClick={e => { e.stopPropagation(); setConfirmDeleteId(null); }}>取消</button>
+            <button className="px-3 py-1 text-xs rounded-md bg-red-500 text-white hover:bg-red-600"
+              onClick={e => { e.stopPropagation(); dispatch({ type: 'DELETE_BOARD', id: b.id }); setConfirmDeleteId(null); }}>删除</button>
+          </div>
+        )}
+      </div>
+    );
+  }, [state.activeBoardId, state.folders, confirmDeleteId, movingBoardId, fmt, dispatch]);
+
+  const renderFolderTree = useCallback((parentId: string | null, depth: number) => {
+    const folders = state.folders
+      .filter(f => f.parentId === parentId)
+      .sort((a, b) => a.order - b.order);
+    const boards = state.boards
+      .filter(b => (b.folderId ?? null) === parentId)
+      .sort((a, b) => b.updatedAt - a.updatedAt);
+
+    return (
+      <>
+        {folders.map(f => {
+          const isRenaming = renamingFolderId === f.id;
+          return (
+            <div key={f.id}>
+              <div
+                className="group flex items-center px-2 py-1 text-sm cursor-pointer hover:bg-[var(--accent-light)] transition-colors"
+                style={{ paddingLeft: `${8 + depth * 16}px` }}
+                onClick={() => dispatch({ type: 'TOGGLE_FOLDER', id: f.id })}
+              >
+                {f.collapsed ? <ChevronRight size={12} className="shrink-0 text-[var(--text-muted)]" /> : <ChevronDown size={12} className="shrink-0 text-[var(--text-muted)]" />}
+                {isRenaming ? (
+                  <input
+                    ref={renameRef}
+                    className="flex-1 ml-1 text-[13px] bg-transparent outline-none border-b border-[var(--accent)] px-0.5"
+                    defaultValue={f.name}
+                    onClick={e => e.stopPropagation()}
+                    onBlur={e => {
+                      const name = e.target.value.trim();
+                      if (name) dispatch({ type: 'RENAME_FOLDER', id: f.id, name });
+                      setRenamingFolderId(null);
+                    }}
+                    onKeyDown={e => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
+                    autoFocus
+                  />
+                ) : (
+                  <span className="flex-1 ml-1 text-[13px] truncate">{f.name}</span>
+                )}
+                <div className="flex items-center gap-0 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" onClick={e => e.stopPropagation()}>
+                  <button className="w-5 h-5 rounded flex items-center justify-center text-[var(--text-muted)] hover:text-[var(--accent)]" onClick={() => dispatch({ type: 'MOVE_FOLDER', id: f.id, direction: 'up' })} title="上移"><ChevronUp size={11} /></button>
+                  <button className="w-5 h-5 rounded flex items-center justify-center text-[var(--text-muted)] hover:text-[var(--accent)]" onClick={() => dispatch({ type: 'MOVE_FOLDER', id: f.id, direction: 'down' })} title="下移"><ChevronDown size={11} /></button>
+                  <button className="w-5 h-5 rounded flex items-center justify-center text-[var(--text-muted)] hover:text-[var(--accent)]" onClick={() => { setRenamingFolderId(f.id); }} title="重命名"><Pencil size={10} /></button>
+                  <button className="w-5 h-5 rounded flex items-center justify-center text-[var(--text-muted)] hover:text-red-500" onClick={() => dispatch({ type: 'DELETE_FOLDER', id: f.id })} title="删除文件夹"><X size={11} /></button>
+                </div>
+              </div>
+              {!f.collapsed && (
+                <div>
+                  {renderFolderTree(f.id, depth + 1)}
+                  {boards.length === 0 && state.folders.filter(c => c.parentId === f.id).length === 0 && (
+                    <div className="text-[11px] text-[var(--text-muted)] py-1" style={{ paddingLeft: `${24 + depth * 16}px` }}>空</div>
+                  )}
+                </div>
+              )}
+            </div>
+          );
+        })}
+        {boards.map(b => (
+          <div key={b.id} style={{ paddingLeft: `${depth * 16}px` }}>
+            {renderBoardItem(b)}
+          </div>
+        ))}
+      </>
+    );
+  }, [state.folders, state.boards, renamingFolderId, dispatch, renderBoardItem]);
 
   // --- 组装带标点的正文 ---
   const buildText = () => {
     if (!board) return '';
-    const chars = board.poemChars;
-    const validation = state.validation;
-    const rhymeSet = new Set(validation?.rhyme_positions ?? []);
-    const sentenceLen = board.genre === 'Shi' ? (board.charCount % 7 === 0 ? 7 : 5) : 0;
-
-    const getPunct = (gi: number): string => {
-      if (board.genre === 'Shi') {
-        const posInCouplet = gi % (sentenceLen * 2);
-        const isSentenceEnd = posInCouplet === sentenceLen - 1 || posInCouplet === sentenceLen * 2 - 1;
-        if (!isSentenceEnd) return '';
-        return rhymeSet.has(gi) ? '。' : '，';
-      } else {
-        if (!validation?.display_segments) return '';
-        for (const seg of validation.display_segments) {
-          const offset = gi - seg.start_index;
-          if (offset >= 0 && offset < seg.rule_items.length) {
-            const comment = seg.rule_items[offset].comment;
-            if (rhymeSet.has(gi)) return '。';
-            if (comment === '叶' || comment === '换叶') return '。';
-            if (comment === '句') return '，';
-            if (comment === '读') return '、';
-            return '';
-          }
-        }
-        return '';
-      }
-    };
-
-    let text = '';
-    for (let i = 0; i < chars.length; i++) {
-      text += chars[i] === PLACEHOLDER ? '□' : chars[i];
-      const punct = getPunct(i);
-      if (punct) text += punct;
-      if (board.genre === 'Shi' && sentenceLen > 0) {
-        const posInCouplet = i % (sentenceLen * 2);
-        if (posInCouplet === sentenceLen * 2 - 1 && i < chars.length - 1) text += '\n';
-      }
+    if (board.genre === 'Free') {
+      return (board.sections[0]?.lines ?? []).filter(l => l.trim()).join('\n');
     }
-    if (text.length > 0 && !text.endsWith('。') && !text.endsWith('，')) text += '。';
-    return text;
+    const parts: string[] = [];
+
+    board.sections.forEach((sec, idx) => {
+      const validation = state.validations[idx] ?? null;
+      const chars = sec.poemChars;
+      const rhymeSet = new Set(validation?.rhyme_positions ?? []);
+      const sentenceLen = board.genre === 'Shi' ? (sec.charCount % 7 === 0 ? 7 : 5) : 0;
+
+      if (board.sections.length > 1) {
+        parts.push(sec.title || `其${['一','二','三','四','五','六','七','八','九','十'][idx] ?? idx + 1}`);
+      }
+
+      const getPunct = (gi: number): string => {
+        if (board.genre === 'Shi') {
+          const posInCouplet = gi % (sentenceLen * 2);
+          const isSentenceEnd = posInCouplet === sentenceLen - 1 || posInCouplet === sentenceLen * 2 - 1;
+          if (!isSentenceEnd) return '';
+          return rhymeSet.has(gi) ? '。' : '，';
+        } else {
+          if (!validation?.display_segments) return '';
+          for (const seg of validation.display_segments) {
+            const offset = gi - seg.start_index;
+            if (offset >= 0 && offset < seg.rule_items.length) {
+              const comment = seg.rule_items[offset].comment;
+              if (rhymeSet.has(gi)) return '。';
+              if (comment === '叶' || comment === '换叶') return '。';
+              if (comment === '句') return '，';
+              if (comment === '读') return '、';
+              return '';
+            }
+          }
+          return '';
+        }
+      };
+
+      let text = '';
+      for (let i = 0; i < chars.length; i++) {
+        text += chars[i] === PLACEHOLDER ? '□' : chars[i];
+        const punct = getPunct(i);
+        if (punct) text += punct;
+        if (board.genre === 'Shi' && sentenceLen > 0) {
+          const posInCouplet = i % (sentenceLen * 2);
+          if (posInCouplet === sentenceLen * 2 - 1 && i < chars.length - 1) text += '\n';
+        }
+      }
+      if (text.length > 0 && !text.endsWith('。') && !text.endsWith('，')) text += '。';
+      parts.push(text);
+    });
+
+    return parts.join('\n');
   };
 
   const handleCopy = () => {
@@ -327,14 +476,14 @@ export function TopBar() {
       metadata.dateFormat,
     );
     const params = new URLSearchParams({
-      '类型': board.genre === 'Shi' ? '诗' : '词',
+      '类型': board.genre === 'Shi' ? '诗' : board.genre === 'Ci' ? '词' : '自由诗',
       '正文': text,
       '日期': date,
       '标题': board.title,
     });
     if (metadata.preface) params.set('序', metadata.preface);
     if (metadata.footnote) params.set('脚注', metadata.footnote);
-    const author = metadata.author ?? localStorage.getItem('default_author') ?? '';
+    const author = resolveAuthor(metadata);
     if (author) params.set('署名', author);
     window.open(`https://sjtuguoxue.space/submit/?${params.toString()}`, '_blank');
   };
@@ -352,36 +501,37 @@ export function TopBar() {
         </button>
         {dropOpen && (
           <>
-            <div className="fixed inset-0" onClick={() => setDropOpen(false)} />
-            <div className="absolute top-10 left-0 bg-[var(--bg-card)] border border-[var(--border)] rounded-lg shadow-[var(--shadow)] min-w-[220px] max-w-[280px] py-1 z-40 max-h-[50vh] overflow-y-auto">
-              {state.boards.map(b => (
-                <div key={b.id} className="relative">
-                  <div
-                    className={`flex items-center justify-between px-3 py-2 text-sm cursor-pointer hover:bg-[var(--bg-card)] ${b.id === state.activeBoardId ? 'bg-[var(--accent-light)] text-[var(--accent)]' : ''}`}
-                    onClick={() => { dispatch({ type: 'SWITCH_BOARD', id: b.id }); setDropOpen(false); setConfirmDeleteId(null); }}
-                  >
-                    <div className="truncate flex-1 mr-2">
-                      <div className="truncate">{b.title}</div>
-                      <div className="text-xs text-[var(--text-muted)]">{b.ruleName} · {new Date(b.updatedAt).toLocaleDateString('zh-CN', { month: 'numeric', day: 'numeric' })}修改</div>
-                    </div>
-                    <button
-                      className="text-[var(--text-muted)] hover:text-red-500 text-xs shrink-0"
-                      onClick={e => { e.stopPropagation(); setConfirmDeleteId(b.id); }}
-                    >
-                      ✕
-                    </button>
-                  </div>
-                  {confirmDeleteId === b.id && (
-                    <div className="absolute inset-0 backdrop-blur-sm flex items-center justify-center gap-3 z-10 rounded" style={{ backgroundColor: 'color-mix(in srgb, var(--bg-card) 80%, transparent)' }}>
-                      <button className="px-3 py-1 text-xs rounded-md border border-[var(--grid-empty-border)] text-[var(--text-secondary)] hover:bg-[var(--accent-light)]"
-                        onClick={e => { e.stopPropagation(); setConfirmDeleteId(null); }}>取消</button>
-                      <button className="px-3 py-1 text-xs rounded-md bg-red-500 text-white hover:bg-red-600"
-                        onClick={e => { e.stopPropagation(); dispatch({ type: 'DELETE_BOARD', id: b.id }); setConfirmDeleteId(null); }}>删除</button>
-                    </div>
-                  )}
+            <div className="fixed inset-0" onClick={() => { setDropOpen(false); setMovingBoardId(null); }} />
+            <div className="absolute top-10 left-0 bg-[var(--bg-card)] border border-[var(--border)] rounded-lg shadow-[var(--shadow)] min-w-[240px] max-w-[300px] py-1 z-40 max-h-[50vh] overflow-y-auto">
+              {/* New folder button */}
+              {newFolderMode ? (
+                <div className="flex items-center px-3 py-1.5 gap-1">
+                  <FolderPlus size={12} className="text-[var(--text-muted)] shrink-0" />
+                  <input
+                    ref={newFolderRef}
+                    className="flex-1 text-[13px] bg-transparent outline-none border-b border-[var(--accent)] px-0.5"
+                    placeholder="文件夹名称"
+                    onBlur={e => {
+                      const name = e.target.value.trim();
+                      if (name) dispatch({ type: 'ADD_FOLDER', name, parentId: null });
+                      setNewFolderMode(false);
+                    }}
+                    onKeyDown={e => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); if (e.key === 'Escape') setNewFolderMode(false); }}
+                    autoFocus
+                  />
                 </div>
-              ))}
-              {state.boards.length === 0 && (
+              ) : (
+                <button
+                  className="w-full flex items-center gap-1.5 px-3 py-1.5 text-[12px] text-[var(--text-muted)] hover:text-[var(--accent)] hover:bg-[var(--accent-light)] transition-colors"
+                  onClick={() => setNewFolderMode(true)}
+                >
+                  <FolderPlus size={12} /> 新建文件夹
+                </button>
+              )}
+              <div className="border-b border-[var(--border)] my-0.5" />
+              {/* Tree */}
+              {renderFolderTree(null, 0)}
+              {state.boards.length === 0 && state.folders.length === 0 && (
                 <div className="px-3 py-2 text-sm text-[var(--text-muted)]">暂无画板</div>
               )}
             </div>
@@ -444,7 +594,10 @@ export function TopBar() {
                   {copied ? <Check size={14} className="text-emerald-600" /> : <ClipboardType size={14} />}
                   <span>复制文字</span>
                 </button>
-                {!board.poemChars.includes(PLACEHOLDER) && (
+                {(board.genre === 'Free'
+                  ? (board.sections[0]?.lines ?? []).some(l => l.trim())
+                  : board.sections.every(s => !s.poemChars.includes(PLACEHOLDER))
+                ) && (
                   <>
                     <button
                       className="w-full text-left px-3 py-2 text-sm flex items-center gap-2 hover:bg-[var(--accent-light)] transition-colors"

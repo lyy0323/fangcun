@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { BoardProvider } from './context/BoardContext';
 import { TopBar } from './components/TopBar';
 import { GridEditor } from './components/GridEditor';
+import { FreeEditor } from './components/FreeEditor';
 import { RhymePanel } from './components/RhymePanel';
 import { GenreSelector } from './components/GenreSelector';
 import { InspirationBoard } from './components/InspirationBoard';
@@ -76,13 +77,15 @@ function Layout() {
       {state.showGenreSelector && <GenreSelector />}
       {board && (
         <div className="flex flex-1 min-h-0 relative">
-          {/* 左侧栏 — 桌面端常驻 */}
-          <aside className={`w-[20%] border-r border-[var(--border)] p-3 hidden ${lgShow} flex-col shrink-0`}>
-            <h3 className="text-xs font-medium text-[var(--text-secondary)] mb-2">灵感板</h3>
-            <div className="flex-1 overflow-hidden min-h-0">
-              <InspirationBoard />
-            </div>
-          </aside>
+          {/* 左侧栏 — 桌面端常驻（Android 上不挂载） */}
+          {!isAndroid && (
+            <aside className={`w-[20%] border-r border-[var(--border)] p-3 hidden ${lgShow} flex-col shrink-0`}>
+              <h3 className="text-xs font-medium text-[var(--text-secondary)] mb-2">灵感板</h3>
+              <div className="flex-1 overflow-hidden min-h-0">
+                <InspirationBoard />
+              </div>
+            </aside>
+          )}
 
           {/* 中栏 */}
           <main className="flex-1 flex flex-col min-h-0 min-w-0">
@@ -103,15 +106,17 @@ function Layout() {
               >
                 <BookOpen size={16} />
               </button>
-              <GridEditor />
+              {board?.genre === 'Free' ? <FreeEditor /> : <GridEditor />}
             </div>
             <Dictionary />
           </main>
 
-          {/* 右侧栏 — 桌面端常驻 */}
-          <aside className={`w-[30%] border-l border-[var(--border)] overflow-y-auto hidden ${lgBlock} shrink-0`}>
-            <RhymePanel />
-          </aside>
+          {/* 右侧栏 — 桌面端常驻（Android 上永远隐藏，不挂载避免抢占 rhymeOverride） */}
+          {!isAndroid && (
+            <aside className={`w-[30%] border-l border-[var(--border)] overflow-y-auto hidden ${lgBlock} shrink-0`}>
+              <RhymePanel />
+            </aside>
+          )}
 
           {/* 移动端侧滑抽屉 — Android 上仅激活时渲染，避免部分 WebView transform 不生效 */}
           {(!isAndroid || mobilePanel === 'left') && (

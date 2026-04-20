@@ -55,7 +55,11 @@ export function Dictionary() {
   const pendingQuery = useRef(false);
 
   // 结果
-  const [rhymeResult, setRhymeResult] = useState<{ tones: string[]; categories: { name: string; tone_type: string }[] } | null>(null);
+  const [rhymeResult, setRhymeResult] = useState<{
+    tones: string[];
+    categories: { name: string; tone_type: string }[];
+    definitions: { py: string; defs: { d: string; c?: string }[] }[];
+  } | null>(null);
   const [phraseResult, setPhraseResult] = useState<[string, number][]>([]);
   const [allusionResult, setAllusionResult] = useState<AllusionEntry[]>([]);
   const [loading, setLoading] = useState(false);
@@ -99,7 +103,7 @@ export function Dictionary() {
     try {
       if (curTab === 'rhyme') {
         const r = await charLookup(q, bookName);
-        setRhymeResult({ tones: r.tones, categories: r.rhyme_categories });
+        setRhymeResult({ tones: r.tones, categories: r.rhyme_categories, definitions: r.definitions ?? [] });
         setPhraseResult([]);
         setAllusionResult([]);
       } else if (curTab === 'allusion') {
@@ -170,7 +174,7 @@ export function Dictionary() {
       const chars = [...word];
       for (let i = 0; i < chars.length; i++) {
         const pos = startPos + i;
-        if (pos >= 0 && pos < (board?.charCount ?? 0)) {
+        if (pos >= 0 && pos < (board?.sections[0].charCount ?? 0)) {
           dispatch({ type: 'UPDATE_CHAR', index: pos, char: chars[i] });
         }
       }
@@ -178,7 +182,7 @@ export function Dictionary() {
       // fallback: 从光标向后填充
       state.insertCharFn?.(word, 'forward');
     }
-  }, [lastDictQuery, lastDictCursor, board?.charCount, dispatch, state.insertCharFn]);
+  }, [lastDictQuery, lastDictCursor, board?.sections[0].charCount, dispatch, state.insertCharFn]);
 
   const showFilters = effectiveTab === 'head' || effectiveTab === 'tail';
   const [expanded, setExpanded] = useState(true);
@@ -304,19 +308,37 @@ export function Dictionary() {
             ) : (
               <div className="text-xs text-[var(--text-muted)]">无韵部信息</div>
             )}
+            {rhymeResult.definitions.length > 0 && (
+              <div className="mt-2 border-t border-[var(--border)] pt-1.5 space-y-1.5">
+                {rhymeResult.definitions.map((reading, ri) => (
+                  <div key={ri}>
+                    <div className="text-[11px] text-[var(--text-muted)] font-mono">{reading.py}</div>
+                    {reading.defs.map((def, di) => (
+                      <div key={di} className="text-xs leading-relaxed pl-1">
+                        <span className="text-[var(--text-muted)]">{'①②③④'[di] ?? `${di + 1}.`} </span>
+                        <span>{def.d}</span>
+                        {def.c && (
+                          <div className="text-[11px] text-[var(--text-muted)] pl-3 mt-0.5 leading-snug">{def.c}</div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
 
         {/* 词首/词末/对语结果（可点击填入网格） */}
         {tab !== 'rhyme' && tab !== 'allusion' && phraseResult.length > 0 && (() => {
-          const isPairDisabled = effectiveTab === 'pair' && board?.genre === 'Ci';
+          const isPairDisabled = effectiveTab === 'pair' && board?.genre !== 'Shi';
           // 对语点击：如果有 pairQuery.insertAt，直接写入该位置
           const handlePairClick = (word: string) => {
             if (state.pairQuery && board) {
               const start = state.pairQuery.insertAt;
               for (let i = 0; i < word.length; i++) {
                 const pos = start + i;
-                if (pos >= 0 && pos < board.charCount) {
+                if (pos >= 0 && pos < board.sections[0].charCount) {
                   dispatch({ type: 'UPDATE_CHAR', index: pos, char: word[i] });
                 }
               }

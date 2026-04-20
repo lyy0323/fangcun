@@ -10,7 +10,7 @@ export interface InspirationCard {
 }
 
 export interface BoardMetadata {
-  author?: string;            // 署名（undefined → 回退全局默认值）
+  author?: string;            // undefined → 继承全局默认；'' → 显式不署名；非空 → 画板级署名
   date?: string;              // 日期文本（用户输入，如"2024-04-04"或"甲辰年三月初一"）
   dateFormat?: 'Gregorian' | 'Lunar';  // 日期格式
   rhymeBook?: string;        // 韵书（平水韵/词林正韵/中华通韵，仅标注用途）
@@ -18,19 +18,47 @@ export interface BoardMetadata {
   footnote?: string;         // 脚注文本
 }
 
+export function resolveAuthor(metadata?: BoardMetadata): string {
+  if (metadata?.author !== undefined) return metadata.author;
+  return localStorage.getItem('default_author') ?? '';
+}
+
+export interface PoemSection {
+  id: string;
+  title: string;
+  ruleName: string;
+  charCount: number;
+  poemChars: string[];
+  candidatesMap: Record<number, string[]>;
+  lines?: string[];
+  immersive?: boolean;
+}
+
 export interface Board {
   id: string;
   title: string;
-  genre: 'Shi' | 'Ci';
-  ruleName: string;
-  charCount: number;
+  genre: 'Shi' | 'Ci' | 'Free';
+  subGenre?: string;
+  folderId?: string;
   rhymeBookName: string;
-  poemChars: string[];           // 扁平数组, 空位 = "□"
-  candidatesMap: Record<number, string[]>;
+  sections: PoemSection[];
   inspirationCards: InspirationCard[];
   createdAt: number;
   updatedAt: number;
-  metadata?: BoardMetadata;  // 元数据（可选，向后兼容）
+  metadata?: BoardMetadata;
+}
+
+export interface Folder {
+  id: string;
+  name: string;
+  parentId: string | null;
+  collapsed?: boolean;
+  order: number;
+  createdAt: number;
+}
+
+export function primarySection(board: Board): PoemSection {
+  return board.sections[0];
 }
 
 // ============================================================================
@@ -120,6 +148,28 @@ export const SHI_CHAR_COUNTS: Record<string, number> = {
   '五律': 40,
   '七律': 56,
 };
+
+// ============================================================================
+// 自由韵脚检测
+// ============================================================================
+
+export interface FreeRhymePosition { line: number; pos: number; }
+
+export interface FreeRhymeCandidate {
+  line: number;
+  pos: number;
+  char: string;
+  categories: string[];
+}
+
+export interface FreeRhymeGroup {
+  positions: FreeRhymePosition[];
+}
+
+export interface FreeRhymeResult {
+  candidates: FreeRhymeCandidate[];
+  groups: FreeRhymeGroup[];
+}
 
 // ============================================================================
 // 外部诗词库 (shi.sjtuguoxue.space)
