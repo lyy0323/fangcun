@@ -33,6 +33,7 @@ export function validateMeter(params: {
 export function freeRhyme(params: {
   lines: string[];
   rhyme_book_name: string;
+  merge_tones?: boolean;
 }): Promise<FreeRhymeResult> {
   return post('/free_rhyme', params);
 }
