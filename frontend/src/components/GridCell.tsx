@@ -84,7 +84,7 @@ export function GridCell({
 
         {/* 候选项 */}
         {!immersive && (
-        <div className="flex flex-col items-center gap-0.5 mt-1" style={{ minHeight: candidateSize + 4 }}>
+        <div className="flex flex-col items-center gap-0.5 mt-1" style={{ minHeight: candidateSize + 4 }} onMouseDown={e => e.preventDefault()}>
         {(hasCandidates || isCursor) && (<>
             {hasCandidates && candidates!.map(c => (
               <div key={c} className="relative group">

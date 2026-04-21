@@ -40,6 +40,7 @@ export interface Board {
   genre: 'Shi' | 'Ci' | 'Free';
   subGenre?: string;
   folderId?: string;
+  boardOrder?: number;
   rhymeBookName: string;
   sections: PoemSection[];
   inspirationCards: InspirationCard[];
@@ -48,12 +49,15 @@ export interface Board {
   metadata?: BoardMetadata;
 }
 
+export type SortMode = 'updated-desc' | 'updated-asc' | 'created-desc' | 'created-asc' | 'name' | 'custom';
+
 export interface Folder {
   id: string;
   name: string;
   parentId: string | null;
   collapsed?: boolean;
   order: number;
+  sortMode?: SortMode;
   createdAt: number;
 }
 

@@ -2,8 +2,9 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { useBoardContext, useActiveBoard } from '../context/BoardContext';
 import { PLACEHOLDER, resolveAuthor } from '../lib/types';
 import { ensureGregorianDate } from '../lib/dateConvert';
-import { Layers, Plus, ClipboardType, Check, Upload, Sun, Moon, Settings, ChevronRight, ChevronDown, X, BookOpen, Lightbulb, SendHorizontal, ExternalLink, Download, FolderUp, ImageDown, ScrollText, FolderPlus, Pencil, FolderInput, ChevronUp } from 'lucide-react';
-import type { Board } from '../lib/types';
+import { Layers, Plus, ClipboardType, Check, Upload, Sun, Moon, Settings, ChevronRight, ChevronDown, X, BookOpen, Lightbulb, SendHorizontal, ExternalLink, Download, FolderUp, ImageDown, ScrollText, FolderPlus, Pencil, FolderInput, ChevronUp, ArrowUpDown, ArrowDown, ArrowUp, ArrowDownAZ } from 'lucide-react';
+import type { Board, SortMode } from '../lib/types';
+import { track } from '../lib/api';
 import { ExportPreview } from './ExportPreview';
 import { MetadataPopover } from './MetadataPopover';
 
@@ -29,6 +30,7 @@ function SettingsModal({ onClose }: { onClose: () => void }) {
     a.download = `fangcun-boards-${date}.json`;
     a.click();
     URL.revokeObjectURL(url);
+    track('export_boards', { count: state.boards.length });
   }
 
   function handleImport(e: React.ChangeEvent<HTMLInputElement>) {
@@ -47,6 +49,7 @@ function SettingsModal({ onClose }: { onClose: () => void }) {
         const newCount = incoming.filter(b => !existingIds.has(b.id)).length;
         const skipCount = incoming.length - newCount;
         dispatch({ type: 'IMPORT_BOARDS', boards: incoming });
+        track('import_boards', { count: newCount });
         const parts = [`导入 ${newCount} 个画板`];
         if (skipCount > 0) parts.push(`跳过 ${skipCount} 个重复`);
         setImportMsg(parts.join('，'));
@@ -178,6 +181,7 @@ function SettingsModal({ onClose }: { onClose: () => void }) {
           </a>
           <p className="font-medium text-[var(--text)] pt-1">更新日志</p>
           <ul className="list-disc pl-4 space-y-1">
+            <li>v2.1 (04-21) — 导出主题扩展至 23 款（纸感/棉花糖/鱼肚白/极光/春水/暮山/星河/薄荷/大理石/晨暮/丹霞/碧落/苍翠/鎏金/西湖），支持渐变、等高线、有机曲线、纹理背景</li>
             <li>v2.0 (04-20) — 组诗创作，自由诗与古体诗，沉浸模式，画板文件夹管理，署名逻辑统一</li>
             <li>v1.6.7 (04-14) — 韵书数据清洗：移除无法渲染的生僻字及污染字</li>
             <li>v1.6.6 (04-10) — Logo 品牌升级，Android 开屏诗句动画，修复部分设备面板常开</li>
@@ -272,7 +276,7 @@ export function TopBar() {
 
   const fmt = useCallback((ts: number) => new Date(ts).toLocaleDateString('zh-CN', { month: 'numeric', day: 'numeric' }), []);
 
-  const renderBoardItem = useCallback((b: typeof state.boards[0]) => {
+  const renderBoardItem = useCallback((b: typeof state.boards[0], isCustomSort = false) => {
     const created = fmt(b.createdAt);
     const modified = fmt(b.updatedAt);
     const timeLabel = created === modified ? `${created}创建` : `${modified}修改`;
@@ -286,7 +290,13 @@ export function TopBar() {
             <div className="truncate text-[13px]">{b.title}</div>
             <div className="text-[11px] text-[var(--text-muted)]">{b.sections.length > 1 ? `${b.sections.length}首·` : ''}{b.sections[0].ruleName} · {timeLabel}</div>
           </div>
-          <div className="flex items-center gap-0.5 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+          <div className="flex items-center gap-0.5 shrink-0 opacity-0 group-hover:opacity-100 touch-show transition-opacity">
+            {isCustomSort && (
+              <>
+                <button className="w-5 h-5 rounded flex items-center justify-center text-[var(--text-muted)] hover:text-[var(--accent)]" onClick={e => { e.stopPropagation(); dispatch({ type: 'REORDER_BOARD', boardId: b.id, direction: 'up' }); }} title="上移"><ChevronUp size={11} /></button>
+                <button className="w-5 h-5 rounded flex items-center justify-center text-[var(--text-muted)] hover:text-[var(--accent)]" onClick={e => { e.stopPropagation(); dispatch({ type: 'REORDER_BOARD', boardId: b.id, direction: 'down' }); }} title="下移"><ChevronDown size={11} /></button>
+              </>
+            )}
             {state.folders.length > 0 && (
               <button
                 className="w-5 h-5 rounded flex items-center justify-center text-[var(--text-muted)] hover:text-[var(--accent)]"
@@ -308,7 +318,7 @@ export function TopBar() {
           <div className="mx-2 mb-1 border border-[var(--border)] rounded-md overflow-hidden text-[12px]">
             <button
               className={`w-full text-left px-2 py-1 hover:bg-[var(--accent-light)] ${!b.folderId ? 'text-[var(--accent)]' : ''}`}
-              onClick={e => { e.stopPropagation(); dispatch({ type: 'MOVE_BOARD', boardId: b.id, folderId: null }); setMovingBoardId(null); }}
+              onClick={e => { e.stopPropagation(); dispatch({ type: 'MOVE_BOARD', boardId: b.id, folderId: null }); track('move_board'); setMovingBoardId(null); }}
             >
               根目录
             </button>
@@ -317,7 +327,7 @@ export function TopBar() {
                 key={f.id}
                 className={`w-full text-left px-2 py-1 hover:bg-[var(--accent-light)] ${b.folderId === f.id ? 'text-[var(--accent)]' : ''}`}
                 style={{ paddingLeft: `${8 + (f.parentId ? 16 : 0)}px` }}
-                onClick={e => { e.stopPropagation(); dispatch({ type: 'MOVE_BOARD', boardId: b.id, folderId: f.id }); setMovingBoardId(null); }}
+                onClick={e => { e.stopPropagation(); dispatch({ type: 'MOVE_BOARD', boardId: b.id, folderId: f.id }); track('move_board'); setMovingBoardId(null); }}
               >
                 {f.name}
               </button>
@@ -329,20 +339,77 @@ export function TopBar() {
             <button className="px-3 py-1 text-xs rounded-md border border-[var(--grid-empty-border)] text-[var(--text-secondary)] hover:bg-[var(--accent-light)]"
               onClick={e => { e.stopPropagation(); setConfirmDeleteId(null); }}>取消</button>
             <button className="px-3 py-1 text-xs rounded-md bg-red-500 text-white hover:bg-red-600"
-              onClick={e => { e.stopPropagation(); dispatch({ type: 'DELETE_BOARD', id: b.id }); setConfirmDeleteId(null); }}>删除</button>
+              onClick={e => { e.stopPropagation(); dispatch({ type: 'DELETE_BOARD', id: b.id }); track('delete_board'); setConfirmDeleteId(null); }}>删除</button>
           </div>
         )}
       </div>
     );
   }, [state.activeBoardId, state.folders, confirmDeleteId, movingBoardId, fmt, dispatch]);
 
+  const SORT_LABELS: Record<SortMode, string> = {
+    'updated-desc': '修改', 'updated-asc': '修改',
+    'created-desc': '创建', 'created-asc': '创建',
+    'name': '名称', 'custom': '自定义',
+  };
+  const SORT_ICONS: Record<SortMode, React.ReactNode> = {
+    'updated-desc': <ArrowDown size={9} />, 'updated-asc': <ArrowUp size={9} />,
+    'created-desc': <ArrowDown size={9} />, 'created-asc': <ArrowUp size={9} />,
+    'name': <ArrowDownAZ size={9} />, 'custom': <ArrowUpDown size={9} />,
+  };
+  const SORT_MODES: SortMode[] = ['updated-desc', 'updated-asc', 'created-desc', 'created-asc', 'name', 'custom'];
+
+  const sortBoards = useCallback((boards: Board[], mode: SortMode) => {
+    const sorted = [...boards];
+    switch (mode) {
+      case 'updated-desc': return sorted.sort((a, b) => b.updatedAt - a.updatedAt);
+      case 'updated-asc': return sorted.sort((a, b) => a.updatedAt - b.updatedAt);
+      case 'created-desc': return sorted.sort((a, b) => b.createdAt - a.createdAt);
+      case 'created-asc': return sorted.sort((a, b) => a.createdAt - b.createdAt);
+      case 'name': return sorted.sort((a, b) => a.title.localeCompare(b.title, 'zh-CN'));
+      case 'custom': return sorted.sort((a, b) => (a.boardOrder ?? 0) - (b.boardOrder ?? 0));
+    }
+  }, []);
+
+  const [sortMenuFor, setSortMenuFor] = useState<string | null>(null);
+
+  const sortBtnRef = useRef<HTMLButtonElement>(null);
+  const [sortMenuPos, setSortMenuPos] = useState<{ top: number; right: number } | null>(null);
+
+  const renderSortButton = useCallback((folderId: string | null, mode: SortMode) => (
+    <div className="relative">
+      <button
+        ref={sortMenuFor === (folderId ?? '__root__') ? sortBtnRef : undefined}
+        className="w-5 h-5 rounded flex items-center justify-center text-[var(--text-muted)] hover:text-[var(--accent)] transition-colors"
+        onClick={e => {
+          e.stopPropagation();
+          const key = folderId ?? '__root__';
+          if (sortMenuFor === key) {
+            setSortMenuFor(null);
+            setSortMenuPos(null);
+          } else {
+            const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+            setSortMenuPos({ top: rect.bottom + 2, right: window.innerWidth - rect.right - 10 });
+            setSortMenuFor(key);
+          }
+        }}
+        title={`排序: ${SORT_LABELS[mode]}`}
+      >
+        <ArrowUpDown size={11} />
+      </button>
+    </div>
+  ), [sortMenuFor]);
+
   const renderFolderTree = useCallback((parentId: string | null, depth: number) => {
+    const sortMode = parentId === null
+      ? state.rootSortMode
+      : (state.folders.find(f => f.id === parentId)?.sortMode ?? 'updated-desc');
     const folders = state.folders
       .filter(f => f.parentId === parentId)
       .sort((a, b) => a.order - b.order);
-    const boards = state.boards
-      .filter(b => (b.folderId ?? null) === parentId)
-      .sort((a, b) => b.updatedAt - a.updatedAt);
+    const boards = sortBoards(
+      state.boards.filter(b => (b.folderId ?? null) === parentId),
+      sortMode,
+    );
 
     return (
       <>
@@ -373,17 +440,18 @@ export function TopBar() {
                 ) : (
                   <span className="flex-1 ml-1 text-[13px] truncate">{f.name}</span>
                 )}
-                <div className="flex items-center gap-0 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" onClick={e => e.stopPropagation()}>
+                <div className="flex items-center gap-0 shrink-0 opacity-0 group-hover:opacity-100 touch-show transition-opacity" onClick={e => e.stopPropagation()}>
+                  {renderSortButton(f.id, f.sortMode ?? 'updated-desc')}
                   <button className="w-5 h-5 rounded flex items-center justify-center text-[var(--text-muted)] hover:text-[var(--accent)]" onClick={() => dispatch({ type: 'MOVE_FOLDER', id: f.id, direction: 'up' })} title="上移"><ChevronUp size={11} /></button>
                   <button className="w-5 h-5 rounded flex items-center justify-center text-[var(--text-muted)] hover:text-[var(--accent)]" onClick={() => dispatch({ type: 'MOVE_FOLDER', id: f.id, direction: 'down' })} title="下移"><ChevronDown size={11} /></button>
                   <button className="w-5 h-5 rounded flex items-center justify-center text-[var(--text-muted)] hover:text-[var(--accent)]" onClick={() => { setRenamingFolderId(f.id); }} title="重命名"><Pencil size={10} /></button>
-                  <button className="w-5 h-5 rounded flex items-center justify-center text-[var(--text-muted)] hover:text-red-500" onClick={() => dispatch({ type: 'DELETE_FOLDER', id: f.id })} title="删除文件夹"><X size={11} /></button>
+                  <button className="w-5 h-5 rounded flex items-center justify-center text-[var(--text-muted)] hover:text-red-500" onClick={() => { dispatch({ type: 'DELETE_FOLDER', id: f.id }); track('delete_folder'); }} title="删除文件夹"><X size={11} /></button>
                 </div>
               </div>
               {!f.collapsed && (
                 <div>
                   {renderFolderTree(f.id, depth + 1)}
-                  {boards.length === 0 && state.folders.filter(c => c.parentId === f.id).length === 0 && (
+                  {state.boards.filter(b => (b.folderId ?? null) === f.id).length === 0 && state.folders.filter(c => c.parentId === f.id).length === 0 && (
                     <div className="text-[11px] text-[var(--text-muted)] py-1" style={{ paddingLeft: `${24 + depth * 16}px` }}>空</div>
                   )}
                 </div>
@@ -393,12 +461,12 @@ export function TopBar() {
         })}
         {boards.map(b => (
           <div key={b.id} style={{ paddingLeft: `${depth * 16}px` }}>
-            {renderBoardItem(b)}
+            {renderBoardItem(b, sortMode === 'custom')}
           </div>
         ))}
       </>
     );
-  }, [state.folders, state.boards, renamingFolderId, dispatch, renderBoardItem]);
+  }, [state.folders, state.boards, state.rootSortMode, renamingFolderId, dispatch, renderBoardItem, renderSortButton, sortBoards]);
 
   // --- 组装带标点的正文 ---
   const buildText = () => {
@@ -463,6 +531,7 @@ export function TopBar() {
     const full = `${board.title}\n${buildText()}`;
     navigator.clipboard.writeText(full).then(() => {
       setCopied(true);
+      track('copy_text');
       setTimeout(() => { setCopied(false); setExportMenuOpen(false); }, 1000);
     });
   };
@@ -501,7 +570,31 @@ export function TopBar() {
         </button>
         {dropOpen && (
           <>
-            <div className="fixed inset-0" onClick={() => { setDropOpen(false); setMovingBoardId(null); }} />
+            <div className="fixed inset-0" onClick={() => { setDropOpen(false); setMovingBoardId(null); setSortMenuFor(null); }} />
+            {/* Sort dropdown (fixed to escape overflow) */}
+            {sortMenuFor && sortMenuPos && (() => {
+              const folderId = sortMenuFor === '__root__' ? null : sortMenuFor;
+              const mode = folderId === null
+                ? state.rootSortMode
+                : (state.folders.find(f => f.id === folderId)?.sortMode ?? 'updated-desc');
+              return (
+                <div
+                  className="fixed bg-[var(--bg-card)] border border-[var(--border)] rounded shadow-lg z-[60] w-max"
+                  style={{ top: sortMenuPos.top, right: sortMenuPos.right }}
+                >
+                  {SORT_MODES.map(m => (
+                    <button
+                      key={m}
+                      className={`flex items-center justify-between px-2.5 py-1 text-[11px] whitespace-nowrap hover:bg-[var(--accent-light)] w-full ${m === mode ? 'text-[var(--accent)]' : ''}`}
+                      onClick={e => { e.stopPropagation(); dispatch({ type: 'SET_SORT_MODE', folderId, mode: m }); setSortMenuFor(null); setSortMenuPos(null); }}
+                    >
+                      <span>{SORT_LABELS[m]}</span>
+                      <span className="w-5 flex items-center justify-center shrink-0">{SORT_ICONS[m]}</span>
+                    </button>
+                  ))}
+                </div>
+              );
+            })()}
             <div className="absolute top-10 left-0 bg-[var(--bg-card)] border border-[var(--border)] rounded-lg shadow-[var(--shadow)] min-w-[240px] max-w-[300px] py-1 z-40 max-h-[50vh] overflow-y-auto">
               {/* New folder button */}
               {newFolderMode ? (
@@ -513,7 +606,7 @@ export function TopBar() {
                     placeholder="文件夹名称"
                     onBlur={e => {
                       const name = e.target.value.trim();
-                      if (name) dispatch({ type: 'ADD_FOLDER', name, parentId: null });
+                      if (name) { dispatch({ type: 'ADD_FOLDER', name, parentId: null }); track('create_folder'); }
                       setNewFolderMode(false);
                     }}
                     onKeyDown={e => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); if (e.key === 'Escape') setNewFolderMode(false); }}
@@ -521,12 +614,15 @@ export function TopBar() {
                   />
                 </div>
               ) : (
-                <button
-                  className="w-full flex items-center gap-1.5 px-3 py-1.5 text-[12px] text-[var(--text-muted)] hover:text-[var(--accent)] hover:bg-[var(--accent-light)] transition-colors"
-                  onClick={() => setNewFolderMode(true)}
-                >
-                  <FolderPlus size={12} /> 新建文件夹
-                </button>
+                <div className="flex items-center justify-between px-3 py-1.5">
+                  <button
+                    className="flex items-center gap-1.5 text-[12px] text-[var(--text-muted)] hover:text-[var(--accent)] transition-colors"
+                    onClick={() => setNewFolderMode(true)}
+                  >
+                    <FolderPlus size={12} /> 新建文件夹
+                  </button>
+                  {renderSortButton(null, state.rootSortMode)}
+                </div>
               )}
               <div className="border-b border-[var(--border)] my-0.5" />
               {/* Tree */}

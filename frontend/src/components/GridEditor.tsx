@@ -1,5 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { useBoardContext, useActiveBoard } from '../context/BoardContext';
+import { track } from '../lib/api';
 import { useValidation } from '../hooks/useValidation';
 import { GridCell } from './GridCell';
 import { PLACEHOLDER } from '../lib/types';
@@ -162,6 +163,7 @@ export function GridEditor() {
 
   const enterImmersive = useCallback((sectionIdx: number) => {
     dispatch({ type: 'TOGGLE_IMMERSIVE', sectionIndex: sectionIdx });
+    track('toggle_immersive');
     setImmersiveHint(sectionIdx);
     clearTimeout(hintTimerRef.current);
     hintTimerRef.current = setTimeout(() => setImmersiveHint(null), 3000);
@@ -625,6 +627,7 @@ export function GridEditor() {
                         onClickCandidate={ch => {
                           if (!isActive) dispatch({ type: 'SET_ACTIVE_SECTION', sectionIndex: sectionIdx });
                           dispatch({ type: 'REPLACE_WITH_CANDIDATE', index: gi, char: ch });
+                          focusInput();
                         }}
                         onAddCandidate={() => {
                           const ch = section.poemChars[gi];
@@ -632,10 +635,12 @@ export function GridEditor() {
                             if (!isActive) dispatch({ type: 'SET_ACTIVE_SECTION', sectionIndex: sectionIdx });
                             dispatch({ type: 'ADD_CANDIDATE', index: gi, char: ch });
                           }
+                          focusInput();
                         }}
                         onRemoveCandidate={ch => {
                           if (!isActive) dispatch({ type: 'SET_ACTIVE_SECTION', sectionIndex: sectionIdx });
                           dispatch({ type: 'REMOVE_CANDIDATE', index: gi, char: ch });
+                          focusInput();
                         }}
                       />
                     ))}

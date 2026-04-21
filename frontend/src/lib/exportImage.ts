@@ -2,10 +2,16 @@
 // 诗词图片导出 — Canvas 绘制引擎
 // ============================================================================
 
-export type ThemeKey = '素白' | '朱砂' | '墨韵' | '竹青' | '藏蓝' | '烟紫' | '秋棠' | '霜灰';
+export type ThemeKey = '素白' | '朱砂' | '墨韵' | '竹青' | '藏蓝' | '烟紫' | '秋棠' | '霜灰' | '纸感' | '棉花糖' | '鱼肚白' | '极光' | '春水' | '暮山' | '星河' | '薄荷' | '大理石' | '晨暮' | '丹霞' | '碧落' | '苍翠' | '鎏金' | '西湖';
 
 interface ColorTheme {
   bg: string;
+  gradient?: { colors: string[]; angle?: number };
+  splitBg?: { top: string; bottom: string; blend?: number };
+  blobs?: { x: number; y: number; size: number; color: string; layers?: number; seed?: number; aspect?: number }[];
+  texture?: 'noise' | 'paper' | 'speckle' | 'topography';
+  topoColor?: string;
+  titleText?: string;
   text: string;
   accent: string;
   muted: string;
@@ -20,9 +26,60 @@ export const THEMES: Record<ThemeKey, ColorTheme> = {
   '烟紫': { bg: '#F5F0F7', text: '#4A3560', accent: '#D4C5E0', muted: '#9585A7' },
   '秋棠': { bg: '#FBF5EE', text: '#6B4226', accent: '#E8D0B0', muted: '#B09070' },
   '霜灰': { bg: '#F2F2F0', text: '#3A3A3A', accent: '#D8D8D2', muted: '#999999' },
+  '纸感': { bg: '#F5F0E8', gradient: { colors: ['#FAF7F0', '#E8DCC8', '#F2E8D4', '#EDE0CA'], angle: 155 }, texture: 'paper', text: '#3A3028', accent: '#D8CEBC', muted: '#A89880' },
+  '棉花糖': { bg: '#FDF2F8', blobs: [
+    { x: -0.1, y: 0.2, size: 0.6, color: '#F0C0D8', layers: 5, seed: 0 },
+    { x: 1.1, y: 0.5, size: 0.55, color: '#C0D0F0', layers: 5, seed: 2.5 },
+    { x: 0.5, y: -0.2, size: 0.45, color: '#E8C8F0', layers: 4, seed: 5 },
+  ], text: '#5A4060', accent: '#E8D0E0', muted: '#B098B8' },
+  '鱼肚白': { bg: '#FAFBFD', blobs: [
+    { x: 0.3, y: 1.2, size: 0.65, color: '#D0CAE0', layers: 5, seed: 1 },
+    { x: 1.0, y: 0.3, size: 0.45, color: '#D4D0E8', layers: 4, seed: 3.5 },
+    { x: 0.7, y: 0.6, size: 0.25, color: '#F0DCC0', layers: 3, seed: 6 },
+  ], text: '#2E3440', accent: '#D8DCE4', muted: '#8890A0' },
+  '极光': { bg: '#0E1420', gradient: { colors: ['#0C1018', '#121828', '#0E1822'], angle: 165 }, text: '#C8E0D0', accent: '#1E3030', muted: '#4A6858' },
+  '春水': { bg: '#F4FAF6', blobs: [
+    { x: 0.2, y: 0.8, size: 0.6, color: '#B8DCC8', layers: 5, seed: 0.5 },
+    { x: 0.9, y: 0.1, size: 0.4, color: '#C8E8D8', layers: 4, seed: 3 },
+  ], text: '#2A4A3A', accent: '#C0D8CC', muted: '#7EA090' },
+  '暮山': { bg: '#F0EEF0', blobs: [
+    { x: 0.15, y: 1.1, size: 0.7, color: '#C0B8C8', layers: 5, seed: 1.8 },
+    { x: 0.85, y: 0.4, size: 0.5, color: '#B8BCC8', layers: 5, seed: 4.2 },
+    { x: -0.05, y: 0.1, size: 0.35, color: '#C8C2CC', layers: 3, seed: 6 },
+  ], text: '#3A3450', accent: '#C0BAC8', muted: '#8880A0' },
+  '星河': { bg: '#0E0E1A', blobs: [
+    { x: 0.7, y: 0.15, size: 0.55, color: '#2A2050', layers: 5, seed: 2 },
+    { x: 0.1, y: 0.7, size: 0.45, color: '#1A1840', layers: 4, seed: 4.5 },
+  ], text: '#D0C8E0', accent: '#2A2440', muted: '#5A5078' },
+  '薄荷': { bg: '#F0FAFA', gradient: { colors: ['#F4FDFC', '#E0F4F2', '#E8F8F8', '#DCF0F0'], angle: 140 }, text: '#1A3840', accent: '#BED8D8', muted: '#68A0A0' },
+  '大理石': { bg: '#F5F3F2', gradient: { colors: ['#F8F6F5', '#F0EDEB', '#F5F2F0', '#EDE9E7'], angle: 160 }, texture: 'speckle', text: '#3A3638', accent: '#D8D4D2', muted: '#908888' },
+  '晨暮': { bg: '#F0E8E4', splitBg: { top: '#F8F0EA', bottom: '#EDE4F0', blend: 200 }, text: '#4A3040', accent: '#D8C8D0', muted: '#988898' },
+  '丹霞': { bg: '#FAF8F6', topoColor: '#9B4060', titleText: '#F8F0F2', text: '#3A2030', accent: '#7A2848', muted: '#A08898' },
+  '碧落': { bg: '#F6F9FA', topoColor: '#2A5A8A', titleText: '#F0F4F8', text: '#1A3050', accent: '#1A4068', muted: '#7090A8' },
+  '苍翠': { bg: '#F7FAF6', topoColor: '#2E7A50', titleText: '#F0F8F2', text: '#1A3828', accent: '#1E5A38', muted: '#609878' },
+  '鎏金': { bg: '#FAF8F4', topoColor: '#A07830', titleText: '#FBF6EE', text: '#3A3018', accent: '#806020', muted: '#A89860' },
+  '西湖': { bg: '#FAF8F5', blobs: [
+    { x: 0.0, y: 0.3, size: 0.55, color: '#A8C8A0', layers: 5, seed: 0.7 },
+    { x: 1.0, y: 0.7, size: 0.5, color: '#E8A8B0', layers: 5, seed: 3.2 },
+    { x: 0.4, y: 1.1, size: 0.4, color: '#B0D0A8', layers: 4, seed: 5.5 },
+    { x: 0.7, y: 0.0, size: 0.35, color: '#E0B0B8', layers: 3, seed: 7.8 },
+  ], text: '#3A3030', accent: '#D0C0B8', muted: '#908878' },
 };
 
-export const THEME_KEYS: ThemeKey[] = ['素白', '朱砂', '墨韵', '竹青', '藏蓝', '烟紫', '秋棠', '霜灰'];
+export const THEME_KEYS: ThemeKey[] = [
+  // 纯色浅色
+  '素白', '朱砂', '竹青', '藏蓝', '烟紫', '秋棠', '霜灰',
+  // 纯色深色
+  '墨韵',
+  // 微渐变
+  '纸感', '极光', '薄荷', '晨暮',
+  // 纹理
+  '大理石',
+  // 等高线
+  '丹霞', '碧落', '苍翠', '鎏金',
+  // 花式blob
+  '棉花糖', '鱼肚白', '春水', '暮山', '星河', '西湖',
+];
 
 // ============================================================================
 // 布局参数
@@ -51,6 +108,144 @@ function getCiFontConfig(lineCount: number, maxLineLen: number) {
 
 /** 每列最多显示的字数 */
 const MAX_COL_CHARS = 10;
+
+function drawTexture(ctx: CanvasRenderingContext2D, w: number, h: number, type: 'noise' | 'paper' | 'speckle') {
+  const imgData = ctx.getImageData(0, 0, w, h);
+  const d = imgData.data;
+  if (type === 'noise') {
+    for (let y = 0; y < h; y++) {
+      for (let x = 0; x < w; x++) {
+        const size = 1 + Math.floor(Math.random() * 3);
+        if (Math.random() > 0.3) continue;
+        const n = (Math.random() - 0.5) * 40;
+        for (let dy = 0; dy < size && y + dy < h; dy++) {
+          for (let dx = 0; dx < size && x + dx < w; dx++) {
+            const i = ((y + dy) * w + (x + dx)) * 4;
+            d[i]     = Math.min(255, Math.max(0, d[i] + n));
+            d[i + 1] = Math.min(255, Math.max(0, d[i + 1] + n));
+            d[i + 2] = Math.min(255, Math.max(0, d[i + 2] + n));
+          }
+        }
+      }
+    }
+  } else if (type === 'paper') {
+    for (let y = 0; y < h; y++) {
+      for (let x = 0; x < w; x++) {
+        if (Math.random() > 0.15) continue;
+        const size = 1 + Math.floor(Math.random() * 4);
+        const isFiber = Math.random() < 0.02;
+        const n = isFiber
+          ? (Math.random() - 0.5) * 45
+          : (Math.random() - 0.5) * 18;
+        const lenX = isFiber ? size + Math.floor(Math.random() * 6) : size;
+        const lenY = isFiber ? 1 + Math.floor(Math.random() * 2) : size;
+        for (let dy = 0; dy < lenY && y + dy < h; dy++) {
+          for (let dx = 0; dx < lenX && x + dx < w; dx++) {
+            const fade = 1 - Math.max(dx / lenX, dy / lenY) * 0.5;
+            const v = n * fade;
+            const i = ((y + dy) * w + (x + dx)) * 4;
+            d[i]     = Math.min(255, Math.max(0, d[i] + v));
+            d[i + 1] = Math.min(255, Math.max(0, d[i + 1] + v));
+            d[i + 2] = Math.min(255, Math.max(0, d[i + 2] + v));
+          }
+        }
+      }
+    }
+  } else {
+    const count = Math.floor(w * h * 0.00012);
+    for (let s = 0; s < count; s++) {
+      const cx = Math.random() * w;
+      const cy = Math.random() * h;
+      const r = 3 + Math.random() * 18;
+      const darker = Math.random() < 0.6;
+      const intensity = darker ? -(6 + Math.random() * 14) : (6 + Math.random() * 14);
+      const tintR = Math.random() * 12;
+      const tintB = (Math.random() - 0.5) * 6;
+      const x0 = Math.max(0, Math.floor(cx - r));
+      const x1 = Math.min(w - 1, Math.ceil(cx + r));
+      const y0 = Math.max(0, Math.floor(cy - r));
+      const y1 = Math.min(h - 1, Math.ceil(cy + r));
+      const r2 = r * r;
+      const inner2 = (r * 0.7) * (r * 0.7);
+      for (let y = y0; y <= y1; y++) {
+        for (let x = x0; x <= x1; x++) {
+          const dist2 = (x - cx) * (x - cx) + (y - cy) * (y - cy);
+          if (dist2 > r2) continue;
+          const fade = dist2 < inner2 ? 1.0 : 1 - (Math.sqrt(dist2) - r * 0.7) / (r * 0.3);
+          const v = intensity * fade;
+          const i = (y * w + x) * 4;
+          d[i]     = Math.min(255, Math.max(0, d[i] + v + tintR * fade));
+          d[i + 1] = Math.min(255, Math.max(0, d[i + 1] + v));
+          d[i + 2] = Math.min(255, Math.max(0, d[i + 2] + v + tintB * fade));
+        }
+      }
+    }
+  }
+  ctx.putImageData(imgData, 0, 0);
+}
+
+function hexToRgb(hex: string) {
+  const v = parseInt(hex.slice(1), 16);
+  return [(v >> 16) & 255, (v >> 8) & 255, v & 255];
+}
+
+function drawBlob(ctx: CanvasRenderingContext2D, cx: number, cy: number, maxR: number, layers: number, color: string, bg: string, seedOffset: number, aspect = 1) {
+  const [cr, cg, cb] = hexToRgb(color);
+  const [br, bg2, bb] = hexToRgb(bg);
+  const seeds = [1.3, 2.1, 0.7, 1.9, 3.1, 0.4, 2.7, 1.5, 0.9];
+
+  for (let i = layers; i >= 0; i--) {
+    const t = i / layers;
+    const r = maxR * (0.45 + t * 0.55);
+    const mix = t * 0.85;
+    const fr = Math.round(cr * (1 - mix) + br * mix);
+    const fg = Math.round(cg * (1 - mix) + bg2 * mix);
+    const fb = Math.round(cb * (1 - mix) + bb * mix);
+
+    const pts = 8;
+    const angles: number[] = [];
+    const radii: number[] = [];
+    for (let p = 0; p < pts; p++) {
+      const a = (p / pts) * Math.PI * 2;
+      angles.push(a);
+      const wobble = 0.85 + 0.3 * Math.sin(seeds[p % seeds.length] * (i + 1) * 1.7 + p * 0.8 + seedOffset);
+      radii.push(r * wobble);
+    }
+
+    const yScale = 1 / aspect;
+    const ptX = (a: number, ri: number) => cx + Math.cos(a) * ri;
+    const ptY = (a: number, ri: number) => cy + Math.sin(a) * ri * yScale;
+
+    ctx.beginPath();
+    for (let p = 0; p <= pts; p++) {
+      const ai = p % pts;
+      const ax = ptX(angles[ai], radii[ai]);
+      const ay = ptY(angles[ai], radii[ai]);
+      if (p === 0) { ctx.moveTo(ax, ay); continue; }
+      const prevI = (p - 1) % pts;
+      const a1 = angles[prevI] + 0.5 / pts * Math.PI * 2;
+      const a2 = angles[ai] - 0.5 / pts * Math.PI * 2;
+      ctx.bezierCurveTo(
+        ptX(a1, radii[prevI] * 1.05), ptY(a1, radii[prevI] * 1.05),
+        ptX(a2, radii[ai] * 1.05), ptY(a2, radii[ai] * 1.05),
+        ax, ay,
+      );
+    }
+    ctx.closePath();
+    ctx.fillStyle = `rgb(${fr},${fg},${fb})`;
+    ctx.fill();
+  }
+}
+
+function drawTopography(ctx: CanvasRenderingContext2D, w: number, _h: number, color: string, bg: string) {
+  drawBlob(ctx, w * 0.92, w * 0.08, w * 0.7, 8, color, bg, 0);
+}
+
+function drawBlobs(ctx: CanvasRenderingContext2D, w: number, blobs: NonNullable<ColorTheme['blobs']>, bg: string) {
+  for (const b of blobs) {
+    drawBlob(ctx, b.x * w, b.y * w, b.size * w, b.layers ?? 6, b.color, bg, b.seed ?? 0, b.aspect ?? 1);
+  }
+}
 
 /** 标准画布比例（从小到大尝试） */
 const ASPECT_HEIGHTS = [
@@ -534,8 +729,43 @@ export function renderToCanvas(data: ExportData): HTMLCanvasElement {
   ctx.scale(scale, scale);
 
   // ---- 背景 ----
-  ctx.fillStyle = colors.bg;
+  if (colors.splitBg) {
+    const { top, bottom, blend = 120 } = colors.splitBg;
+    const splitY = titleRegionH + minGap * 0.4;
+    ctx.fillStyle = bottom;
+    ctx.fillRect(0, 0, W, height);
+    ctx.fillStyle = top;
+    ctx.fillRect(0, 0, W, splitY);
+    const grad = ctx.createLinearGradient(0, splitY, 0, splitY + blend);
+    grad.addColorStop(0, top);
+    grad.addColorStop(1, bottom);
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, splitY, W, blend);
+  } else if (colors.gradient) {
+    const { colors: stops, angle = 180 } = colors.gradient;
+    const rad = (angle - 90) * Math.PI / 180;
+    const cx = W / 2, cy = height / 2;
+    const len = Math.max(W, height);
+    const dx = Math.cos(rad) * len, dy = Math.sin(rad) * len;
+    const grad = ctx.createLinearGradient(cx - dx / 2, cy - dy / 2, cx + dx / 2, cy + dy / 2);
+    stops.forEach((c, i) => grad.addColorStop(i / (stops.length - 1), c));
+    ctx.fillStyle = grad;
+  } else {
+    ctx.fillStyle = colors.bg;
+  }
   ctx.fillRect(0, 0, W, height);
+
+  if (colors.texture && colors.texture !== 'topography') {
+    drawTexture(ctx, W * scale, height * scale, colors.texture);
+  }
+
+  if (colors.topoColor) {
+    drawTopography(ctx, W, height, colors.topoColor, colors.bg);
+  }
+
+  if (colors.blobs) {
+    drawBlobs(ctx, W, colors.blobs, colors.bg);
+  }
 
   // ---- 标题色块（先画，标题文字叠在上面） ----
   const titleInfo = measureTitle(title);
@@ -604,7 +834,7 @@ export function renderToCanvas(data: ExportData): HTMLCanvasElement {
   const wmY = height - 25;
 
   if (hasLogo) {
-    const isDark = theme === '墨韵';
+    const isDark = theme === '墨韵' || theme === '极光' || theme === '星河';
     if (isDark) ctx.filter = 'invert(1) hue-rotate(180deg)';
     ctx.drawImage(data.logo!, wmX, wmY - logoSize + 2, logoSize, logoSize);
     if (isDark) ctx.filter = 'none';
@@ -654,7 +884,7 @@ function drawTitle(
   title: string,
   colors: ColorTheme,
 ): { bottomY: number; leftX: number } {
-  ctx.fillStyle = colors.text;
+  ctx.fillStyle = colors.titleText ?? colors.text;
 
   // 处理词牌 · 分隔符
   const dotIdx = title.search(/[·•·]/);
@@ -690,7 +920,7 @@ function drawCiTitle(
   const startY = TITLE_PAD_TOP;
 
   // 词牌名右列（大字）
-  ctx.fillStyle = colors.text;
+  ctx.fillStyle = colors.titleText ?? colors.text;
   ctx.font = exportFont(700, config.fontSize);
   const cipaiResult = drawVerticalColumns(ctx, cipai, baseX, startY, config.fontSize, config.spacing);
 
@@ -698,7 +928,7 @@ function drawCiTitle(
   const subFontSize = Math.round(config.fontSize * 0.75);
   const subSpacing = Math.round(config.spacing * 0.78);
   ctx.font = exportFont(400, subFontSize);
-  ctx.fillStyle = colors.text;
+  ctx.fillStyle = colors.titleText ?? colors.text;
   const subX = baseX - config.fontSize * 1.6;
   const subStartY = startY + config.spacing * 1.6;
   const subResult = drawVerticalColumns(ctx, subtitle, subX, subStartY, subFontSize, subSpacing);
@@ -845,8 +1075,10 @@ declare global {
   }
 }
 
-export function downloadCanvas(canvas: HTMLCanvasElement, title: string): Promise<void> {
-  const fileName = `${title || '诗'}.png`;
+export function downloadCanvas(canvas: HTMLCanvasElement, title: string, theme?: string): Promise<void> {
+  const ts = Math.floor(Date.now() / 1000);
+  const safe = (s: string) => s.replace(/[\\/:*?"<>|·\s]/g, '_');
+  const fileName = `${safe(title || '诗')}_${safe(theme || '默认')}_${ts}.png`;
 
   // Android: 通过 JS Bridge 保存到相册
   if (window.AndroidBridge?.saveImage) {

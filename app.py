@@ -153,8 +153,8 @@ def check_api_auth():
     if not request.path.startswith("/api/"):
         return None
 
-    # 内部统计端点免认证
-    if request.path.startswith("/api/_stats/"):
+    # 内部端点免认证
+    if request.path.startswith("/api/_stats/") or request.path == "/api/_track":
         return None
 
     # --- 1. API Key 认证 ---
@@ -203,7 +203,7 @@ def check_api_auth():
 @app.after_request
 def track_api_call(response):
     """记录 API 调用统计"""
-    if request.path.startswith("/api/") and response.status_code < 400:
+    if request.path.startswith("/api/") and not request.path.startswith("/api/_") and response.status_code < 400:
         source = getattr(g, "call_source", None)
         if source:
             try:
@@ -595,6 +595,31 @@ def allusion_search():
 @limiter.exempt
 def docs():
     return app.send_static_file("docs.html")
+
+# ---------- 前端埋点 ----------
+
+VALID_EVENTS = {
+    'export_image', 'copy_text',
+    'create_board', 'delete_board',
+    'import_poem', 'import_boards', 'export_boards',
+    'create_folder', 'delete_folder', 'move_board',
+    'add_inspiration', 'toggle_immersive',
+}
+
+@app.route("/api/_track", methods=["POST"])
+@limiter.limit("120 per minute")
+def track_event():
+    data = request.get_json(force=True)
+    event = data.get("event", "")
+    if event not in VALID_EVENTS:
+        return jsonify({"error": "invalid event"}), 400
+    props = data.get("props", {})
+    parts = [f"_event:{event}"]
+    for k, v in sorted(props.items()):
+        parts.append(f"{k}={v}")
+    route = ":".join(parts)
+    record_call("frontend", route)
+    return jsonify({"ok": True})
 
 # ---------- 统计端点 (Dashboard 数据源) ----------
 
