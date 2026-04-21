@@ -103,5 +103,27 @@ Run backend (`python app.py`) and frontend (`cd frontend && npm run dev`) simult
 - **每次部署前必须 review：**
   - `static/docs.html` — API 文档（限额、参数、返回值必须与代码一致）
   - `CHANGELOG.md` — 重要功能变更需记录，小改动可省略
-  - `frontend/src/components/TopBar.tsx` — 设置面板中的更新日志（与 CHANGELOG 同步）
+  - `frontend/src/components/TopBar.tsx` — 设置面板中的更新日志（与 CHANGELOG 同步，面向用户，不写内部埋点等技术细节）
 - 部署后用 `test_api.sh` 验证生产环境
+
+## Android 发版流程
+
+1. **更新版本号** — `android/app/build.gradle`：
+   - `versionCode` 递增（整数，每次 +1）
+   - `versionName` 与 Web 版本号对齐（如 `"2.1"`）
+2. **构建前端** — `cd frontend && npm run build && cd ..`
+3. **构建 APK** — `cd android && ./gradlew assembleRelease`
+   - Release APK 路径：`android/app/build/outputs/apk/release/app-release.apk`
+   - Debug APK（测试用）：`./gradlew assembleDebug`
+4. **连接设备测试** — `adb install -r <apk路径>`
+   - 确认版本：`adb shell dumpsys package com.fangcun.app | grep versionName`
+   - 注意：debug 和 release 签名不兼容，覆盖安装需同签名
+   - 若需从 release 切 debug（或反向），须先卸载旧版（会丢失 WebView localStorage 数据）
+5. **测试要点**：
+   - 基本创作流程（新建画板、输入、格律校验）
+   - 导出图片（通过 AndroidBridge.saveImage 保存到 图片/方寸/）
+   - 导出画板 JSON（通过 AndroidBridge.saveFile 保存到 下载/方寸/）
+   - 导入画板 JSON
+   - 开屏动画、深浅色主题切换
+6. **发布 GitHub Release** — `gh release create vX.Y --title "..." --notes "..." <apk路径>`
+7. **数据备份** — 升级前可通过 app 内「导出全部画板」备份，然后 `adb pull` 拉取
