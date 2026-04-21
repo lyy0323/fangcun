@@ -107,7 +107,7 @@ export function ImportPoemModal({ onClose }: { onClose: () => void }) {
     if (!poem.closest_rule) {
       const board = createBoard('Free', '古体诗', 0, '古体诗');
       board.title = poem.title;
-      const lines = poem.content.split(/\n/).map(s => s.trim()).filter(Boolean);
+      const lines = poem.content.split(/(?<=[。！？])\s*/).map(s => s.trim()).filter(Boolean);
       board.sections[0].lines = lines.length > 0 ? lines : [''];
       board.metadata = { ...board.metadata, author: poem.author };
       dispatch({ type: 'ADD_BOARD', board });

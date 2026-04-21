@@ -3,13 +3,32 @@ import { useBoardContext, useActiveBoard } from '../context/BoardContext';
 import { useFreeRhyme } from '../hooks/useFreeRhyme';
 import { Plus, X, Eye } from 'lucide-react';
 
-const MAX_LINE_CHARS = 20;
+const MAX_LINE_CHARS = 26;
 const RHYME_COLORS = ['#559977', '#557799', '#997755', '#775599', '#779955', '#995577', '#996666', '#669966', '#666699', '#888855', '#885588', '#558888'];
 
 function splitByLineBreaks(text: string): string[] {
   return text
     .replace(/<br\s*\/?>/gi, '\n')
     .split(/\r\n|\r|\n/);
+}
+
+function overflowLines(lines: string[]): string[] {
+  const result: string[] = [];
+  for (const line of lines) {
+    if (result.length > 0 && result[result.length - 1].length + line.length <= MAX_LINE_CHARS && line.length === 0) {
+      result.push(line);
+    } else if (line.length <= MAX_LINE_CHARS) {
+      result.push(line);
+    } else {
+      let remaining = line;
+      while (remaining.length > MAX_LINE_CHARS) {
+        result.push(remaining.slice(0, MAX_LINE_CHARS));
+        remaining = remaining.slice(MAX_LINE_CHARS);
+      }
+      result.push(remaining);
+    }
+  }
+  return result;
 }
 
 export function FreeEditor() {
@@ -58,11 +77,18 @@ export function FreeEditor() {
     const after = line.slice(atPos);
 
     if (segments.length === 1) {
-      let merged = before + segments[0] + after;
-      if (merged.length > MAX_LINE_CHARS) merged = merged.slice(0, MAX_LINE_CHARS);
-      newLines[atLine] = merged;
+      const merged = before + segments[0] + after;
+      const expanded = overflowLines([merged]);
+      newLines.splice(atLine, 1, ...expanded);
       updateLines(newLines);
-      setCursorPos(Math.min(before.length + segments[0].length, merged.length));
+      const insertEnd = before.length + segments[0].length;
+      let curLine = atLine, curPos = insertEnd;
+      for (let i = 0; i < expanded.length - 1; i++) {
+        if (curPos > expanded[i].length) { curPos -= expanded[i].length; curLine++; }
+        else break;
+      }
+      setActiveLine(curLine);
+      setCursorPos(Math.min(curPos, expanded[curLine - atLine]?.length ?? 0));
       return;
     }
 
@@ -71,14 +97,14 @@ export function FreeEditor() {
       let seg = segments[i];
       if (i === 0) seg = before + seg;
       if (i === segments.length - 1) seg = seg + after;
-      if (seg.length > MAX_LINE_CHARS) seg = seg.slice(0, MAX_LINE_CHARS);
       result.push(seg);
     }
-    newLines.splice(atLine, 1, ...result);
+    const expanded = overflowLines(result);
+    newLines.splice(atLine, 1, ...expanded);
     updateLines(newLines);
-    const lastSeg = result[result.length - 1];
-    setActiveLine(atLine + result.length - 1);
-    setCursorPos(lastSeg.length - after.length);
+    const lastSeg = expanded[expanded.length - 1];
+    setActiveLine(atLine + expanded.length - 1);
+    setCursorPos(Math.max(0, lastSeg.length - after.length));
   }, [updateLines]);
 
   // Register insertCharFn
@@ -280,6 +306,25 @@ export function FreeEditor() {
 
   const isActive = (li: number) => li === activeLine && inputFocused;
 
+  const [containerW, setContainerW] = useState(0);
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const measure = () => setContainerW(el.clientWidth - 32);
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
+  const getMobileFontSize = (charCount: number) => {
+    if (!containerW || containerW >= 512) return undefined;
+    const charW = 16 * 1.25 + 2;
+    const needed = charCount * charW;
+    if (needed <= containerW) return undefined;
+    return Math.max(10, 16 * containerW / needed);
+  };
+
   return (
     <div
       ref={containerRef}
@@ -325,6 +370,8 @@ export function FreeEditor() {
           const active = isActive(li);
           const chars = [...line];
 
+          const mobileFontSize = getMobileFontSize(chars.length);
+
           return (
             <div
               key={li}
@@ -332,13 +379,14 @@ export function FreeEditor() {
               onClick={(e) => { e.stopPropagation(); handleLineClick(li); }}
             >
               <div
-                className={`min-h-[2.5rem] flex items-center justify-center border-b transition-colors px-1 ${
+                className={`min-h-[2.5rem] flex items-center justify-center border-b transition-colors px-1 w-fit min-w-[15em] max-w-full mx-auto ${
                   immersive
                     ? 'border-transparent'
                     : active
                       ? 'border-[var(--accent)]'
                       : 'border-[var(--grid-empty-border)]'
                 }`}
+                style={mobileFontSize ? { fontSize: `${mobileFontSize}px` } : undefined}
               >
                 {chars.length === 0 && !active && !immersive && (
                   <span className="text-[var(--text-muted)] text-sm select-none opacity-40">点击输入...</span>
@@ -357,7 +405,7 @@ export function FreeEditor() {
                     >
                       <span className={`inline-block w-0.5 h-5 ${isCursorHere ? (immersive ? 'bg-[var(--text-muted)] opacity-40 animate-pulse' : 'bg-[var(--accent)] animate-pulse') : ''}`} />
                       <span
-                        className="inline-block text-center text-base leading-relaxed transition-colors"
+                        className="inline-block text-center leading-relaxed transition-colors"
                         style={{
                           color: color ?? undefined,
                           fontWeight: color ? 600 : undefined,

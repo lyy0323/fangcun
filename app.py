@@ -348,11 +348,17 @@ def free_rhyme():
     data = request.get_json(force=True)
     lines = data.get("lines", [])
     book = data.get("rhyme_book_name", "Zhonghua_Tongyun")
+    merge_tones = data.get("merge_tones", False)
 
     if not isinstance(lines, list) or len(lines) > 100:
         return jsonify({"error": "lines must be a list (max 100)"}), 400
     if book not in VALID_BOOKS:
         return jsonify({"error": f"invalid rhyme_book_name, options: {', '.join(sorted(VALID_BOOKS))}"}), 400
+
+    def _normalize_cat(cat: str) -> str:
+        if merge_tones and (cat.endswith('_平') or cat.endswith('_仄')):
+            return cat.rsplit('_', 1)[0]
+        return cat
 
     candidates = []
     for li, line in enumerate(lines):
@@ -375,19 +381,20 @@ def free_rhyme():
                     "line": li, "pos": ci, "char": ch, "categories": cats,
                 })
 
-    # forward-greedy grouping
+    # forward-greedy grouping (use normalized categories for matching)
     assigned = [False] * len(candidates)
     groups = []
     for i, cand in enumerate(candidates):
         if assigned[i] or not cand["categories"]:
             continue
-        anchor = set(cand["categories"])
+        anchor = set(_normalize_cat(c) for c in cand["categories"])
         group_positions = [{"line": cand["line"], "pos": cand["pos"]}]
         assigned[i] = True
         for j in range(i + 1, len(candidates)):
             if assigned[j] or not candidates[j]["categories"]:
                 continue
-            if anchor & set(candidates[j]["categories"]):
+            norm_cats = set(_normalize_cat(c) for c in candidates[j]["categories"])
+            if anchor & norm_cats:
                 group_positions.append({"line": candidates[j]["line"], "pos": candidates[j]["pos"]})
                 assigned[j] = True
         if len(group_positions) >= 2:

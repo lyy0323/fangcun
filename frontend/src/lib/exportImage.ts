@@ -59,11 +59,10 @@ export const THEMES: Record<ThemeKey, ColorTheme> = {
   '苍翠': { bg: '#F7FAF6', topoColor: '#2E7A50', titleText: '#F0F8F2', text: '#1A3828', accent: '#1E5A38', muted: '#609878' },
   '鎏金': { bg: '#FAF8F4', topoColor: '#A07830', titleText: '#FBF6EE', text: '#3A3018', accent: '#806020', muted: '#A89860' },
   '西湖': { bg: '#FAF8F5', blobs: [
-    { x: 0.0, y: 0.3, size: 0.55, color: '#A8C8A0', layers: 5, seed: 0.7 },
+    { x: -0.1, y: 0.5, size: 0.6, color: '#A8C8A0', layers: 5, seed: 0.7 },
     { x: 1.0, y: 0.7, size: 0.5, color: '#E8A8B0', layers: 5, seed: 3.2 },
-    { x: 0.4, y: 1.1, size: 0.4, color: '#B0D0A8', layers: 4, seed: 5.5 },
-    { x: 0.7, y: 0.0, size: 0.35, color: '#E0B0B8', layers: 3, seed: 7.8 },
-  ], text: '#3A3030', accent: '#D0C0B8', muted: '#908878' },
+    { x: 0.7, y: -0.05, size: 0.4, color: '#E0B0B8', layers: 4, seed: 7.8 },
+  ], titleText: '#6A3040', text: '#3A3030', accent: '#D8A0A8', muted: '#908878' },
 };
 
 export const THEME_KEYS: ThemeKey[] = [
@@ -98,12 +97,18 @@ function getShiFontConfig(charCount: number) {
 }
 
 function getCiFontConfig(lineCount: number, maxLineLen: number) {
-  // 每行不超过 15 字时，用律诗同等大字
-  if (maxLineLen < 16) return { fontSize: 44, lineHeight: 96 };
-  if (lineCount <= 6)  return { fontSize: 40, lineHeight: 88 };
-  if (lineCount <= 10) return { fontSize: 36, lineHeight: 76 };
-  if (lineCount <= 15) return { fontSize: 32, lineHeight: 66 };
-  return { fontSize: 28, lineHeight: 56 };
+  if (lineCount < 8) {
+    if (maxLineLen < 16) return { fontSize: 44, lineHeight: 96 };
+    if (lineCount <= 6)  return { fontSize: 40, lineHeight: 88 };
+    return { fontSize: 36, lineHeight: 76 };
+  }
+  // >= 8 行：由最长行字数决定字号，上限 44px（等价 <=15 字/行）
+  const contentW = W - PAD_X * 2;
+  const spacing = 0.12;
+  const idealSize = contentW / (maxLineLen * (1 + spacing));
+  const fontSize = Math.min(44, Math.max(22, Math.floor(idealSize)));
+  const lineHeight = Math.round(fontSize * 2.1);
+  return { fontSize, lineHeight };
 }
 
 /** 每列最多显示的字数 */
@@ -717,7 +722,7 @@ export function renderToCanvas(data: ExportData): HTMLCanvasElement {
   const authorH = author ? 40 : 0;  // 署名行高度
   const belowPoemPad = lineHeight + footerH + authorH + 70;
   const contentH = prefaceH + poemTotalH + belowPoemPad;
-  const minGap = MIN_GAP + ((data.sectionCount ?? 1) > 1 ? lineHeight * 2 : 0);
+  const minGap = MIN_GAP + ((data.sectionCount ?? 1) > 1 || genre === 'Free' ? lineHeight * 2 : 0);
   const minH = titleRegionH + minGap + contentH;
   const height = pickCanvasHeight(minH);
 

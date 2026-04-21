@@ -33,6 +33,7 @@ export function useFreeRhyme() {
         const result = await freeRhyme({
           lines,
           rhyme_book_name: board.rhymeBookName,
+          merge_tones: true,
         });
         if (boardIdRef.current === currentBoardId) {
           dispatch({ type: 'SET_FREE_RHYME', result });
