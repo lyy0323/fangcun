@@ -1071,7 +1071,10 @@ function drawPoemLines(
 
 declare global {
   interface Window {
-    AndroidBridge?: { saveImage(base64: string, fileName: string): void };
+    AndroidBridge?: {
+      saveImage(base64: string, fileName: string): void;
+      saveFile?(content: string, fileName: string, mimeType: string): void;
+    };
   }
 }
 
