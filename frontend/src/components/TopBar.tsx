@@ -22,14 +22,21 @@ function SettingsModal({ onClose }: { onClose: () => void }) {
       exportedAt: new Date().toISOString(),
       boards: state.boards,
     };
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
+    const json = JSON.stringify(data, null, 2);
     const date = new Date().toISOString().slice(0, 10);
-    a.href = url;
-    a.download = `fangcun-boards-${date}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
+    const fileName = `fangcun-boards-${date}.json`;
+
+    if (window.AndroidBridge?.saveFile) {
+      window.AndroidBridge.saveFile(json, fileName, 'application/json');
+    } else {
+      const blob = new Blob([json], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = fileName;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
     track('export_boards', { count: state.boards.length });
   }
 

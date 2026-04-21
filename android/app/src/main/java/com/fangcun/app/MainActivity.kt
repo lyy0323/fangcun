@@ -292,6 +292,35 @@ class MainActivity : Activity() {
                 }
             }
         }
+
+        @JavascriptInterface
+        fun saveFile(content: String, fileName: String, mimeType: String) {
+            try {
+                val values = ContentValues().apply {
+                    put(MediaStore.Downloads.DISPLAY_NAME, fileName)
+                    put(MediaStore.Downloads.MIME_TYPE, mimeType)
+                    put(MediaStore.Downloads.RELATIVE_PATH,
+                        Environment.DIRECTORY_DOWNLOADS + "/方寸")
+                }
+                val uri = contentResolver.insert(
+                    MediaStore.Downloads.EXTERNAL_CONTENT_URI, values
+                )
+                if (uri != null) {
+                    contentResolver.openOutputStream(uri)?.use {
+                        it.write(content.toByteArray(Charsets.UTF_8))
+                    }
+                    runOnUiThread {
+                        Toast.makeText(this@MainActivity,
+                            "已保存到 下载/方寸/$fileName", Toast.LENGTH_SHORT).show()
+                    }
+                }
+            } catch (e: Exception) {
+                runOnUiThread {
+                    Toast.makeText(this@MainActivity,
+                        "保存失败: ${e.message}", Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
     }
 
     // ---- 版本检查 ----
