@@ -274,6 +274,24 @@
     </div>
   </div>
 
+  <!-- Frontend events -->
+  <div class="section">
+    <div class="section-title">前端事件</div>
+    <div id="eventChart" class="bar-chart"><div class="loading">加载中</div></div>
+  </div>
+
+  <!-- Export image breakdown -->
+  <div class="grid-2">
+    <div class="section">
+      <div class="section-title">导出图片 · 主题分布</div>
+      <div id="exportThemeChart" class="bar-chart"><div class="loading">加载中</div></div>
+    </div>
+    <div class="section">
+      <div class="section-title">导出图片 · 体裁分布</div>
+      <div id="exportGenreChart" class="bar-chart"><div class="loading">加载中</div></div>
+    </div>
+  </div>
+
   <!-- Route detail for selected date -->
   <div class="section">
     <div class="section-title" id="detailTitle">当日明细</div>
@@ -357,7 +375,7 @@ function render() {
   const totalCalls = allStats.reduce((s, r) => s + r.call_count, 0);
   document.getElementById('totalCalls').textContent = totalCalls.toLocaleString();
 
-  const activeRoutes = new Set(allStats.map(s => s.route)).size;
+  const activeRoutes = new Set(allStats.filter(s => !s.route.startsWith('_event:')).map(s => s.route)).size;
   document.getElementById('activeRoutes').textContent = activeRoutes;
 
   // --- Trend chart ---
@@ -382,9 +400,9 @@ function render() {
     }).join('');
   }
 
-  // --- Route distribution (all time) ---
+  // --- Route distribution (all time, exclude events) ---
   const routeMap = {};
-  allStats.forEach(s => { routeMap[s.route] = (routeMap[s.route] || 0) + s.call_count; });
+  allStats.filter(s => !s.route.startsWith('_event:')).forEach(s => { routeMap[s.route] = (routeMap[s.route] || 0) + s.call_count; });
   const routeEntries = Object.entries(routeMap).sort((a, b) => b[1] - a[1]);
   const routeMax = routeEntries.length ? routeEntries[0][1] : 1;
   const routeEl = document.getElementById('routeChart');
@@ -415,6 +433,77 @@ function render() {
       return `<div class="bar-row">
         <div class="bar-label" title="${source}">${source}</div>
         <div class="bar-track"><div class="bar-fill color-${(i + 2) % 8}" style="width: ${pct}%"></div></div>
+        <div class="bar-count">${count}</div>
+      </div>`;
+    }).join('');
+  }
+
+  // --- Frontend events ---
+  const eventMap = {};
+  allStats.filter(s => s.route.startsWith('_event:')).forEach(s => {
+    const parts = s.route.split(':');
+    const eventName = parts[1] || '';
+    const detail = parts.slice(2).join(' ').replace(/=/g, ': ');
+    const label = detail ? `${eventName} (${detail})` : eventName;
+    eventMap[label] = (eventMap[label] || 0) + s.call_count;
+  });
+  const eventEntries = Object.entries(eventMap).sort((a, b) => b[1] - a[1]);
+  const eventMax = eventEntries.length ? eventEntries[0][1] : 1;
+  const eventEl = document.getElementById('eventChart');
+  if (!eventEntries.length) {
+    eventEl.innerHTML = '<div class="empty">暂无事件数据</div>';
+  } else {
+    eventEl.innerHTML = eventEntries.map(([label, count], i) => {
+      const pct = (count / eventMax * 100).toFixed(1);
+      return `<div class="bar-row">
+        <div class="bar-label" title="${label}">${label}</div>
+        <div class="bar-track"><div class="bar-fill color-${(i + 4) % 8}" style="width: ${pct}%"></div></div>
+        <div class="bar-count">${count}</div>
+      </div>`;
+    }).join('');
+  }
+
+  // --- Export image breakdown ---
+  const exportStats = allStats.filter(s => s.route.startsWith('_event:export_image'));
+  const themeMap = {};
+  const genreMap = {};
+  exportStats.forEach(s => {
+    const props = {};
+    s.route.split(':').slice(2).forEach(p => { const [k, v] = p.split('='); if (k && v) props[k] = v; });
+    if (props.theme) themeMap[props.theme] = (themeMap[props.theme] || 0) + s.call_count;
+    if (props.genre) {
+      const label = props.genre === 'Shi' ? '诗' : props.genre === 'Ci' ? '词' : '自由诗';
+      genreMap[label] = (genreMap[label] || 0) + s.call_count;
+    }
+  });
+
+  const themeEntries = Object.entries(themeMap).sort((a, b) => b[1] - a[1]);
+  const themeMax = themeEntries.length ? themeEntries[0][1] : 1;
+  const themeEl = document.getElementById('exportThemeChart');
+  if (!themeEntries.length) {
+    themeEl.innerHTML = '<div class="empty">暂无数据</div>';
+  } else {
+    themeEl.innerHTML = themeEntries.map(([name, count], i) => {
+      const pct = (count / themeMax * 100).toFixed(1);
+      return `<div class="bar-row">
+        <div class="bar-label">${name}</div>
+        <div class="bar-track"><div class="bar-fill color-${(i + 1) % 8}" style="width: ${pct}%"></div></div>
+        <div class="bar-count">${count}</div>
+      </div>`;
+    }).join('');
+  }
+
+  const genreEntries = Object.entries(genreMap).sort((a, b) => b[1] - a[1]);
+  const genreMax = genreEntries.length ? genreEntries[0][1] : 1;
+  const genreEl = document.getElementById('exportGenreChart');
+  if (!genreEntries.length) {
+    genreEl.innerHTML = '<div class="empty">暂无数据</div>';
+  } else {
+    genreEl.innerHTML = genreEntries.map(([name, count], i) => {
+      const pct = (count / genreMax * 100).toFixed(1);
+      return `<div class="bar-row">
+        <div class="bar-label">${name}</div>
+        <div class="bar-track"><div class="bar-fill color-${(i + 3) % 8}" style="width: ${pct}%"></div></div>
         <div class="bar-count">${count}</div>
       </div>`;
     }).join('');

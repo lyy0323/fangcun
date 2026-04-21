@@ -48,4 +48,10 @@ body {
   .max-touch\:hidden {
     display: none !important;
   }
+  .touch-show {
+    opacity: 0.4 !important;
+  }
+  .touch-show:active {
+    opacity: 1 !important;
+  }
 }

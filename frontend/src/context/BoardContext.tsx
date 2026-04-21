@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useReducer, useEffect, type Dispatch } from 'react';
-import type { Board, Folder, ValidationResult, BoardMetadata, PoemSection, FreeRhymeResult } from '../lib/types';
+import type { Board, Folder, SortMode, ValidationResult, BoardMetadata, PoemSection, FreeRhymeResult } from '../lib/types';
 import { PLACEHOLDER } from '../lib/types';
 import { loadBoards, saveBoards, loadActiveBoardId, saveActiveBoardId, loadFolders, saveFolders } from '../lib/storage';
 
@@ -20,6 +20,7 @@ export interface AppState {
   rhymeOverride: string | null;
   pairQuery: { text: string; insertAt: number } | null;
   freeRhymeResult: FreeRhymeResult | null;
+  rootSortMode: SortMode;
 }
 
 const initialState: AppState = {
@@ -35,6 +36,7 @@ const initialState: AppState = {
   rhymeOverride: null,
   pairQuery: null,
   freeRhymeResult: null,
+  rootSortMode: 'updated-desc' as SortMode,
 };
 
 // 首次打开没有画板时，自动弹出体裁选择
@@ -80,7 +82,9 @@ export type Action =
   | { type: 'DELETE_FOLDER'; id: string }
   | { type: 'TOGGLE_FOLDER'; id: string }
   | { type: 'MOVE_FOLDER'; id: string; direction: 'up' | 'down' }
-  | { type: 'MOVE_BOARD'; boardId: string; folderId: string | null };
+  | { type: 'MOVE_BOARD'; boardId: string; folderId: string | null }
+  | { type: 'SET_SORT_MODE'; folderId: string | null; mode: SortMode }
+  | { type: 'REORDER_BOARD'; boardId: string; direction: 'up' | 'down' };
 
 // ============================================================================
 // Reducer
@@ -388,6 +392,32 @@ function reducer(state: AppState, action: Action): AppState {
       const boards = state.boards.map(b =>
         b.id === action.boardId ? { ...b, folderId: action.folderId ?? undefined, updatedAt: Date.now() } : b,
       );
+      return { ...state, boards };
+    }
+    case 'SET_SORT_MODE': {
+      if (action.folderId === null) {
+        return { ...state, rootSortMode: action.mode };
+      }
+      const folders = state.folders.map(f => f.id === action.folderId ? { ...f, sortMode: action.mode } : f);
+      return { ...state, folders };
+    }
+    case 'REORDER_BOARD': {
+      const board = state.boards.find(b => b.id === action.boardId);
+      if (!board) return state;
+      const fid = board.folderId ?? null;
+      const siblings = state.boards
+        .filter(b => (b.folderId ?? null) === fid)
+        .sort((a, b) => (a.boardOrder ?? 0) - (b.boardOrder ?? 0));
+      const idx = siblings.findIndex(b => b.id === action.boardId);
+      const swapIdx = action.direction === 'up' ? idx - 1 : idx + 1;
+      if (swapIdx < 0 || swapIdx >= siblings.length) return state;
+      const orderA = siblings[idx].boardOrder ?? idx;
+      const orderB = siblings[swapIdx].boardOrder ?? swapIdx;
+      const boards = state.boards.map(b => {
+        if (b.id === siblings[idx].id) return { ...b, boardOrder: orderB };
+        if (b.id === siblings[swapIdx].id) return { ...b, boardOrder: orderA };
+        return b;
+      });
       return { ...state, boards };
     }
     default:

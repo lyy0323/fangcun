@@ -14,6 +14,7 @@ import {
   FONT_OPTIONS,
   DEFAULT_FONT,
 } from '../lib/exportImage';
+import { track } from '../lib/api';
 import type { ThemeKey, FontKey } from '../lib/exportImage';
 import type { Board } from '../lib/types';
 import { X, Download, Loader, Check } from 'lucide-react';
@@ -236,7 +237,8 @@ export function ExportPreview({ onClose }: { onClose: () => void }) {
   const handleDownload = async () => {
     if (!canvasEl || !board || downloadState !== 'idle') return;
     setDownloadState('saving');
-    await downloadCanvas(canvasEl, board.title);
+    await downloadCanvas(canvasEl, board.title, theme);
+    track('export_image', { theme, genre: board.genre });
     setDownloadState('done');
     setTimeout(() => setDownloadState('idle'), 1500);
   };
@@ -297,22 +299,34 @@ export function ExportPreview({ onClose }: { onClose: () => void }) {
           </div>
           {/* 配色 + 下载 */}
           <div className="flex items-center justify-between gap-3">
-          <div className="flex flex-wrap gap-1.5">
-            {THEME_KEYS.map((k) => (
+          <div className="flex gap-1.5 overflow-x-auto flex-1 min-w-0 py-1 px-1">
+            {THEME_KEYS.map((k) => {
+              const t = THEMES[k];
+              const bgStyle = t.topoColor
+                ? { background: `radial-gradient(circle at 75% 25%, ${t.topoColor}, ${t.bg} 70%)` }
+                : t.blobs
+                  ? { background: `radial-gradient(circle at 30% 50%, ${t.blobs[0].color}88 0%, transparent 60%), radial-gradient(circle at 70% 50%, ${(t.blobs[1] ?? t.blobs[0]).color}88 0%, transparent 60%), ${t.bg}` }
+                  : t.splitBg
+                    ? { background: `linear-gradient(180deg, ${t.splitBg.top} 40%, ${t.splitBg.bottom} 60%)` }
+                    : t.gradient
+                      ? { background: `linear-gradient(${t.gradient.angle ?? 180}deg, ${t.gradient.colors.join(', ')})` }
+                      : { backgroundColor: t.bg };
+              return (
               <button
                 key={k}
                 onClick={() => setTheme(k)}
                 className="w-6 h-6 rounded-full transition-all shrink-0"
                 style={{
-                  backgroundColor: THEMES[k].bg,
+                  ...bgStyle,
                   boxShadow:
                     theme === k
-                      ? `0 0 0 2px var(--bg-card), 0 0 0 3.5px ${THEMES[k].text}`
+                      ? `0 0 0 2px var(--bg-card), 0 0 0 3.5px ${t.text}`
                       : `inset 0 0 0 1px rgba(0,0,0,0.12)`,
                 }}
                 title={k}
               />
-            ))}
+              );
+            })}
           </div>
           <button
             onClick={handleDownload}

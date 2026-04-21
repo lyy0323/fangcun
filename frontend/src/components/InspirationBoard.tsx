@@ -1,5 +1,6 @@
 import { useRef, useState, useEffect, useCallback } from 'react';
 import { useBoardContext, useActiveBoard } from '../context/BoardContext';
+import { track } from '../lib/api';
 import type { InspirationCard } from '../lib/types';
 import { Plus, Type, Image as ImageIcon, Clipboard } from 'lucide-react';
 
@@ -53,6 +54,7 @@ export function InspirationBoard() {
             createdAt: Date.now(),
           };
           dispatch({ type: 'ADD_INSPIRATION', card });
+          track('add_inspiration', { type: 'image' });
           return true;
         } catch { /* ignore */ }
       }
@@ -107,6 +109,7 @@ export function InspirationBoard() {
       createdAt: Date.now(),
     };
     dispatch({ type: 'ADD_INSPIRATION', card });
+    track('add_inspiration', { type: 'text' });
     pendingFocusId.current = card.id;
     setMenuOpen(false);
   };
@@ -200,7 +203,7 @@ export function InspirationBoard() {
           <div key={card.id} className="relative group bg-[var(--bg-card)] rounded-lg border border-[var(--border)] ">
             {/* 删除触发按钮 */}
             <button
-              className="absolute top-1 right-1 w-5 h-5 rounded-full text-xs text-[var(--text-muted)] hover:text-red-500 hover:bg-red-50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-10"
+              className="absolute top-1 right-1 w-5 h-5 rounded-full text-xs text-[var(--text-muted)] hover:text-red-500 hover:bg-red-50 flex items-center justify-center opacity-0 group-hover:opacity-100 touch-show transition-opacity z-10"
               onClick={() => setConfirmDeleteId(card.id)}
             >
               ✕

@@ -378,7 +378,7 @@ export function FreeEditor() {
               {/* Delete button */}
               {!immersive && lines.length > 1 && (
                 <button
-                  className="absolute right-0 top-1/2 -translate-y-1/2 -mr-6 w-4 h-4 rounded flex items-center justify-center text-[var(--text-muted)] opacity-0 group-hover:opacity-100 hover:text-rose-500 transition-opacity"
+                  className="absolute right-0 top-1/2 -translate-y-1/2 -mr-6 w-4 h-4 rounded flex items-center justify-center text-[var(--text-muted)] opacity-0 group-hover:opacity-100 touch-show hover:text-rose-500 transition-opacity"
                   onClick={(e) => { e.stopPropagation(); deleteLine(li); }}
                   title="删除行"
                 >

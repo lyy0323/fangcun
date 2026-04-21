@@ -132,3 +132,11 @@ export async function poemsGetPoem(id: number): Promise<PoemFull> {
   if (!res.ok) throw new Error('获取详情失败');
   return res.json();
 }
+
+export function track(event: string, props?: Record<string, string | number>) {
+  fetch(`${BASE}/_track`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ event, props }),
+  }).catch(() => {});
+}

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { X, ArrowLeft, Search, ChevronLeft, ChevronRight } from 'lucide-react';
-import { poemsSearchText, poemsGetPoem } from '../lib/api';
+import { poemsSearchText, poemsGetPoem, track } from '../lib/api';
 import { createBoard, useBoardContext } from '../context/BoardContext';
 import { SHI_CHAR_COUNTS, type PoemBrief, type PoemFull } from '../lib/types';
 
@@ -111,6 +111,7 @@ export function ImportPoemModal({ onClose }: { onClose: () => void }) {
       board.sections[0].lines = lines.length > 0 ? lines : [''];
       board.metadata = { ...board.metadata, author: poem.author };
       dispatch({ type: 'ADD_BOARD', board });
+      track('import_poem', { matched: 0 });
       return;
     }
 
@@ -130,6 +131,7 @@ export function ImportPoemModal({ onClose }: { onClose: () => void }) {
     board.sections[0].poemChars = chars;
     board.metadata = { ...board.metadata, author: poem.author };
     dispatch({ type: 'ADD_BOARD', board });
+    track('import_poem', { matched: 1 });
   };
 
   const totalPages = Math.ceil(total / LIMIT);

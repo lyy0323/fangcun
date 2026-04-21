@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useBoardContext, createBoard } from '../context/BoardContext';
-import { rulesList } from '../lib/api';
+import { rulesList, track } from '../lib/api';
 import { SHI_CHAR_COUNTS, type RuleListItem } from '../lib/types';
 import { X, ArrowLeft } from 'lucide-react';
 import { ImportPoemModal } from './ImportPoemModal';
@@ -24,11 +24,13 @@ export function GenreSelector() {
     const charCount = SHI_CHAR_COUNTS[label];
     const board = createBoard('Shi', label, charCount);
     dispatch({ type: 'ADD_BOARD', board });
+    track('create_board', { genre: 'Shi', rule: label });
   };
 
   const selectCi = (rule: RuleListItem) => {
     const board = createBoard('Ci', rule.name, rule.char_count);
     dispatch({ type: 'ADD_BOARD', board });
+    track('create_board', { genre: 'Ci', rule: rule.name });
   };
 
   const [showCount, setShowCount] = useState(100);
@@ -90,7 +92,7 @@ export function GenreSelector() {
                   onClick={() => setStep('shi')}
                 >
                   <span className="text-3xl">诗</span>
-                  <span className="text-xs text-[var(--text-secondary)]">绝句·律诗</span>
+                  <span className="text-xs text-[var(--text-secondary)]">近体·古体</span>
                 </button>
                 <button
                   className="w-24 h-24 sm:w-28 sm:h-28 rounded-2xl border-2 border-[var(--border)] hover:border-[var(--accent)] hover:bg-[var(--accent-light)] flex flex-col items-center justify-center gap-2 transition-all"
@@ -104,6 +106,7 @@ export function GenreSelector() {
                   onClick={() => {
                     const board = createBoard('Free', '自由', 0);
                     dispatch({ type: 'ADD_BOARD', board });
+                    track('create_board', { genre: 'Free', rule: '自由诗' });
                   }}
                 >
                   <span className="text-3xl">文</span>
@@ -137,6 +140,7 @@ export function GenreSelector() {
                 onClick={() => {
                   const board = createBoard('Free', '古体诗', 0, '古体诗');
                   dispatch({ type: 'ADD_BOARD', board });
+                  track('create_board', { genre: 'Free', rule: '古体诗' });
                 }}
               >
                 <span className="font-semibold">古体诗</span>
