@@ -52,6 +52,7 @@ def start(base_dir):
     def relax_csp_for_android(response):
         response.headers["Content-Security-Policy"] = (
             "default-src 'self' data: blob:; "
+            "connect-src 'self' https://write.sjtuguoxue.space; "
             "style-src 'self' 'unsafe-inline'; "
             "script-src 'self' 'unsafe-inline'; "
             "img-src 'self' data: blob:"
