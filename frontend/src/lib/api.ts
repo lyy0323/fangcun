@@ -134,10 +134,14 @@ export async function poemsGetPoem(id: number): Promise<PoemFull> {
   return res.json();
 }
 
+const IS_ANDROID = navigator.userAgent.includes('FangcunAndroid');
+
 export function track(event: string, props?: Record<string, string | number>) {
-  fetch(`${BASE}/_track`, {
+  const url = IS_ANDROID ? 'https://write.sjtuguoxue.space/api/_track' : `${BASE}/_track`;
+  const source = IS_ANDROID ? 'android' : 'frontend';
+  fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ event, props }),
+    body: JSON.stringify({ event, props, source }),
   }).catch(() => {});
 }

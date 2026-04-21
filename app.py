@@ -625,7 +625,10 @@ def track_event():
     for k, v in sorted(props.items()):
         parts.append(f"{k}={v}")
     route = ":".join(parts)
-    record_call("frontend", route)
+    source = data.get("source", "frontend")
+    if source not in ("frontend", "android"):
+        source = "frontend"
+    record_call(source, route)
     return jsonify({"ok": True})
 
 # ---------- 统计端点 (Dashboard 数据源) ----------
