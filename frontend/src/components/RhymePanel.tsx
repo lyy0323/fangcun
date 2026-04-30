@@ -21,7 +21,39 @@ export function RhymePanel() {
   const rhymeName = validation?.rhyme_name ?? null;
   const isHuanyun = rhymeName?.includes('换韵') ?? false;
 
-  // 加载同韵字的通用函数
+  const isFree = board?.genre === 'Free';
+  const freeRhyme = state.freeRhymeResult;
+
+  // 换韵时自动推断第一韵组的韵部
+  const inferHuanyunCategory = (): string | null => {
+    if (!isHuanyun || !validation?.rhyme_groups?.length || !validation?.rhyme_chars?.length) return null;
+    const firstGroup = validation.rhyme_groups[0];
+    if (!firstGroup?.positions?.length) return null;
+    const firstPos = firstGroup.positions[0];
+    const idx = validation.rhyme_positions?.indexOf(firstPos);
+    if (idx == null || idx < 0) return null;
+    const ch = validation.rhyme_chars[idx];
+    if (!ch || ch === '□') return null;
+    return ch;
+  };
+
+  // 自由诗：找最大韵组，取其中韵字的共同韵部
+  const inferFreeCategory = (): string | null => {
+    if (!freeRhyme?.groups?.length || !freeRhyme?.candidates?.length) return null;
+    const largest = freeRhyme.groups.reduce((a, b) => b.positions.length > a.positions.length ? b : a);
+    const candidateMap = new Map(freeRhyme.candidates.map(c => [`${c.line}:${c.pos}`, c]));
+    const catCount: Record<string, number> = {};
+    for (const p of largest.positions) {
+      const c = candidateMap.get(`${p.line}:${p.pos}`);
+      if (c?.categories) {
+        for (const cat of c.categories) {
+          catCount[cat] = (catCount[cat] || 0) + 1;
+        }
+      }
+    }
+    const sorted = Object.entries(catCount).sort((a, b) => b[1] - a[1]);
+    return sorted[0]?.[0] ?? null;
+  };
   const loadCategory = (name: string) => {
     setRhymeCatName(name);
     setRhymeChars([]);
@@ -59,16 +91,34 @@ export function RhymePanel() {
       loadCategory(manualOverride);
       return;
     }
+    if (isFree) {
+      const cat = inferFreeCategory();
+      if (cat) loadCategory(cat);
+      else { setRhymeCatName(null); setRhymeChars([]); setRhymeTotal(0); }
+      return;
+    }
     if (rhymeName && !isHuanyun) {
       const firstName = rhymeName.split(',')[0].trim();
       loadCategory(firstName);
+    } else if (isHuanyun) {
+      const ch = inferHuanyunCategory();
+      if (ch) {
+        charLookup(ch, bookName)
+          .then(data => {
+            const cat = data.rhyme_categories?.[0];
+            if (cat) loadCategory(cat.name);
+          })
+          .catch(() => {});
+      } else {
+        setRhymeCatName(null); setRhymeChars([]); setRhymeTotal(0);
+      }
     } else {
       setRhymeCatName(null);
       setRhymeChars([]);
       setRhymeTotal(0);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [rhymeName, bookName, manualOverride, boardId]);
+  }, [rhymeName, bookName, manualOverride, boardId, freeRhyme]);
 
   // 加载韵部列表（打开选韵列表时，或韵书变化后重新加载）
   useEffect(() => {
