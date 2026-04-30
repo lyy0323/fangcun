@@ -668,7 +668,7 @@ export function GridEditor() {
               <div className="mt-2 text-xs space-y-0.5">
                 {sV.errors.filter(e => e.position >= 0).slice(0, 5).map((e, i) => (
                   <div key={i} className="text-rose-500">
-                    第{e.position + 1}字「{e.character}」{e.message}
+                    第{e.position + 1}字「{e.character}」{e.message}{e.error_type === 'Rhyme' && e.expected ? `，应押「${e.expected}」韵` : ''}
                   </div>
                 ))}
               </div>
