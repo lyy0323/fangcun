@@ -87,6 +87,8 @@ export interface ErrorItem {
   character: string;
   error_type: 'Tone' | 'Rhyme';
   message: string;
+  expected?: string;
+  actual?: string;
 }
 
 export interface WarningItem {
