@@ -192,29 +192,33 @@ def cmd_rules(args):
 
 
 # ---------------------------------------------------------------------------
-# char — 并发批量查询
+# char — 批量查询（单字走 lookup，多字走 batch）
 # ---------------------------------------------------------------------------
 
 def cmd_char(args):
     chars = list(args.char)
-    bk = f"&book={urllib.parse.quote(args.book)}" if args.book else ""
+    book = args.book
 
     if len(chars) == 1:
+        bk = f"&book={urllib.parse.quote(book)}" if book else ""
         print(json.dumps(_get(CHECKER_URL, f"/api/char/lookup?char={urllib.parse.quote(chars[0])}{bk}"), ensure_ascii=False))
         return 0
 
-    paths = [f"/api/char/lookup?char={urllib.parse.quote(ch)}{bk}" for ch in chars]
-    raw = _get_many(CHECKER_URL, paths)
+    payload = {"chars": chars}
+    if book:
+        payload["book"] = book
+    raw = _post(CHECKER_URL, "/api/char/batch", payload)
+
+    if isinstance(raw, dict) and "error" in raw:
+        print(json.dumps(raw, ensure_ascii=False))
+        return 2
 
     results = []
-    for ch, r in zip(chars, raw):
-        if "error" in r:
-            results.append({"char": ch, "tones": [], "tone": "?"})
-            continue
+    for r in raw:
         tones = r.get("tones", [])
         tone = "P" if tones == ["平"] else ("Z" if tones and all(t != "平" for t in tones) else "?")
-        entry = {"char": ch, "tones": tones, "tone": tone}
-        if args.book:
+        entry = {"char": r.get("char", ""), "tones": tones, "tone": tone}
+        if book:
             cats = r.get("rhyme_categories", [])
             entry["rhymes"] = [c["name"] for c in cats] if isinstance(cats, list) else cats
         results.append(entry)
@@ -264,13 +268,14 @@ def cmd_suggest(args):
         all_chars.update(word)
 
     char_list = list(all_chars)
-    paths = [f"/api/char/lookup?char={urllib.parse.quote(ch)}" for ch in char_list]
-    raw = _get_many(CHECKER_URL, paths)
+    batch = _post(CHECKER_URL, "/api/char/batch", {"chars": char_list})
 
     tone_map = {}
-    for ch, r in zip(char_list, raw):
-        t = r.get("tones", [])
-        tone_map[ch] = "P" if t == ["平"] else ("Z" if t and all(x != "平" for x in t) else "?")
+    if isinstance(batch, list):
+        for r in batch:
+            ch = r.get("char", "")
+            t = r.get("tones", [])
+            tone_map[ch] = "P" if t == ["平"] else ("Z" if t and all(x != "平" for x in t) else "?")
 
     enhanced = []
     for item in items:
