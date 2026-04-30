@@ -6,76 +6,63 @@
 
 子命令:
     validate  校验格律（返回逐字平仄谱 + 结构化错误）
-    rules     列出格律规则（含句式结构描述）
+    rules     列出格律规则
     char      查字声调与韵部（支持多字批量）
     rhyme     查韵部字表
     suggest   词语/对仗联想（含声调标注）
 
-validate/rules/char/rhyme 需要 checker.py 和 config_loader.py。
+所有查询通过线上 checker 服务完成，无需本地数据文件。
+环境变量 FANGCUN_CHECKER_URL 可覆盖默认地址。
+环境变量 FANGCUN_DICT_URL 可覆盖词库服务地址。
 """
 
 import argparse
 import json
+import os
 import sys
+import urllib.request
+import urllib.error
+import urllib.parse
 
-_data = {}
+CHECKER_URL = os.environ.get("FANGCUN_CHECKER_URL", "https://checker.sjtuguoxue.space")
+DICT_URL = os.environ.get("FANGCUN_DICT_URL", "https://write.sjtuguoxue.space")
 
 
-def _ensure_loaded():
-    if _data:
-        return
+# ---------------------------------------------------------------------------
+# HTTP 客户端
+# ---------------------------------------------------------------------------
+
+def _get(base: str, path: str):
+    url = f"{base}{path}"
     try:
-        import config_loader
-        from checker import PoetryChecker
-    except ImportError:
-        print(json.dumps({"error": "checker not found", "hint": "安装 check_rhyme 包或将 checker.py、config_loader.py 放在当前目录"}, ensure_ascii=False))
-        sys.exit(1)
-
-    _data["config_loader"] = config_loader
-    _data["char_dict"] = config_loader.load_char_dict()
-    _data["rhyme_books"] = config_loader.load_rhyme_books()
-    _data["rule_database"] = config_loader.load_rule_database()
-    _data["checker"] = PoetryChecker(
-        char_dict=_data["char_dict"],
-        rhyme_books=_data["rhyme_books"],
-        rule_database=_data["rule_database"],
-    )
-    _data["char_dict_raw"] = _data["char_dict"]
-    _data["rhyme_books_raw"] = config_loader._load_json("rhyme_books.json") or {}
-    _data["phrase_head"] = config_loader._load_json("phrase_head.json") or {}
-    _data["phrase_tail"] = config_loader._load_json("phrase_tail.json") or {}
-    _data["phrase_pairs"] = config_loader._load_json("phrase_pairs.json") or {}
-    _data["t2s_map"] = config_loader._load_json("t2s_map.json") or {}
-    shi_rules = config_loader._load_json("shi_rules.json") or []
-    ci_rules = config_loader._load_json("ci_rules.json") or []
-    _data["shi_rules_raw"] = shi_rules
-    _data["ci_rules_raw"] = ci_rules
+        req = urllib.request.Request(url)
+        with urllib.request.urlopen(req, timeout=15) as resp:
+            return json.loads(resp.read())
+    except urllib.error.HTTPError as e:
+        body = e.read().decode(errors="replace")
+        try:
+            return json.loads(body)
+        except Exception:
+            return {"error": f"HTTP {e.code}: {body[:200]}"}
+    except urllib.error.URLError as e:
+        return {"error": f"连接失败: {e.reason}", "hint": f"检查网络或设置 FANGCUN_CHECKER_URL 环境变量（当前: {base}）"}
 
 
-def _t2s(ch: str) -> str:
-    return _data["t2s_map"].get(ch, ch)
-
-
-def _lookup_char(ch: str):
-    info = _data["char_dict_raw"].get(ch)
-    if info:
-        return info
-    simplified = _t2s(ch)
-    if simplified != ch:
-        return _data["char_dict_raw"].get(simplified)
-    return None
-
-
-def _get_tone_label(ch: str) -> str:
-    info = _lookup_char(ch)
-    if not info or not info.get("tones"):
-        return "?"
-    tones = info["tones"]
-    has_p = any(t in ("平", "Ping", "ping", "yinping", "阴平", "yangping", "阳平") for t in tones)
-    has_z = any(t not in ("平", "Ping", "ping", "yinping", "阴平", "yangping", "阳平") for t in tones)
-    if has_p and has_z:
-        return "?"
-    return "P" if has_p else "Z"
+def _post(base: str, path: str, data: dict):
+    url = f"{base}{path}"
+    body = json.dumps(data).encode()
+    try:
+        req = urllib.request.Request(url, data=body, headers={"Content-Type": "application/json"})
+        with urllib.request.urlopen(req, timeout=15) as resp:
+            return json.loads(resp.read())
+    except urllib.error.HTTPError as e:
+        resp_body = e.read().decode(errors="replace")
+        try:
+            return json.loads(resp_body)
+        except Exception:
+            return {"error": f"HTTP {e.code}: {resp_body[:200]}"}
+    except urllib.error.URLError as e:
+        return {"error": f"连接失败: {e.reason}", "hint": f"检查网络或设置 FANGCUN_CHECKER_URL 环境变量（当前: {base}）"}
 
 
 # ---------------------------------------------------------------------------
@@ -83,136 +70,126 @@ def _get_tone_label(ch: str) -> str:
 # ---------------------------------------------------------------------------
 
 def cmd_validate(args):
-    _ensure_loaded()
-    result = _data["checker"].check_auto(
-        poem_text=args.text, genre=args.genre, rhyme_book_name=args.rhyme_book,
-        ensure_longpu=args.longpu, rule_name=args.rule,
-    )
+    payload = {
+        "poem_text": args.text,
+        "genre": args.genre,
+        "rhyme_book_name": args.rhyme_book,
+    }
+    if args.rule:
+        payload["rule_name"] = args.rule
+    if args.longpu:
+        payload["ensure_longpu"] = True
+
+    result = _post(CHECKER_URL, "/api/validate_meter", payload)
+
+    if "error" in result and "is_valid" not in result:
+        print(json.dumps(result, ensure_ascii=False))
+        return 2
 
     if args.pretty:
-        from checker import print_pretty_result
-        print_pretty_result(result)
-        return 0 if result.is_valid else 1
+        _pretty_print(result)
+    else:
+        out = {
+            "is_valid": result.get("is_valid"),
+            "rule": result.get("closest_rule"),
+            "chars": result.get("chars", []),
+            "tone_pattern": result.get("tone_pattern", []),
+            "rhyme": {
+                "name": result.get("rhyme_name"),
+                "positions": result.get("rhyme_positions"),
+                "chars": result.get("rhyme_chars"),
+            },
+            "errors": result.get("errors", []),
+            "warnings": result.get("warnings", []),
+        }
+        print(json.dumps(out, ensure_ascii=False))
 
-    closest = None
-    if result.closest_rule:
-        r = result.closest_rule
-        closest = {"name": r.name, "genre": r.genre, "cipai": r.cipai, "char_count": r.char_count}
+    return 0 if result.get("is_valid") else 1
 
-    tone_pattern = []
-    for seg in result.display_segments:
-        for item in seg.rule_items:
-            tone_pattern.append(item.get("tone", "?"))
 
-    errors = []
-    for e in result.errors:
-        err = {"position": e.position, "character": e.character, "type": e.error_type, "message": e.message}
-        if e.expected is not None:
-            err["expected"] = e.expected
-        if e.actual is not None:
-            err["actual"] = e.actual
-        errors.append(err)
+def _pretty_print(result):
+    RED = "\033[91m"
+    GREEN = "\033[92m"
+    RESET = "\033[0m"
+    EM = "　"
+    tone_map = {"P": "平", "Z": "仄", "A": "中", "?": "?"}
 
-    warnings = []
-    for w in result.warnings:
-        warnings.append({"positions": w.positions, "character": w.character, "type": w.warning_type, "message": w.message})
+    rule = result.get("closest_rule")
+    print(f"\n{'='*60}")
+    if rule:
+        print(f"体裁: {rule['name']}")
+    rhyme_name = result.get("rhyme_name")
+    if rhyme_name:
+        print(f"押韵: {rhyme_name}")
+    print(f"结果: {'通过' if result.get('is_valid') else '不通过'}")
 
-    out = {
-        "is_valid": result.is_valid,
-        "rule": closest,
-        "chars": result.cleaned_chars,
-        "tone_pattern": tone_pattern,
-        "rhyme": {
-            "name": result.rhyme_name,
-            "positions": result.rhyme_positions,
-            "chars": result.rhyme_chars,
-        },
-        "errors": errors,
-        "warnings": warnings,
-    }
-    print(json.dumps(out, ensure_ascii=False))
-    return 0 if result.is_valid else 1
+    error_positions = {e["position"] for e in result.get("errors", [])}
+    rhyme_positions = set(result.get("rhyme_positions") or [])
+
+    for seg in result.get("display_segments", []):
+        text_line = ""
+        rule_line = ""
+        for i, ch in enumerate(seg["text_chars"]):
+            gi = seg["start_index"] + i
+            if gi in error_positions:
+                text_line += f"{RED}{ch}{RESET}"
+            else:
+                text_line += ch
+            item = seg["rule_items"][i] if i < len(seg["rule_items"]) else {}
+            rule_line += tone_map.get(item.get("tone", "?"), "?")
+            if gi in rhyme_positions:
+                text_line += EM
+                rule_line += f"{GREEN}韵{RESET}"
+        print(f"\n{text_line}")
+        print(rule_line)
+
+    if result.get("errors"):
+        print(f"\n--- 错误 ({len(result['errors'])}) ---")
+        for e in result["errors"]:
+            exp = e.get("expected", "")
+            act = e.get("actual", "")
+            detail = f" (expected={exp}, actual={act})" if exp else ""
+            print(f"  [{e['position']:>3d}] {e['character']}  {e['message']}{detail}")
+    elif result.get("is_valid"):
+        print("\n--- 格律通过 ---")
+    print(f"{'='*60}\n")
 
 
 # ---------------------------------------------------------------------------
-# rules — 规则列表（含结构描述）
+# rules — 规则列表
 # ---------------------------------------------------------------------------
-
-def _describe_rule(raw_rule: dict) -> dict:
-    name = raw_rule["name"]
-    char_count = raw_rule["char_count"]
-    genre = raw_rule.get("genre", "Shi")
-    cipai = raw_rule.get("cipai")
-
-    pattern = raw_rule.get("tone_pattern", [])
-    flat = []
-    for item in pattern:
-        if isinstance(item, dict):
-            flat.append(item.get("tone", "?"))
-        elif isinstance(item, list):
-            flat.append("/".join("".join(v.get("tone","?") for v in variant) for variant in item))
-
-    desc = {"name": name, "char_count": char_count}
-    if cipai:
-        desc["cipai"] = cipai
-
-    if genre == "Shi":
-        sentence_len = 7 if char_count % 7 == 0 else 5
-        desc["sentence_length"] = sentence_len
-        desc["sentence_count"] = char_count // sentence_len
-        first_tone = flat[0] if flat else "?"
-        desc["start_tone"] = "平起" if first_tone == "P" else ("仄起" if first_tone == "Z" else "中")
-        desc["first_line_rhyme"] = "首句入韵" in name
-
-    if flat:
-        desc["tone_preview"] = "".join(t.replace("P","平").replace("Z","仄").replace("A","中") for t in flat[:14])
-        if len(flat) > 14:
-            desc["tone_preview"] += "…"
-
-    return desc
-
 
 def cmd_rules(args):
-    _ensure_loaded()
-    raw_rules = _data["shi_rules_raw"] if args.genre == "Shi" else _data["ci_rules_raw"]
-    results = []
-    for r in raw_rules:
-        desc = _describe_rule(r)
-        if args.search:
-            if args.search not in desc["name"] and args.search not in desc.get("cipai", ""):
-                continue
-        results.append(desc)
-    print(json.dumps(results, ensure_ascii=False))
+    path = f"/api/rules/list?genre={args.genre}"
+    if args.search:
+        path += f"&search={urllib.parse.quote(args.search)}"
+    result = _get(CHECKER_URL, path)
+    print(json.dumps(result, ensure_ascii=False))
     return 0
 
 
 # ---------------------------------------------------------------------------
-# char — 单字/多字声调查询
+# char — 单字/多字音韵查询
 # ---------------------------------------------------------------------------
 
 def cmd_char(args):
-    _ensure_loaded()
     chars = list(args.char)
+    book_param = f"&book={urllib.parse.quote(args.book)}" if args.book else ""
+
     if len(chars) == 1:
-        ch = chars[0]
-        info = _lookup_char(ch)
-        if not info:
-            print(json.dumps({"char": ch, "tones": [], "rhyme_categories": {}}, ensure_ascii=False))
-            return 0
-        if args.book:
-            cats = info.get("rhymes", {}).get(args.book, [])
-            out = {"char": ch, "tones": info.get("tones", []), "rhyme_categories": {args.book: cats}}
-        else:
-            out = {"char": ch, "tones": info.get("tones", []), "rhyme_categories": info.get("rhymes", {})}
-        print(json.dumps(out, ensure_ascii=False))
+        result = _get(CHECKER_URL, f"/api/char/lookup?char={urllib.parse.quote(chars[0])}{book_param}")
+        print(json.dumps(result, ensure_ascii=False))
     else:
         results = []
         for ch in chars:
-            info = _lookup_char(ch)
-            if info:
-                entry = {"char": ch, "tones": info.get("tones", []), "tone": _get_tone_label(ch)}
+            r = _get(CHECKER_URL, f"/api/char/lookup?char={urllib.parse.quote(ch)}{book_param}")
+            if "error" not in r:
+                tones = r.get("tones", [])
+                tone = "P" if tones == ["平"] else ("Z" if tones and all(t != "平" for t in tones) else "?")
+                entry = {"char": ch, "tones": tones, "tone": tone}
                 if args.book:
-                    entry["rhymes"] = info.get("rhymes", {}).get(args.book, [])
+                    cats = r.get("rhyme_categories", [])
+                    entry["rhymes"] = [c["name"] for c in cats] if isinstance(cats, list) else cats
                 results.append(entry)
             else:
                 results.append({"char": ch, "tones": [], "tone": "?"})
@@ -225,76 +202,46 @@ def cmd_char(args):
 # ---------------------------------------------------------------------------
 
 def cmd_rhyme(args):
-    _ensure_loaded()
-    book_data = _data["rhyme_books_raw"].get(args.book, {}).get("categories", {})
-    cat = book_data.get(args.category)
-    if not cat:
-        avail = list(book_data.keys())[:10]
-        print(json.dumps({"error": f"韵部 '{args.category}' 不存在", "available_sample": avail}, ensure_ascii=False))
-        return 2
-    result = {"category_name": cat["name"], "tone_type": cat["tone_type"], "total": len(cat["characters"]), "characters": cat["characters"]}
+    path = f"/api/rhyme/lookup?book={urllib.parse.quote(args.book)}&category={urllib.parse.quote(args.category)}"
     if args.include:
-        related = []
-        for rel_type in args.include.split(","):
-            rel_type = rel_type.strip()
-            for rn in cat.get("relations", {}).get(rel_type, []):
-                rel_cat = book_data.get(rn)
-                if rel_cat:
-                    related.append({"relation": rel_type, "category": {"category_name": rel_cat["name"], "tone_type": rel_cat["tone_type"], "total": len(rel_cat["characters"]), "characters": rel_cat["characters"]}})
-        result = {"primary": result, "related": related}
+        path += f"&include={urllib.parse.quote(args.include)}"
+    result = _get(CHECKER_URL, path)
     print(json.dumps(result, ensure_ascii=False))
-    return 0
+    return 0 if "error" not in result else 2
 
 
 # ---------------------------------------------------------------------------
-# suggest — 词语联想（含声调）
+# suggest — 词语联想
 # ---------------------------------------------------------------------------
 
 def cmd_suggest(args):
-    _ensure_loaded()
-    term = "".join(_t2s(c) for c in args.term)
+    term = urllib.parse.quote(args.term)
+    path = f"/api/dictionary/search?term={term}&mode={args.mode}"
+    if args.length is not None:
+        path += f"&length={args.length}"
+    if args.tone:
+        path += f"&tone={args.tone}"
 
-    if args.mode == "pair":
-        raw = _data["phrase_pairs"].get(term, [])
-        if args.with_tones:
-            result = []
-            for item in raw[:50]:
-                word = item[0] if isinstance(item, list) else item
-                freq = item[1] if isinstance(item, list) and len(item) > 1 else 0
-                tones = "".join(_get_tone_label(c) for c in word)
-                result.append([word, freq, tones])
-            print(json.dumps(result, ensure_ascii=False))
-        else:
-            print(json.dumps(raw, ensure_ascii=False))
-        return 0
+    result = _get(DICT_URL, path)
 
-    src = _data["phrase_head"] if args.mode == "head" else _data["phrase_tail"]
-    entry = src.get(term, {})
+    if isinstance(result, dict) and "error" in result:
+        print(json.dumps(result, ensure_ascii=False))
+        return 2
 
-    if args.length is None:
-        print(json.dumps(entry, ensure_ascii=False))
-        return 0
-
-    len_data = entry.get(str(args.length), {})
-    if args.tone in ("P", "Z"):
-        raw = len_data.get(args.tone, [])
-    else:
-        merged = {}
-        for t in ["P", "Z"]:
-            for w, c in len_data.get(t, []):
-                merged[w] = max(merged.get(w, 0), c)
-        raw = sorted(merged.items(), key=lambda x: -x[1])
-
-    if args.with_tones:
-        result = []
-        for item in raw[:50]:
+    if args.with_tones and isinstance(result, list):
+        enhanced = []
+        for item in result[:30]:
             word = item[0] if isinstance(item, (list, tuple)) else item
             freq = item[1] if isinstance(item, (list, tuple)) and len(item) > 1 else 0
-            tones = "".join(_get_tone_label(c) for c in word)
-            result.append([word, freq, tones])
-        print(json.dumps(result, ensure_ascii=False))
+            tones = ""
+            for ch in word:
+                r = _get(CHECKER_URL, f"/api/char/lookup?char={urllib.parse.quote(ch)}")
+                t = r.get("tones", [])
+                tones += "P" if t == ["平"] else ("Z" if t and all(x != "平" for x in t) else "?")
+            enhanced.append([word, freq, tones])
+        print(json.dumps(enhanced, ensure_ascii=False))
     else:
-        print(json.dumps(raw, ensure_ascii=False))
+        print(json.dumps(result, ensure_ascii=False))
     return 0
 
 
@@ -303,48 +250,46 @@ def cmd_suggest(args):
 # ---------------------------------------------------------------------------
 
 def main():
-    parser = argparse.ArgumentParser(prog="fangcun", description="方寸 — 格律诗词校验工具 (Chinese classical poetry validator)")
+    parser = argparse.ArgumentParser(
+        prog="fangcun",
+        description="方寸 — 格律诗词校验工具 (Chinese classical poetry validator)",
+        epilog=f"checker: {CHECKER_URL}  dict: {DICT_URL}",
+    )
     sub = parser.add_subparsers(dest="command", required=True)
 
-    p_val = sub.add_parser("validate", help="校验诗词格律（返回逐字谱面 + 结构化错误）")
-    p_val.add_argument("--text", required=True, help="诗词文本（汉字，标点自动忽略）")
-    p_val.add_argument("--genre", required=True, choices=["Shi", "Ci"], help="体裁: Shi(诗) / Ci(词)")
-    p_val.add_argument("--rhyme-book", default="Pingshuiyun", choices=["Pingshuiyun", "Cilinzhengyun", "Zhonghua_Tongyun"], help="韵书")
-    p_val.add_argument("--rule", default=None, help="指定规则名（如「七律平起」），不指定则自动匹配")
-    p_val.add_argument("--longpu", action="store_true", help="词牌仅匹配龙谱")
-    p_val.add_argument("--pretty", action="store_true", help="人类可读彩色输出（非 JSON）")
+    p_val = sub.add_parser("validate", help="校验诗词格律")
+    p_val.add_argument("--text", required=True, help="诗词文本（标点自动忽略）")
+    p_val.add_argument("--genre", required=True, choices=["Shi", "Ci"], help="Shi(诗) / Ci(词)")
+    p_val.add_argument("--rhyme-book", default="Pingshuiyun", choices=["Pingshuiyun", "Cilinzhengyun", "Zhonghua_Tongyun"])
+    p_val.add_argument("--rule", default=None, help="指定规则名")
+    p_val.add_argument("--longpu", action="store_true", help="仅匹配龙谱")
+    p_val.add_argument("--pretty", action="store_true", help="彩色人类可读输出")
 
-    p_rules = sub.add_parser("rules", help="列出格律规则（含句式结构描述）")
-    p_rules.add_argument("--genre", required=True, choices=["Shi", "Ci"], help="体裁")
+    p_rules = sub.add_parser("rules", help="列出格律规则")
+    p_rules.add_argument("--genre", required=True, choices=["Shi", "Ci"])
     p_rules.add_argument("--search", default=None, help="按名称/词牌搜索")
 
-    p_char = sub.add_parser("char", help="查字声调与韵部（支持多字如 --char 明月）")
-    p_char.add_argument("--char", required=True, help="要查询的汉字（单字或多字）")
-    p_char.add_argument("--book", default=None, help="韵书名（可选）")
+    p_char = sub.add_parser("char", help="查字声调与韵部（支持多字）")
+    p_char.add_argument("--char", required=True, help="汉字（单字或多字如「明月」）")
+    p_char.add_argument("--book", default=None, help="韵书名")
 
     p_rhyme = sub.add_parser("rhyme", help="查韵部字表")
-    p_rhyme.add_argument("--book", required=True, choices=["Pingshuiyun", "Cilinzhengyun", "Zhonghua_Tongyun"], help="韵书")
+    p_rhyme.add_argument("--book", required=True, choices=["Pingshuiyun", "Cilinzhengyun", "Zhonghua_Tongyun"])
     p_rhyme.add_argument("--category", required=True, help="韵部名（如 一东）")
-    p_rhyme.add_argument("--include", default=None, help="包含关联韵部（如 neighbor,ye_ping）")
+    p_rhyme.add_argument("--include", default=None, help="关联韵部（如 neighbor,ye_ping）")
 
-    p_sug = sub.add_parser("suggest", help="词语/对仗联想（--with-tones 附带声调）")
+    p_sug = sub.add_parser("suggest", help="词语/对仗联想")
     p_sug.add_argument("--term", required=True, help="查询词")
-    p_sug.add_argument("--mode", required=True, choices=["head", "tail", "pair"], help="head(首字)/tail(尾字)/pair(对仗)")
-    p_sug.add_argument("--length", type=int, default=None, help="词语长度")
-    p_sug.add_argument("--tone", default=None, choices=["P", "Z"], help="末字声调: P(平)/Z(仄)")
-    p_sug.add_argument("--with-tones", action="store_true", help="每条结果附带逐字声调标注")
+    p_sug.add_argument("--mode", required=True, choices=["head", "tail", "pair", "tongwei"])
+    p_sug.add_argument("--length", type=int, default=None)
+    p_sug.add_argument("--tone", default=None, choices=["P", "Z"])
+    p_sug.add_argument("--with-tones", action="store_true", help="附带逐字声调标注")
 
     args = parser.parse_args()
-
-    old_stdout = sys.stdout
-    sys.stdout = sys.stderr
+    handler = {"validate": cmd_validate, "rules": cmd_rules, "char": cmd_char, "rhyme": cmd_rhyme, "suggest": cmd_suggest}
     try:
-        handler = {"validate": cmd_validate, "rules": cmd_rules, "char": cmd_char, "rhyme": cmd_rhyme, "suggest": cmd_suggest}[args.command]
-        _ensure_loaded()
-        sys.stdout = old_stdout
-        return handler(args)
+        return handler[args.command](args)
     except Exception as e:
-        sys.stdout = old_stdout
         print(json.dumps({"error": str(e)}, ensure_ascii=False), file=sys.stderr)
         return 2
 
