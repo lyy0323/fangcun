@@ -15,82 +15,52 @@
     --accent: #2563eb;
     --accent-light: #eff6ff;
     --green: #059669;
-    --green-bg: #ecfdf5;
     --orange: #d97706;
-    --orange-bg: #fffbeb;
     --purple: #7c3aed;
-    --purple-bg: #f5f3ff;
     --red: #dc2626;
     --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans SC", sans-serif;
     --font-mono: "SF Mono", "Fira Code", Menlo, Consolas, monospace;
     --shadow: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04);
-    --shadow-md: 0 4px 6px rgba(0,0,0,0.06), 0 2px 4px rgba(0,0,0,0.04);
     --radius: 12px;
   }
-
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body { font-family: var(--font-sans); color: var(--text); background: var(--bg); min-height: 100vh; }
 
-  /* Header */
   .header {
-    background: var(--bg-card);
-    border-bottom: 1px solid var(--border);
-    padding: 1rem 2rem;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    position: sticky;
-    top: 0;
-    z-index: 10;
+    background: var(--bg-card); border-bottom: 1px solid var(--border);
+    padding: 1rem 2rem; display: flex; align-items: center; justify-content: space-between;
+    position: sticky; top: 0; z-index: 10;
   }
-  .header h1 {
-    font-size: 1.25rem;
-    font-weight: 700;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-  }
+  .header h1 { font-size: 1.25rem; font-weight: 700; display: flex; align-items: center; gap: 0.5rem; }
   .header h1 span { color: var(--text-muted); font-weight: 400; font-size: 0.875rem; }
-  .header-right { display: flex; align-items: center; gap: 1rem; }
-  .date-picker {
-    padding: 0.4rem 0.75rem;
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    font-size: 0.875rem;
-    font-family: var(--font-sans);
-    color: var(--text);
-    background: var(--bg);
-    cursor: pointer;
+  .header-right { display: flex; align-items: center; gap: 0.75rem; }
+
+  .range-btns { display: flex; gap: 0; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+  .range-btn {
+    padding: 0.4rem 0.85rem; border: none; font-size: 0.8rem;
+    background: var(--bg-card); cursor: pointer; color: var(--text-secondary);
+    transition: all 0.15s; border-right: 1px solid var(--border);
   }
+  .range-btn:last-child { border-right: none; }
+  .range-btn.active { background: var(--accent); color: #fff; }
+  .range-btn:hover:not(.active) { background: var(--accent-light); }
+
+  .date-picker {
+    padding: 0.4rem 0.75rem; border: 1px solid var(--border); border-radius: 8px;
+    font-size: 0.8rem; font-family: var(--font-sans); color: var(--text); background: var(--bg); cursor: pointer;
+  }
+  .date-picker.hidden { display: none; }
+
   .refresh-btn {
-    padding: 0.4rem 0.75rem;
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    font-size: 0.875rem;
-    background: var(--bg-card);
-    cursor: pointer;
-    color: var(--text-secondary);
-    transition: all 0.15s;
+    padding: 0.4rem 0.75rem; border: 1px solid var(--border); border-radius: 8px;
+    font-size: 0.8rem; background: var(--bg-card); cursor: pointer; color: var(--text-secondary); transition: all 0.15s;
   }
   .refresh-btn:hover { background: var(--accent-light); color: var(--accent); }
 
-  /* Container */
   .container { max-width: 1100px; margin: 0 auto; padding: 1.5rem; }
 
-  /* Summary cards */
-  .cards {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 1rem;
-    margin-bottom: 1.5rem;
-  }
-  .card {
-    background: var(--bg-card);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 1.25rem;
-    box-shadow: var(--shadow);
-  }
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1.5rem; }
+  .card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.25rem; box-shadow: var(--shadow); }
   .card-label { font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.25rem; }
   .card-value { font-size: 2rem; font-weight: 700; line-height: 1.2; }
   .card-sub { font-size: 0.8rem; color: var(--text-secondary); margin-top: 0.25rem; }
@@ -99,100 +69,42 @@
   .card--purple .card-value { color: var(--purple); }
   .card--orange .card-value { color: var(--orange); }
 
-  /* Sections */
-  .section {
-    background: var(--bg-card);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 1.25rem;
-    margin-bottom: 1.5rem;
-    box-shadow: var(--shadow);
-  }
-  .section-title {
-    font-size: 0.95rem;
-    font-weight: 600;
-    margin-bottom: 1rem;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-  }
+  .section { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.25rem; margin-bottom: 1.5rem; box-shadow: var(--shadow); }
+  .section-title { font-size: 0.95rem; font-weight: 600; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem; }
 
-  /* Bar chart */
   .bar-chart { display: flex; flex-direction: column; gap: 0.6rem; }
   .bar-row { display: flex; align-items: center; gap: 0.75rem; }
-  .bar-label {
-    width: 140px;
-    flex-shrink: 0;
-    font-size: 0.8rem;
-    color: var(--text-secondary);
-    text-align: right;
-    font-family: var(--font-mono);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-  .bar-track { flex: 1; height: 24px; background: var(--bg); border-radius: 6px; overflow: hidden; position: relative; }
-  .bar-fill {
-    height: 100%;
-    border-radius: 6px;
-    min-width: 2px;
-    transition: width 0.5s ease;
-    display: flex;
-    align-items: center;
-    padding-left: 8px;
-  }
-  .bar-fill span { font-size: 0.75rem; font-weight: 600; color: #fff; white-space: nowrap; }
+  .bar-label { width: 140px; flex-shrink: 0; font-size: 0.8rem; color: var(--text-secondary); text-align: right; font-family: var(--font-mono); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .bar-track { flex: 1; height: 24px; background: var(--bg); border-radius: 6px; overflow: hidden; }
+  .bar-fill { height: 100%; border-radius: 6px; min-width: 2px; transition: width 0.5s ease; }
   .bar-count { width: 50px; font-size: 0.8rem; font-weight: 600; color: var(--text); text-align: right; font-family: var(--font-mono); }
 
-  .color-0 { background: var(--accent); }
-  .color-1 { background: var(--green); }
-  .color-2 { background: var(--purple); }
-  .color-3 { background: var(--orange); }
-  .color-4 { background: #ec4899; }
-  .color-5 { background: #06b6d4; }
-  .color-6 { background: #f59e0b; }
-  .color-7 { background: #8b5cf6; }
+  .color-0 { background: var(--accent); } .color-1 { background: var(--green); }
+  .color-2 { background: var(--purple); } .color-3 { background: var(--orange); }
+  .color-4 { background: #ec4899; } .color-5 { background: #06b6d4; }
+  .color-6 { background: #f59e0b; } .color-7 { background: #8b5cf6; }
 
-  /* Daily trend */
-  .trend-chart {
-    display: flex;
-    align-items: flex-end;
-    gap: 6px;
-    height: 140px;
-    padding: 0 0.5rem;
-  }
-  .trend-bar-wrap {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    height: 100%;
-    justify-content: flex-end;
-  }
-  .trend-bar {
-    width: 100%;
-    max-width: 48px;
-    border-radius: 6px 6px 0 0;
-    background: var(--accent);
-    transition: height 0.5s ease;
-    position: relative;
-    min-height: 2px;
-  }
+  /* Bar trend */
+  .trend-area { position: relative; }
+  .trend-bars { display: flex; align-items: flex-end; gap: 2px; height: 130px; padding: 0 4px; }
+  .trend-bar-wrap { flex: 1; display: flex; flex-direction: column; align-items: center; height: 100%; justify-content: flex-end; min-width: 0; }
+  .trend-bar { width: 100%; max-width: 48px; border-radius: 4px 4px 0 0; background: var(--accent); min-height: 2px; cursor: pointer; transition: opacity 0.15s; }
+  .trend-bar:hover { opacity: 0.75; }
   .trend-bar.today { background: var(--green); }
-  .trend-count {
-    font-size: 0.7rem;
-    font-weight: 600;
-    color: var(--text);
-    margin-bottom: 4px;
-  }
-  .trend-date {
-    font-size: 0.7rem;
-    color: var(--text-muted);
-    margin-top: 6px;
-    font-family: var(--font-mono);
-  }
+  .trend-count { font-size: 0.6rem; font-weight: 600; color: var(--text); margin-bottom: 2px; min-height: 14px; }
+  .trend-axis { display: flex; gap: 2px; padding: 4px 4px 0; border-top: 1px solid var(--border); }
+  .trend-axis-label { flex: 1; text-align: center; font-size: 0.6rem; color: var(--text-muted); font-family: var(--font-mono); min-width: 0; overflow: hidden; }
 
-  /* Table */
+  /* SVG line trend */
+  .trend-svg { width: 100%; height: 180px; }
+  .trend-svg .line { fill: none; stroke: var(--accent); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  .trend-svg .area { fill: var(--accent); opacity: 0.08; }
+  .trend-svg .dot { fill: var(--accent); cursor: pointer; transition: r 0.15s; }
+  .trend-svg .dot:hover { r: 5; }
+  .trend-svg .grid-line { stroke: var(--border); stroke-width: 0.5; }
+  .trend-svg text { font-family: var(--font-mono); font-size: 10px; fill: var(--text-muted); }
+  .trend-svg .val-text { font-size: 9px; fill: var(--text-secondary); font-weight: 600; }
+
   .table-wrap { overflow-x: auto; }
   table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
   th { text-align: left; color: var(--text-muted); font-weight: 500; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; padding: 0.5rem 0.75rem; border-bottom: 1px solid var(--border); }
@@ -201,23 +113,12 @@
   .status-active { color: var(--green); font-weight: 600; }
   .status-revoked { color: var(--red); font-weight: 600; }
 
-  /* Grid two columns */
-  .grid-2 {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 1.5rem;
-  }
-  @media (max-width: 768px) {
-    .grid-2 { grid-template-columns: 1fr; }
-    .bar-label { width: 100px; }
-    .container { padding: 1rem; }
-  }
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+  @media (max-width: 768px) { .grid-2 { grid-template-columns: 1fr; } .bar-label { width: 100px; } .container { padding: 1rem; } }
 
-  /* Loading */
   .loading { text-align: center; padding: 3rem; color: var(--text-muted); }
   .loading::after { content: ''; display: inline-block; width: 18px; height: 18px; border: 2px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.6s linear infinite; margin-left: 0.5rem; vertical-align: middle; }
   @keyframes spin { to { transform: rotate(360deg); } }
-
   .empty { text-align: center; padding: 2rem; color: var(--text-muted); font-size: 0.875rem; }
 </style>
 </head>
@@ -226,18 +127,23 @@
 <div class="header">
   <h1>方寸 <span>Dashboard</span></h1>
   <div class="header-right">
-    <input type="date" id="datePicker" class="date-picker">
-    <button class="refresh-btn" onclick="loadAll()" title="刷新数据">刷新</button>
+    <div class="range-btns">
+      <button class="range-btn" data-range="1d">1日</button>
+      <button class="range-btn active" data-range="7d">7日</button>
+      <button class="range-btn" data-range="30d">30日</button>
+      <button class="range-btn" data-range="all">全部</button>
+    </div>
+    <input type="date" id="datePicker" class="date-picker hidden">
+    <button class="refresh-btn" onclick="loadAll()">刷新</button>
   </div>
 </div>
 
 <div class="container">
-  <!-- Summary Cards -->
-  <div class="cards" id="cards">
+  <div class="cards">
     <div class="card card--blue">
-      <div class="card-label">今日调用</div>
-      <div class="card-value" id="todayCalls">-</div>
-      <div class="card-sub" id="todayDate">-</div>
+      <div class="card-label" id="callsLabel">区间调用</div>
+      <div class="card-value" id="rangeCalls">-</div>
+      <div class="card-sub" id="rangeDesc">-</div>
     </div>
     <div class="card card--green">
       <div class="card-label">活跃 Key</div>
@@ -250,19 +156,17 @@
       <div class="card-sub">全部时间</div>
     </div>
     <div class="card card--orange">
-      <div class="card-label">活跃路由</div>
-      <div class="card-value" id="activeRoutes">-</div>
-      <div class="card-sub">有请求的端点</div>
+      <div class="card-label" id="eventsLabel">区间事件</div>
+      <div class="card-value" id="rangeEvents">-</div>
+      <div class="card-sub" id="eventsDesc">前端事件</div>
     </div>
   </div>
 
-  <!-- Daily Trend -->
-  <div class="section">
-    <div class="section-title">近 7 日调用趋势</div>
-    <div id="trendChart" class="trend-chart"><div class="loading">加载中</div></div>
+  <div class="section" id="trendSection">
+    <div class="section-title">调用趋势</div>
+    <div id="trendChart"><div class="loading">加载中</div></div>
   </div>
 
-  <!-- Two column charts -->
   <div class="grid-2">
     <div class="section">
       <div class="section-title">按路由分布</div>
@@ -274,31 +178,18 @@
     </div>
   </div>
 
-  <!-- Frontend events -->
   <div class="section">
     <div class="section-title">前端事件</div>
     <div id="eventChart" class="bar-chart"><div class="loading">加载中</div></div>
   </div>
 
-  <!-- Export image breakdown -->
-  <div class="grid-2">
-    <div class="section">
-      <div class="section-title">导出图片 · 主题分布</div>
-      <div id="exportThemeChart" class="bar-chart"><div class="loading">加载中</div></div>
-    </div>
-    <div class="section">
-      <div class="section-title">导出图片 · 体裁分布</div>
-      <div id="exportGenreChart" class="bar-chart"><div class="loading">加载中</div></div>
-    </div>
-  </div>
+  <div class="grid-2" id="eventBreakdowns"></div>
 
-  <!-- Route detail for selected date -->
   <div class="section">
-    <div class="section-title" id="detailTitle">当日明细</div>
+    <div class="section-title" id="detailTitle">明细</div>
     <div id="detailTable" class="table-wrap"><div class="loading">加载中</div></div>
   </div>
 
-  <!-- Key overview -->
   <div class="section">
     <div class="section-title">API Key 概览</div>
     <div id="keysTable" class="table-wrap"><div class="loading">加载中</div></div>
@@ -308,247 +199,326 @@
 <script>
 const API = '';
 const TZ_OFFSET = 8;
+let allStats = [];
+let keysData = [];
+let rangeMode = '7d';
 
 function todayUTC8() {
-  const now = new Date();
-  const utc8 = new Date(now.getTime() + TZ_OFFSET * 3600000);
-  return utc8.toISOString().slice(0, 10);
+  const d = new Date(Date.now() + TZ_OFFSET * 3600000);
+  return d.toISOString().slice(0, 10);
 }
 
-function last7Days() {
+function lastNDays(n) {
   const days = [];
-  for (let i = 6; i >= 0; i--) {
-    const d = new Date();
-    d.setTime(d.getTime() + TZ_OFFSET * 3600000 - i * 86400000);
-    days.push(d.toISOString().slice(0, 10));
+  const now = Date.now() + TZ_OFFSET * 3600000;
+  for (let i = n - 1; i >= 0; i--) {
+    days.push(new Date(now - i * 86400000).toISOString().slice(0, 10));
   }
   return days;
 }
 
-function formatDate(iso) {
+function allDates() {
+  const s = new Set(allStats.map(r => r.date));
+  return [...s].sort();
+}
+
+function formatTs(iso) {
   if (!iso) return '-';
-  try {
-    const d = new Date(iso);
-    return d.toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
-  } catch { return iso.slice(0, 16); }
+  try { return new Date(iso).toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }); }
+  catch { return iso.slice(0, 16); }
 }
 
-function shortRoute(r) {
-  return r.replace('/api/', '');
-}
-
-async function fetchJSON(url) {
-  const res = await fetch(url);
-  return res.json();
-}
-
-let allStats = [];
-let keysData = [];
+function shortRoute(r) { return r.replace('/api/', ''); }
+async function fetchJSON(url) { return (await fetch(url)).json(); }
 
 async function loadAll() {
-  const [stats, keys] = await Promise.all([
-    fetchJSON(`${API}/api/_stats/routes`),
-    fetchJSON(`${API}/api/_stats/keys`),
-  ]);
-  allStats = stats;
-  keysData = keys;
+  [allStats, keysData] = await Promise.all([fetchJSON(`${API}/api/_stats/routes`), fetchJSON(`${API}/api/_stats/keys`)]);
   render();
 }
 
-function getSelectedDate() {
-  return document.getElementById('datePicker').value || todayUTC8();
+function getFilteredStats() {
+  if (rangeMode === '1d') {
+    const d = document.getElementById('datePicker').value || todayUTC8();
+    return allStats.filter(s => s.date === d);
+  }
+  if (rangeMode === 'all') return allStats;
+  const n = parseInt(rangeMode);
+  const days = new Set(lastNDays(n));
+  return allStats.filter(s => days.has(s.date));
 }
+
+function getRangeLabel() {
+  if (rangeMode === '1d') return document.getElementById('datePicker').value || todayUTC8();
+  if (rangeMode === '7d') return '近 7 日';
+  if (rangeMode === '30d') return '近 30 日';
+  return '全部时间';
+}
+
+function barChart(entries, maxVal, colorOffset) {
+  if (!entries.length) return '<div class="empty">暂无数据</div>';
+  return entries.map(([label, count], i) => {
+    const pct = (count / maxVal * 100).toFixed(1);
+    return `<div class="bar-row">
+      <div class="bar-label" title="${label}">${label}</div>
+      <div class="bar-track"><div class="bar-fill color-${(i + colorOffset) % 8}" style="width: ${pct}%"></div></div>
+      <div class="bar-count">${count}</div>
+    </div>`;
+  }).join('');
+}
+
+function parseEventProps(route) {
+  const parts = route.split(':');
+  const eventName = parts[1] || '';
+  const props = {};
+  parts.slice(2).forEach(p => { const [k, v] = p.split('='); if (k && v) props[k] = v; });
+  return { eventName, props };
+}
+
+// Catmull-Rom to cubic bezier control points
+function smoothPath(points) {
+  if (points.length < 2) return '';
+  if (points.length === 2) return `M${points[0].x},${points[0].y}L${points[1].x},${points[1].y}`;
+  let d = `M${points[0].x},${points[0].y}`;
+  for (let i = 0; i < points.length - 1; i++) {
+    const p0 = points[Math.max(i - 1, 0)];
+    const p1 = points[i];
+    const p2 = points[i + 1];
+    const p3 = points[Math.min(i + 2, points.length - 1)];
+    const cp1x = p1.x + (p2.x - p0.x) / 6;
+    const cp1y = p1.y + (p2.y - p0.y) / 6;
+    const cp2x = p2.x - (p3.x - p1.x) / 6;
+    const cp2y = p2.y - (p3.y - p1.y) / 6;
+    d += `C${cp1x},${cp1y},${cp2x},${cp2y},${p2.x},${p2.y}`;
+  }
+  return d;
+}
+
+function renderBarTrend(days, dailyTotals, maxVal, today) {
+  const showEvery = days.length <= 7 ? 1 : days.length <= 14 ? 2 : 3;
+  const bars = days.map((d, i) => {
+    const pct = (dailyTotals[i] / maxVal * 100).toFixed(1);
+    const cls = d === today ? 'today' : '';
+    return `<div class="trend-bar-wrap">
+      <div class="trend-count">${dailyTotals[i] || ''}</div>
+      <div class="trend-bar ${cls}" style="height: ${Math.max(pct, 2)}%"></div>
+    </div>`;
+  }).join('');
+  const axis = days.map((d, i) =>
+    `<div class="trend-axis-label">${i % showEvery === 0 || i === days.length - 1 ? d.slice(5) : ''}</div>`
+  ).join('');
+  return `<div class="trend-area"><div class="trend-bars">${bars}</div><div class="trend-axis">${axis}</div></div>`;
+}
+
+function renderLineTrend(days, dailyTotals, maxVal) {
+  const W = 1000, H = 160, PAD_L = 40, PAD_R = 20, PAD_T = 20, PAD_B = 30;
+  const plotW = W - PAD_L - PAD_R, plotH = H - PAD_T - PAD_B;
+  const n = days.length;
+  if (n === 0) return '<div class="empty">暂无数据</div>';
+
+  const points = days.map((_, i) => ({
+    x: PAD_L + (n === 1 ? plotW / 2 : i / (n - 1) * plotW),
+    y: PAD_T + plotH - (dailyTotals[i] / maxVal * plotH),
+  }));
+
+  const linePath = smoothPath(points);
+  const areaPath = linePath + `L${points[n-1].x},${PAD_T + plotH}L${points[0].x},${PAD_T + plotH}Z`;
+
+  const gridLines = [0.25, 0.5, 0.75].map(f => {
+    const y = PAD_T + plotH * (1 - f);
+    const val = Math.round(maxVal * f);
+    return `<line class="grid-line" x1="${PAD_L}" y1="${y}" x2="${W - PAD_R}" y2="${y}"/>
+      <text x="${PAD_L - 4}" y="${y + 3}" text-anchor="end">${val}</text>`;
+  }).join('');
+
+  const showEvery = Math.max(1, Math.floor(n / 12));
+  const labels = days.map((d, i) => {
+    if (i % showEvery !== 0 && i !== n - 1) return '';
+    return `<text x="${points[i].x}" y="${H - 4}" text-anchor="middle">${d.slice(5)}</text>`;
+  }).join('');
+
+  const dots = points.map((p, i) =>
+    `<circle class="dot" cx="${p.x}" cy="${p.y}" r="3"><title>${days[i]}: ${dailyTotals[i]}</title></circle>`
+  ).join('');
+
+  const topVal = `<text x="${PAD_L - 4}" y="${PAD_T + 3}" text-anchor="end">${maxVal}</text>`;
+
+  return `<svg class="trend-svg" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">
+    ${gridLines}${topVal}
+    <line class="grid-line" x1="${PAD_L}" y1="${PAD_T + plotH}" x2="${W - PAD_R}" y2="${PAD_T + plotH}"/>
+    <path class="area" d="${areaPath}"/>
+    <path class="line" d="${linePath}"/>
+    ${dots}${labels}
+  </svg>`;
+}
+
+const EVENT_LABELS = {
+  export_image: '导出图片', copy_text: '复制文字', create_board: '新建画板',
+  delete_board: '删除画板', import_poem: '导入作品', import_boards: '导入画板',
+  export_boards: '导出画板', import_ciyun: '次韵导入', create_folder: '新建文件夹',
+  delete_folder: '删除文件夹', move_board: '移动画板', add_inspiration: '添加灵感',
+  toggle_immersive: '沉浸模式',
+};
 
 function render() {
   const today = todayUTC8();
-  const selectedDate = getSelectedDate();
+  const filtered = getFilteredStats();
+  const label = getRangeLabel();
 
-  // --- Cards ---
-  const todayStats = allStats.filter(s => s.date === today);
-  const todayCalls = todayStats.reduce((s, r) => s + r.call_count, 0);
-  document.getElementById('todayCalls').textContent = todayCalls.toLocaleString();
-  document.getElementById('todayDate').textContent = today;
+  // Cards
+  const calls = filtered.reduce((s, r) => s + r.call_count, 0);
+  document.getElementById('rangeCalls').textContent = calls.toLocaleString();
+  document.getElementById('rangeDesc').textContent = label;
+  document.getElementById('callsLabel').textContent = rangeMode === '1d' ? `${label.slice(5)} 调用` : `${label}调用`;
+  document.getElementById('activeKeys').textContent = keysData.filter(k => k.is_active).length;
+  document.getElementById('totalCalls').textContent = allStats.reduce((s, r) => s + r.call_count, 0).toLocaleString();
+  const events = filtered.filter(s => s.route.startsWith('_event:')).reduce((s, r) => s + r.call_count, 0);
+  document.getElementById('rangeEvents').textContent = events.toLocaleString();
+  document.getElementById('eventsLabel').textContent = rangeMode === '1d' ? `${label.slice(5)} 事件` : `${label}事件`;
+  document.getElementById('eventsDesc').textContent = '前端事件';
 
-  const activeKeys = keysData.filter(k => k.is_active).length;
-  document.getElementById('activeKeys').textContent = activeKeys;
-
-  const totalCalls = allStats.reduce((s, r) => s + r.call_count, 0);
-  document.getElementById('totalCalls').textContent = totalCalls.toLocaleString();
-
-  const activeRoutes = new Set(allStats.filter(s => !s.route.startsWith('_event:')).map(s => s.route)).size;
-  document.getElementById('activeRoutes').textContent = activeRoutes;
-
-  // --- Trend chart ---
-  const days = last7Days();
-  const dailyTotals = days.map(d => {
-    return allStats.filter(s => s.date === d).reduce((sum, r) => sum + r.call_count, 0);
-  });
-  const maxDaily = Math.max(...dailyTotals, 1);
-
+  // Trend
+  const trendSection = document.getElementById('trendSection');
   const trendEl = document.getElementById('trendChart');
-  if (dailyTotals.every(v => v === 0)) {
-    trendEl.innerHTML = '<div class="empty">暂无数据</div>';
+  if (rangeMode === '1d') {
+    trendSection.style.display = 'none';
   } else {
-    trendEl.innerHTML = days.map((d, i) => {
-      const pct = (dailyTotals[i] / maxDaily * 100).toFixed(1);
-      const isToday = d === today;
-      return `<div class="trend-bar-wrap">
-        <div class="trend-count">${dailyTotals[i] || ''}</div>
-        <div class="trend-bar ${isToday ? 'today' : ''}" style="height: ${Math.max(pct, 2)}%"></div>
-        <div class="trend-date">${d.slice(5)}</div>
-      </div>`;
-    }).join('');
+    trendSection.style.display = '';
+    const days = rangeMode === 'all' ? allDates() : lastNDays(parseInt(rangeMode));
+    const dailyTotals = days.map(d => allStats.filter(s => s.date === d).reduce((sum, r) => sum + r.call_count, 0));
+    const maxDaily = Math.max(...dailyTotals, 1);
+
+    if (dailyTotals.every(v => v === 0)) {
+      trendEl.innerHTML = '<div class="empty">暂无数据</div>';
+    } else if (rangeMode === 'all') {
+      trendEl.innerHTML = renderLineTrend(days, dailyTotals, maxDaily);
+    } else {
+      trendEl.innerHTML = renderBarTrend(days, dailyTotals, maxDaily, today);
+    }
   }
 
-  // --- Route distribution (all time, exclude events) ---
+  // Route distribution
+  const apiStats = filtered.filter(s => !s.route.startsWith('_event:'));
   const routeMap = {};
-  allStats.filter(s => !s.route.startsWith('_event:')).forEach(s => { routeMap[s.route] = (routeMap[s.route] || 0) + s.call_count; });
+  apiStats.forEach(s => { routeMap[s.route] = (routeMap[s.route] || 0) + s.call_count; });
   const routeEntries = Object.entries(routeMap).sort((a, b) => b[1] - a[1]);
-  const routeMax = routeEntries.length ? routeEntries[0][1] : 1;
-  const routeEl = document.getElementById('routeChart');
-  if (!routeEntries.length) {
-    routeEl.innerHTML = '<div class="empty">暂无数据</div>';
-  } else {
-    routeEl.innerHTML = routeEntries.map(([route, count], i) => {
-      const pct = (count / routeMax * 100).toFixed(1);
-      return `<div class="bar-row">
-        <div class="bar-label" title="${route}">${shortRoute(route)}</div>
-        <div class="bar-track"><div class="bar-fill color-${i % 8}" style="width: ${pct}%"></div></div>
-        <div class="bar-count">${count}</div>
-      </div>`;
-    }).join('');
-  }
+  document.getElementById('routeChart').innerHTML = barChart(
+    routeEntries.map(([r, c]) => [shortRoute(r), c]),
+    routeEntries.length ? routeEntries[0][1] : 1, 0
+  );
 
-  // --- Source distribution (all time) ---
+  // Source distribution
   const sourceMap = {};
-  allStats.forEach(s => { sourceMap[s.source] = (sourceMap[s.source] || 0) + s.call_count; });
+  filtered.forEach(s => { sourceMap[s.source] = (sourceMap[s.source] || 0) + s.call_count; });
   const sourceEntries = Object.entries(sourceMap).sort((a, b) => b[1] - a[1]);
-  const sourceMax = sourceEntries.length ? sourceEntries[0][1] : 1;
-  const sourceEl = document.getElementById('sourceChart');
-  if (!sourceEntries.length) {
-    sourceEl.innerHTML = '<div class="empty">暂无数据</div>';
-  } else {
-    sourceEl.innerHTML = sourceEntries.map(([source, count], i) => {
-      const pct = (count / sourceMax * 100).toFixed(1);
-      return `<div class="bar-row">
-        <div class="bar-label" title="${source}">${source}</div>
-        <div class="bar-track"><div class="bar-fill color-${(i + 2) % 8}" style="width: ${pct}%"></div></div>
-        <div class="bar-count">${count}</div>
-      </div>`;
-    }).join('');
-  }
+  document.getElementById('sourceChart').innerHTML = barChart(sourceEntries, sourceEntries.length ? sourceEntries[0][1] : 1, 2);
 
-  // --- Frontend events ---
-  const eventMap = {};
-  allStats.filter(s => s.route.startsWith('_event:')).forEach(s => {
-    const parts = s.route.split(':');
-    const eventName = parts[1] || '';
-    const detail = parts.slice(2).join(' ').replace(/=/g, ': ');
-    const label = detail ? `${eventName} (${detail})` : eventName;
-    eventMap[label] = (eventMap[label] || 0) + s.call_count;
+  // Frontend events (merged)
+  const eventStats = filtered.filter(s => s.route.startsWith('_event:'));
+  const eventNameMap = {};
+  const eventPropsMap = {};
+  eventStats.forEach(s => {
+    const { eventName, props } = parseEventProps(s.route);
+    eventNameMap[eventName] = (eventNameMap[eventName] || 0) + s.call_count;
+    if (!eventPropsMap[eventName]) eventPropsMap[eventName] = [];
+    eventPropsMap[eventName].push({ props, count: s.call_count });
   });
-  const eventEntries = Object.entries(eventMap).sort((a, b) => b[1] - a[1]);
+  const eventEntries = Object.entries(eventNameMap).sort((a, b) => b[1] - a[1]);
   const eventMax = eventEntries.length ? eventEntries[0][1] : 1;
   const eventEl = document.getElementById('eventChart');
   if (!eventEntries.length) {
     eventEl.innerHTML = '<div class="empty">暂无事件数据</div>';
   } else {
-    eventEl.innerHTML = eventEntries.map(([label, count], i) => {
+    eventEl.innerHTML = eventEntries.map(([name, count], i) => {
+      const lbl = EVENT_LABELS[name] || name;
       const pct = (count / eventMax * 100).toFixed(1);
       return `<div class="bar-row">
-        <div class="bar-label" title="${label}">${label}</div>
+        <div class="bar-label" title="${name}">${lbl}</div>
         <div class="bar-track"><div class="bar-fill color-${(i + 4) % 8}" style="width: ${pct}%"></div></div>
         <div class="bar-count">${count}</div>
       </div>`;
     }).join('');
   }
 
-  // --- Export image breakdown ---
-  const exportStats = allStats.filter(s => s.route.startsWith('_event:export_image'));
-  const themeMap = {};
-  const genreMap = {};
-  exportStats.forEach(s => {
-    const props = {};
-    s.route.split(':').slice(2).forEach(p => { const [k, v] = p.split('='); if (k && v) props[k] = v; });
-    if (props.theme) themeMap[props.theme] = (themeMap[props.theme] || 0) + s.call_count;
-    if (props.genre) {
-      const label = props.genre === 'Shi' ? '诗' : props.genre === 'Ci' ? '词' : '自由诗';
-      genreMap[label] = (genreMap[label] || 0) + s.call_count;
+  // Event breakdowns
+  const breakdownsEl = document.getElementById('eventBreakdowns');
+  let bHTML = '';
+  const bCfg = [
+    { event: 'export_image', prop: 'theme', title: '导出图片 · 主题' },
+    { event: 'export_image', prop: 'genre', title: '导出图片 · 体裁', transform: g => g === 'Shi' ? '诗' : g === 'Ci' ? '词' : '自由诗' },
+    { event: 'create_board', prop: 'genre', title: '新建画板 · 体裁', transform: g => g === 'Shi' ? '诗' : g === 'Ci' ? '词' : g === 'Free' ? '自由诗' : g },
+    { event: 'create_board', prop: 'rule', title: '新建画板 · 规则' },
+  ];
+  for (const cfg of bCfg) {
+    const items = eventPropsMap[cfg.event] || [];
+    const pm = {};
+    items.forEach(({ props, count }) => { let v = props[cfg.prop]; if (!v) return; if (cfg.transform) v = cfg.transform(v); pm[v] = (pm[v] || 0) + count; });
+    const entries = Object.entries(pm).sort((a, b) => b[1] - a[1]);
+    if (entries.length) {
+      bHTML += `<div class="section"><div class="section-title">${cfg.title}</div>
+        <div class="bar-chart">${barChart(entries, entries[0][1], bCfg.indexOf(cfg) + 1)}</div></div>`;
     }
-  });
-
-  const themeEntries = Object.entries(themeMap).sort((a, b) => b[1] - a[1]);
-  const themeMax = themeEntries.length ? themeEntries[0][1] : 1;
-  const themeEl = document.getElementById('exportThemeChart');
-  if (!themeEntries.length) {
-    themeEl.innerHTML = '<div class="empty">暂无数据</div>';
-  } else {
-    themeEl.innerHTML = themeEntries.map(([name, count], i) => {
-      const pct = (count / themeMax * 100).toFixed(1);
-      return `<div class="bar-row">
-        <div class="bar-label">${name}</div>
-        <div class="bar-track"><div class="bar-fill color-${(i + 1) % 8}" style="width: ${pct}%"></div></div>
-        <div class="bar-count">${count}</div>
-      </div>`;
-    }).join('');
   }
+  breakdownsEl.innerHTML = bHTML;
 
-  const genreEntries = Object.entries(genreMap).sort((a, b) => b[1] - a[1]);
-  const genreMax = genreEntries.length ? genreEntries[0][1] : 1;
-  const genreEl = document.getElementById('exportGenreChart');
-  if (!genreEntries.length) {
-    genreEl.innerHTML = '<div class="empty">暂无数据</div>';
-  } else {
-    genreEl.innerHTML = genreEntries.map(([name, count], i) => {
-      const pct = (count / genreMax * 100).toFixed(1);
-      return `<div class="bar-row">
-        <div class="bar-label">${name}</div>
-        <div class="bar-track"><div class="bar-fill color-${(i + 3) % 8}" style="width: ${pct}%"></div></div>
-        <div class="bar-count">${count}</div>
-      </div>`;
-    }).join('');
-  }
-
-  // --- Detail table for selected date ---
-  const dateStats = allStats.filter(s => s.date === selectedDate);
-  document.getElementById('detailTitle').textContent = `${selectedDate} 明细`;
+  // Detail table
+  document.getElementById('detailTitle').textContent = `${label} 明细`;
   const detailEl = document.getElementById('detailTable');
-  if (!dateStats.length) {
-    detailEl.innerHTML = '<div class="empty">当日无调用记录</div>';
+  if (!filtered.length) {
+    detailEl.innerHTML = '<div class="empty">无调用记录</div>';
   } else {
-    const sorted = [...dateStats].sort((a, b) => b.call_count - a.call_count);
+    const grouped = {};
+    filtered.forEach(s => {
+      const key = `${s.route}||${s.source}`;
+      if (!grouped[key]) grouped[key] = { route: s.route, source: s.source, call_count: 0, last_called_at: '' };
+      grouped[key].call_count += s.call_count;
+      if (s.last_called_at > (grouped[key].last_called_at || '')) grouped[key].last_called_at = s.last_called_at;
+    });
+    const sorted = Object.values(grouped).sort((a, b) => b.call_count - a.call_count);
     detailEl.innerHTML = `<table>
       <thead><tr><th>路由</th><th>来源</th><th>调用次数</th><th>最后调用</th></tr></thead>
       <tbody>${sorted.map(s => `<tr>
         <td style="font-family:var(--font-mono);font-size:0.8rem">${shortRoute(s.route)}</td>
         <td style="font-size:0.8rem">${s.source}</td>
         <td style="font-weight:600">${s.call_count}</td>
-        <td style="color:var(--text-secondary);font-size:0.8rem">${formatDate(s.last_called_at)}</td>
+        <td style="color:var(--text-secondary);font-size:0.8rem">${formatTs(s.last_called_at)}</td>
       </tr>`).join('')}</tbody>
     </table>`;
   }
 
-  // --- Keys table ---
+  // Keys table
   const keysEl = document.getElementById('keysTable');
-  if (!keysData.length) {
-    keysEl.innerHTML = '<div class="empty">暂无 API Key</div>';
-  } else {
+  if (!keysData.length) { keysEl.innerHTML = '<div class="empty">暂无 API Key</div>'; }
+  else {
     keysEl.innerHTML = `<table>
       <thead><tr><th>名称</th><th>状态</th><th>调用次数</th><th>创建时间</th><th>最后使用</th></tr></thead>
       <tbody>${keysData.map(k => `<tr>
         <td style="font-weight:500">${k.name}</td>
         <td><span class="${k.is_active ? 'status-active' : 'status-revoked'}">${k.is_active ? '活跃' : '已吊销'}</span></td>
         <td style="font-weight:600">${k.call_count}</td>
-        <td style="color:var(--text-secondary);font-size:0.8rem">${formatDate(k.created_at)}</td>
-        <td style="color:var(--text-secondary);font-size:0.8rem">${formatDate(k.last_used_at)}</td>
+        <td style="color:var(--text-secondary);font-size:0.8rem">${formatTs(k.created_at)}</td>
+        <td style="color:var(--text-secondary);font-size:0.8rem">${formatTs(k.last_used_at)}</td>
       </tr>`).join('')}</tbody>
     </table>`;
   }
 }
 
+// Range buttons
+document.querySelectorAll('.range-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.range-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    rangeMode = btn.dataset.range;
+    const picker = document.getElementById('datePicker');
+    if (rangeMode === '1d') { picker.classList.remove('hidden'); }
+    else { picker.classList.add('hidden'); }
+    render();
+  });
+});
+
 // Init
-document.getElementById('datePicker').value = todayUTC8();
-document.getElementById('datePicker').addEventListener('change', render);
+const picker = document.getElementById('datePicker');
+picker.value = todayUTC8();
+picker.addEventListener('change', render);
 loadAll();
 </script>
 </body>

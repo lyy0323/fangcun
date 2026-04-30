@@ -152,7 +152,6 @@
   <div class="sidebar-title">方寸 API <span>v0.1</span></div>
   <nav>
     <a class="section-title">概览</a>
-    <a href="#auth">认证</a>
     <a href="#rate-limit">限流</a>
     <a href="#errors">错误处理</a>
     <a href="#params">参数约束</a>
@@ -178,26 +177,7 @@
 
 <!-- ==================== 认证 ==================== -->
 <h2 id="auth">认证</h2>
-<p>所有 <code>/api/*</code> 请求需通过 <code>X-API-Key</code> Header 传递 API Key：</p>
-<pre><code>X-API-Key: fc_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx</code></pre>
-
-<h3>获取 Key</h3>
-<p>发送邮件至 <a href="mailto:guoxue_sjtu@163.com?subject=方寸 API Key 申请&amp;body=您好，%0A%0A我希望申请方寸 API Key，信息如下：%0A%0A姓名/团队：%0A用途说明：%0A预计调用量：%0A%0A谢谢！" style="color: var(--accent); font-weight: 600;">guoxue_sjtu@163.com</a>，请包含以下信息：</p>
-
-<pre><code>收件人: guoxue_sjtu@163.com
-主　题: 方寸 API Key 申请
-
-您好，
-
-我希望申请方寸 API Key，信息如下：
-
-姓名/团队：
-用途说明：
-预计调用量：
-
-谢谢！</code></pre>
-
-<p>审核通过后将回复包含 API Key 的邮件。</p>
+<p>所有 API 端点<strong>无需认证</strong>，公开访问。按 IP 限流。</p>
 
 <!-- ==================== 限流 ==================== -->
 <h2 id="rate-limit">限流</h2>
@@ -218,7 +198,6 @@
 <table>
   <tr><th>状态码</th><th>含义</th></tr>
   <tr><td><span class="status-code s4xx">400</span></td><td>参数校验失败（无效枚举值、参数过长等）</td></tr>
-  <tr><td><span class="status-code s4xx">401</span></td><td>缺失或无效 API Key</td></tr>
   <tr><td><span class="status-code s4xx">404</span></td><td>资源不存在（如韵部名不存在）</td></tr>
   <tr><td><span class="status-code s4xx">429</span></td><td>请求频率超限</td></tr>
 </table>
@@ -231,7 +210,7 @@
   <tr><td>请求体</td><td>上限 50 KB</td></tr>
   <tr><td><code>genre</code></td><td><code>Shi</code>（诗）或 <code>Ci</code>（词）</td></tr>
   <tr><td><code>book</code></td><td><code>Pingshuiyun</code>（平水韵）、<code>Cilinzhengyun</code>（词林正韵）或 <code>Zhonghua_Tongyun</code>（中华通韵）</td></tr>
-  <tr><td><code>mode</code></td><td><code>head</code>、<code>tail</code>、<code>pair</code></td></tr>
+  <tr><td><code>mode</code></td><td><code>head</code>、<code>tail</code>、<code>pair</code>、<code>tongwei</code></td></tr>
   <tr><td><code>tone</code></td><td><code>P</code>（平）或 <code>Z</code>（仄）</td></tr>
 </table>
 
@@ -258,7 +237,6 @@
 
 <h3>请求示例</h3>
 <pre><code>curl -X POST https://write.sjtuguoxue.space/api/validate_meter \
-  -H <span class="string">"X-API-Key: fc_xxx"</span> \
   -H <span class="string">"Content-Type: application/json"</span> \
   -d <span class="string">'{
     "poem_text": "白日依山尽，黄河入海流。欲穷千里目，更上一层楼。",
@@ -354,7 +332,7 @@
 
 <h3>示例 — 指定韵书</h3>
 <pre><code>curl <span class="string">"https://write.sjtuguoxue.space/api/char/lookup?char=花&amp;book=Pingshuiyun"</span> \
-  -H <span class="string">"X-API-Key: fc_xxx"</span></code></pre>
+</code></pre>
 <pre><code>{
   <span class="key">"char"</span>: <span class="string">"花"</span>,
   <span class="key">"tones"</span>: [<span class="string">"平"</span>, <span class="string">"上"</span>],
@@ -395,7 +373,7 @@
 
 <h3>示例</h3>
 <pre><code>curl <span class="string">"https://write.sjtuguoxue.space/api/rhyme/lookup?book=Pingshuiyun&amp;category=一东"</span> \
-  -H <span class="string">"X-API-Key: fc_xxx"</span></code></pre>
+</code></pre>
 <pre><code>{
   <span class="key">"category_name"</span>: <span class="string">"一东"</span>,
   <span class="key">"tone_type"</span>: <span class="string">"P"</span>,
@@ -427,7 +405,7 @@
 
 <h3>示例</h3>
 <pre><code>curl <span class="string">"https://write.sjtuguoxue.space/api/rhyme/list?book=Pingshuiyun&amp;tone=P"</span> \
-  -H <span class="string">"X-API-Key: fc_xxx"</span></code></pre>
+</code></pre>
 <pre><code>{
   <span class="key">"book"</span>: <span class="string">"Pingshuiyun"</span>,
   <span class="key">"categories"</span>: [
@@ -467,7 +445,7 @@
 
 <h3>示例 — 搜索五绝</h3>
 <pre><code>curl <span class="string">"https://write.sjtuguoxue.space/api/rules/list?genre=Shi&amp;search=五绝"</span> \
-  -H <span class="string">"X-API-Key: fc_xxx"</span></code></pre>
+</code></pre>
 <pre><code>[
   { <span class="key">"name"</span>: <span class="string">"五绝仄起首句入韵"</span>, <span class="key">"char_count"</span>: <span class="number">20</span> },
   { <span class="key">"name"</span>: <span class="string">"五绝仄起"</span>,         <span class="key">"char_count"</span>: <span class="number">20</span> },
@@ -491,14 +469,14 @@
 <table>
   <tr><th>参数</th><th>类型</th><th></th><th>说明</th></tr>
   <tr><td>term</td><td>string</td><td><span class="badge badge-required">必填</span></td><td>查询字（支持繁体）</td></tr>
-  <tr><td>mode</td><td>string</td><td><span class="badge badge-optional">可选</span></td><td><code>head</code>（以此字开头）、<code>tail</code>（以此字结尾）、<code>pair</code>（对仗字）。默认 <code>head</code></td></tr>
+  <tr><td>mode</td><td>string</td><td><span class="badge badge-optional">可选</span></td><td><code>head</code>（以此字开头）、<code>tail</code>（以此字结尾）、<code>pair</code>（对仗字/词）、<code>tongwei</code>（同位词，对语的对语）。默认 <code>head</code></td></tr>
   <tr><td>length</td><td>string</td><td><span class="badge badge-optional">可选</span></td><td>词语长度（<code>2</code>、<code>3</code>...），<code>all</code> 返回所有长度。默认 <code>2</code></td></tr>
   <tr><td>tone</td><td>string</td><td><span class="badge badge-optional">可选</span></td><td>末字声调过滤：<code>P</code>（平）或 <code>Z</code>（仄）。默认不过滤</td></tr>
 </table>
 
 <h3>示例 — 首字联想</h3>
 <pre><code>curl <span class="string">"https://write.sjtuguoxue.space/api/dictionary/search?term=明&amp;mode=head&amp;length=2"</span> \
-  -H <span class="string">"X-API-Key: fc_xxx"</span></code></pre>
+</code></pre>
 <pre><code>[
   [<span class="string">"明月"</span>, <span class="number">2298</span>],
   [<span class="string">"明朝"</span>, <span class="number">1683</span>],
@@ -511,7 +489,7 @@
 
 <h3>示例 — 对仗字</h3>
 <pre><code>curl <span class="string">"https://write.sjtuguoxue.space/api/dictionary/search?term=月&amp;mode=pair"</span> \
-  -H <span class="string">"X-API-Key: fc_xxx"</span></code></pre>
+</code></pre>
 <pre><code>[
   [<span class="string">"风"</span>, <span class="number">4450</span>],
   [<span class="string">"云"</span>, <span class="number">3575</span>],
@@ -520,7 +498,42 @@
   [<span class="string">"天"</span>, <span class="number">1142</span>]
 ]</code></pre>
 
-<div class="callout">对仗模式返回与查询字在古诗中常对仗的字及频次。</div>
+<div class="callout">对仗模式返回与查询字/词在古诗中常对仗的字/词及频次。支持单字和多字查询。</div>
+
+<h3>示例 — 多字对仗</h3>
+<pre><code>curl <span class="string">"https://write.sjtuguoxue.space/api/dictionary/search?term=明月&amp;mode=pair"</span> \
+</code></pre>
+<pre><code>[
+  [<span class="string">"白云"</span>, <span class="number">176</span>],
+  [<span class="string">"清风"</span>, <span class="number">94</span>],
+  [<span class="string">"青山"</span>, <span class="number">71</span>],
+  [<span class="string">"西风"</span>, <span class="number">54</span>],
+  [<span class="string">"浮云"</span>, <span class="number">47</span>]
+]</code></pre>
+
+<h3>示例 — 同位词（单字）</h3>
+<pre><code>curl <span class="string">"https://write.sjtuguoxue.space/api/dictionary/search?term=月&amp;mode=tongwei"</span> \
+</code></pre>
+<pre><code>[
+  [<span class="string">"雨"</span>, <span class="number">96</span>],
+  [<span class="string">"日"</span>, <span class="number">96</span>],
+  [<span class="string">"水"</span>, <span class="number">96</span>],
+  [<span class="string">"酒"</span>, <span class="number">85</span>],
+  [<span class="string">"风"</span>, <span class="number">80</span>]
+]</code></pre>
+
+<div class="callout">同位词（tongwei）= 对语的对语。返回与查询字/词在诗中处于相同语法位置、可互相替换的字/词。分数 = 共享对仗伙伴数量。</div>
+
+<h3>示例 — 同位词（多字）</h3>
+<pre><code>curl <span class="string">"https://write.sjtuguoxue.space/api/dictionary/search?term=明月&amp;mode=tongwei"</span> \
+</code></pre>
+<pre><code>[
+  [<span class="string">"流水"</span>, <span class="number">66</span>],
+  [<span class="string">"落日"</span>, <span class="number">55</span>],
+  [<span class="string">"芳草"</span>, <span class="number">55</span>],
+  [<span class="string">"细雨"</span>, <span class="number">44</span>],
+  [<span class="string">"白日"</span>, <span class="number">39</span>]
+]</code></pre>
 
 <hr>
 
@@ -541,7 +554,7 @@
 
 <h3>示例</h3>
 <pre><code>curl <span class="string">"https://write.sjtuguoxue.space/api/dictionary/allusion?term=月&amp;limit=5"</span> \
-  -H <span class="string">"X-API-Key: fc_xxx"</span></code></pre>
+</code></pre>
 <pre><code>[
   {
     <span class="key">"id"</span>: <span class="number">42</span>,
@@ -586,13 +599,20 @@
 <table>
   <tr><th>参数</th><th>类型</th><th></th><th>说明</th></tr>
   <tr><td>lines</td><td>string[]</td><td><span class="badge badge-required">必填</span></td><td>诗行数组，每行一个字符串</td></tr>
-  <tr><td>rhyme_book_name</td><td>string</td><td><span class="badge badge-optional">可选</span></td><td>韵书名，默认 <code>Zhonghua_Tongyun</code>，可选 <code>Pingshuiyun</code></td></tr>
+  <tr><td>rhyme_book_name</td><td>string</td><td><span class="badge badge-optional">可选</span></td><td>韵书名，默认 <code>Zhonghua_Tongyun</code>（中华通韵），可选 <code>Pingshuiyun</code>（平水韵）、<code>Cilinzhengyun</code>（词林正韵）</td></tr>
+  <tr><td>merge_tones</td><td>boolean</td><td><span class="badge badge-optional">可选</span></td><td>是否合并平仄声调（同韵部的平声字和仄声字视为同韵）。默认 <code>false</code></td></tr>
 </table>
 
-<h3>示例</h3>
+<div class="callout" style="border-left-color: var(--accent);">
+  <strong>韵书选择建议：</strong><br>
+  • <strong>古体诗、歌行体</strong>（如《卖炭翁》《长恨歌》）→ 指定 <code>Pingshuiyun</code>（平水韵）<br>
+  • <strong>新诗、歌词、现代自由诗</strong> → 默认 <code>Zhonghua_Tongyun</code>（中华通韵），建议 <code>merge_tones: true</code>（现代诗词不讲究平仄分押）<br>
+  • <strong>词</strong> → 指定 <code>Cilinzhengyun</code>（词林正韵）
+</div>
+
+<h3>示例 — 新诗（默认中华通韵）</h3>
 <pre><code>curl -X POST https://write.sjtuguoxue.space/api/free_rhyme \
   -H <span class="string">"Content-Type: application/json"</span> \
-  -H <span class="string">"X-API-Key: fc_xxx"</span> \
   -d <span class="string">'{"lines": ["春眠不觉晓，", "处处闻啼鸟。", "夜来风雨声，", "花落知多少。"]}'</span></code></pre>
 <pre><code>{
   <span class="key">"candidates"</span>: [
@@ -609,6 +629,25 @@
     ] }
   ]
 }</code></pre>
+
+<h3>示例 — 古体诗（平水韵）</h3>
+<pre><code>curl -X POST https://write.sjtuguoxue.space/api/free_rhyme \
+  -H <span class="string">"Content-Type: application/json"</span> \
+  -d <span class="string">'{"lines": ["卖炭翁，伐薪烧炭南山中。", "满面尘灰烟火色，两鬓苍苍十指黑。"], "rhyme_book_name": "Pingshuiyun"}'</span></code></pre>
+<pre><code>{
+  <span class="key">"candidates"</span>: [
+    { <span class="key">"char"</span>: <span class="string">"翁"</span>, <span class="key">"categories"</span>: [<span class="string">"一东"</span>], ... },
+    { <span class="key">"char"</span>: <span class="string">"中"</span>, <span class="key">"categories"</span>: [<span class="string">"一东"</span>, <span class="string">"一送"</span>], ... },
+    { <span class="key">"char"</span>: <span class="string">"色"</span>, <span class="key">"categories"</span>: [<span class="string">"十三职"</span>], ... },
+    { <span class="key">"char"</span>: <span class="string">"黑"</span>, <span class="key">"categories"</span>: [<span class="string">"十三职"</span>], ... }
+  ],
+  <span class="key">"groups"</span>: [
+    { <span class="key">"positions"</span>: [<span class="comment">/* 翁, 中 */</span>] },
+    { <span class="key">"positions"</span>: [<span class="comment">/* 色, 黑 */</span>] }
+  ]
+}</code></pre>
+
+<div class="callout">使用 <code>merge_tones: true</code> 后，同韵部的平声和仄声字合并为一组（如中华通韵"九熬_平"与"九熬_仄"视为同韵）。新诗和歌词通常不讲究平仄分押，建议开启。</div>
 
 <h3>响应字段说明</h3>
 <table>
