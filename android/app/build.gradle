@@ -11,9 +11,9 @@ android {
     signingConfigs {
         release {
             storeFile file("${rootProject.projectDir}/fangcun.jks")
-            storePassword "REDACTED"
+            storePassword System.getenv("KEYSTORE_PASSWORD") ?: ""
             keyAlias "fangcun"
-            keyPassword "REDACTED"
+            keyPassword System.getenv("KEY_PASSWORD") ?: ""
         }
     }
 
@@ -21,8 +21,8 @@ android {
         applicationId "com.fangcun.app"
         minSdk 26
         targetSdk 36
-        versionCode 10
-        versionName "2.1.3"
+        versionCode 11
+        versionName "2.2"
 
         ndk {
             abiFilters "arm64-v8a", "x86_64"
@@ -72,7 +72,7 @@ def projectRoot = rootProject.projectDir.parentFile  // shiva/
 
 tasks.register('syncPythonSources', Copy) {
     from(projectRoot) {
-        include 'app.py', 'checker.py', 'config_loader.py'
+        include 'app.py', 'dict_db.py'
     }
     into "$projectDir/generated/python"
 }
@@ -83,7 +83,10 @@ tasks.register('syncFrontendDist', Copy) {
 }
 
 tasks.register('syncConfigData', Copy) {
-    from "$projectRoot/static/config"
+    from("$projectRoot/static/config") {
+        exclude 'ci_rules.json', 'shi_rules.json',
+                'char_dict.json', 'rhyme_books.json'
+    }
     into "$projectDir/generated/assets/config"
 }
 

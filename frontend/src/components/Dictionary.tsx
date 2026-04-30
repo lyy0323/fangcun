@@ -113,12 +113,12 @@ export function Dictionary() {
         setPhraseResult([]);
       } else if (curTab === 'pair') {
         const r = await dictionarySearch({ term: q, mode: 'pair' });
-        setPhraseResult(r);
+        setPhraseResult(r as [string, number][]);
         setRhymeResult(null);
         setAllusionResult([]);
       } else if (curTab === 'head' || curTab === 'tail') {
         const r = await dictionarySearch({ term: q, mode: curTab, length, tone });
-        setPhraseResult(r);
+        setPhraseResult(r as [string, number][]);
         setRhymeResult(null);
         setAllusionResult([]);
       }

@@ -7,6 +7,11 @@ export default defineConfig({
   server: {
     port: 3000,
     proxy: {
+      '/api/validate_meter': 'https://checker.sjtuguoxue.space',
+      '/api/free_rhyme': 'https://checker.sjtuguoxue.space',
+      '/api/rules': 'https://checker.sjtuguoxue.space',
+      '/api/rhyme': 'https://checker.sjtuguoxue.space',
+      '/api/char/lookup': 'https://checker.sjtuguoxue.space',
       '/api': 'http://localhost:5050',
     },
   },

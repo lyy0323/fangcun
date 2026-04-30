@@ -5,5 +5,20 @@ node_modules
 *.xlsx
 android
 tests
-/fonts
+data
+fonts
 frontend/public/fonts
+checker-api
+# 已迁移到 checker 服务
+checker.py
+config_loader.py
+**/ci_rules.json
+**/shi_rules.json
+**/char_dict.json
+**/rhyme_books.json
+# 已迁移到 Neon DB
+**/phrase_pairs.json
+**/phrase_tongwei.json
+**/allusion_entries.json
+**/allusion_index.json
+**/char_definitions.json

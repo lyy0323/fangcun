@@ -13,6 +13,14 @@
     }
   ],
   "routes": [
+    { "src": "/api/validate_meter", "dest": "https://checker.sjtuguoxue.space/api/validate_meter" },
+    { "src": "/api/free_rhyme", "dest": "https://checker.sjtuguoxue.space/api/free_rhyme" },
+    { "src": "/api/rules/(.*)", "dest": "https://checker.sjtuguoxue.space/api/rules/$1" },
+    { "src": "/api/rhyme/(.*)", "dest": "https://checker.sjtuguoxue.space/api/rhyme/$1" },
+    { "src": "/api/char/lookup(.*)", "dest": "https://checker.sjtuguoxue.space/api/char/lookup$1" },
+    { "src": "/about", "dest": "/frontend/about.html" },
+    { "src": "/ref/(.*)", "dest": "/frontend/ref/$1.html" },
+    { "src": "/download/android", "dest": "/api/index.py" },
     { "src": "/docs", "dest": "/api/index.py" },
     { "src": "/dashboard", "dest": "/api/index.py" },
     { "src": "/api/(.*)", "dest": "/api/index.py" },

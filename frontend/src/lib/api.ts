@@ -2,14 +2,19 @@ import type { ValidationResult, RhymeLookupResult, RuleListItem, PoemSearchResul
 
 const BASE = '/api';
 
-async function get<T>(path: string): Promise<T> {
-  const res = await fetch(`${BASE}${path}`);
+const IS_ANDROID = navigator.userAgent.includes('FangcunAndroid');
+const CHECKER_BASE = IS_ANDROID
+  ? 'https://checker.sjtuguoxue.space/api'
+  : '/api';
+
+async function get<T>(path: string, base = BASE): Promise<T> {
+  const res = await fetch(`${base}${path}`);
   if (!res.ok) throw new Error(`API error: ${res.status}`);
   return res.json();
 }
 
-async function post<T>(path: string, body: unknown): Promise<T> {
-  const res = await fetch(`${BASE}${path}`, {
+async function post<T>(path: string, body: unknown, base = BASE): Promise<T> {
+  const res = await fetch(`${base}${path}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
@@ -18,7 +23,7 @@ async function post<T>(path: string, body: unknown): Promise<T> {
   return res.json();
 }
 
-// --- 格律检测 ---
+// --- 格律检测（→ checker 服务）---
 export function validateMeter(params: {
   poem_text: string;
   genre: string;
@@ -26,19 +31,19 @@ export function validateMeter(params: {
   rule_name?: string;
   ensure_longpu?: boolean;
 }): Promise<ValidationResult> {
-  return post('/validate_meter', params);
+  return post('/validate_meter', params, CHECKER_BASE);
 }
 
-// --- 自由韵脚检测 ---
+// --- 自由韵脚检测（→ checker 服务）---
 export function freeRhyme(params: {
   lines: string[];
   rhyme_book_name: string;
   merge_tones?: boolean;
 }): Promise<FreeRhymeResult> {
-  return post('/free_rhyme', params);
+  return post('/free_rhyme', params, CHECKER_BASE);
 }
 
-// --- 韵部同韵字 ---
+// --- 韵部同韵字（→ checker 服务）---
 export function rhymeLookup(
   book: string,
   category: string,
@@ -46,38 +51,44 @@ export function rhymeLookup(
 ): Promise<RhymeLookupResult | { primary: RhymeLookupResult; related: { relation: string; category: RhymeLookupResult }[] }> {
   let url = `/rhyme/lookup?book=${enc(book)}&category=${enc(category)}`;
   if (include) url += `&include=${enc(include)}`;
-  return get(url);
+  return get(url, CHECKER_BASE);
 }
 
-// --- 韵部列表 ---
+// --- 韵部列表（→ checker 服务）---
 export function rhymeList(book: string, tone?: string) {
   let url = `/rhyme/list?book=${enc(book)}`;
   if (tone) url += `&tone=${enc(tone)}`;
-  return get<{ book: string; categories: { name: string; tone_type: string; char_count: number }[] }>(url);
+  return get<{ book: string; categories: { name: string; tone_type: string; char_count: number }[] }>(url, CHECKER_BASE);
 }
 
-// --- 规则列表 ---
+// --- 规则列表（→ checker 服务）---
 export function rulesList(genre: string): Promise<RuleListItem[]> {
-  return get(`/rules/list?genre=${enc(genre)}`);
+  return get(`/rules/list?genre=${enc(genre)}`, CHECKER_BASE);
 }
 
-// --- 单字韵部查找 ---
-export function charLookup(char: string, book: string) {
-  return get<{
-    char: string;
-    tones: string[];
-    rhyme_categories: { name: string; tone_type: string }[];
-    definitions: { py: string; defs: { d: string; c?: string }[] }[];
-  }>(`/char/lookup?char=${enc(char)}&book=${enc(book)}`);
+// --- 单字查询：并发调用 checker(音韵) + 主项目(释义) ---
+export async function charLookup(char: string, book: string) {
+  const [rhyme, defs] = await Promise.all([
+    get<{
+      char: string;
+      tones: string[];
+      rhyme_categories: { name: string; tone_type: string }[];
+    }>(`/char/lookup?char=${enc(char)}&book=${enc(book)}`, CHECKER_BASE),
+    get<{
+      char: string;
+      definitions: { py: string; defs: { d: string; c?: string }[] }[];
+    }>(`/char/definitions?char=${enc(char)}`),
+  ]);
+  return { ...rhyme, definitions: defs.definitions };
 }
 
-// --- 字典搜索 (词首/词末/对语) ---
+// --- 字典搜索 (词首/词末/对语/同位) ---
 export function dictionarySearch(params: {
   term: string;
-  mode: 'head' | 'tail' | 'pair';
+  mode: 'head' | 'tail' | 'pair' | 'tongwei';
   length?: string;
   tone?: string;
-}): Promise<[string, number][]> {
+}): Promise<[string, number][] | Record<string, [string, number][]>> {
   let url = `/dictionary/search?term=${enc(params.term)}&mode=${params.mode}`;
   if (params.length) url += `&length=${params.length}`;
   if (params.tone) url += `&tone=${params.tone}`;
@@ -108,8 +119,7 @@ const enc = encodeURIComponent;
 // 外部诗词库 (shi.sjtuguoxue.space)
 // ============================================================================
 
-// Android WebView 走本地代理（外部 API 需要正确 Referer），Web 端直连
-const POEMS_API = navigator.userAgent.includes('FangcunAndroid')
+const POEMS_API = IS_ANDROID
   ? '/proxy/poems'
   : 'https://shi.sjtuguoxue.space/api';
 
@@ -133,8 +143,6 @@ export async function poemsGetPoem(id: number): Promise<PoemFull> {
   if (!res.ok) throw new Error('获取详情失败');
   return res.json();
 }
-
-const IS_ANDROID = navigator.userAgent.includes('FangcunAndroid');
 
 export function track(event: string, props?: Record<string, string | number>) {
   const url = IS_ANDROID ? 'https://write.sjtuguoxue.space/api/_track' : `${BASE}/_track`;
