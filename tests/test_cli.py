@@ -234,6 +234,22 @@ def main():
           json_check=lambda d: isinstance(d, list) and len(d) > 0
                                 and all("name" in r and "char_count" in r for r in d))
 
+    t.run("rules: 增强字段 (tone_pattern/sentence_length)",
+          ["rules", "--genre", "Shi", "--search", "五绝"],
+          json_check=lambda d: isinstance(d, list) and len(d) > 0
+                                and "tone_pattern" in d[0]
+                                and "sentence_length" in d[0]
+                                and "start_tone" in d[0]
+                                and "first_line_rhyme" in d[0]
+                                and d[0]["sentence_length"] == 5
+                                and isinstance(d[0]["tone_pattern"], list)
+                                and len(d[0]["tone_pattern"]) == 20)
+
+    t.run("rules: Ci 含 cipai 字段",
+          ["rules", "--genre", "Ci", "--search", "沁园春"],
+          json_check=lambda d: isinstance(d, list) and len(d) > 0
+                                and d[0].get("cipai") is not None)
+
     t.run("rules: 词规则数量",
           ["rules", "--genre", "Ci"],
           json_check=lambda d: isinstance(d, list) and len(d) > 100)
@@ -260,10 +276,15 @@ def main():
                                 and isinstance(d.get("rhyme_categories"), list)
                                 and d["rhyme_categories"][0]["name"] == "一东")
 
-    t.run("char: 多字批量",
+    t.run("char: 多字批量 (batch API)",
           ["char", "--char", "明月", "--book", "Pingshuiyun"],
           json_check=lambda d: isinstance(d, list) and len(d) == 2
                                 and d[0]["tone"] == "P" and d[1]["tone"] == "Z")
+
+    t.run("char: 4字批量",
+          ["char", "--char", "大江东去", "--book", "Pingshuiyun"],
+          json_check=lambda d: isinstance(d, list) and len(d) == 4
+                                and all("tone" in r and "rhymes" in r for r in d))
 
     t.run("char: 不存在的字",
           ["char", "--char", "鑫"],
@@ -295,6 +316,13 @@ def main():
     t.run("suggest: pair 模式",
           ["suggest", "--term", "明月", "--mode", "pair"],
           json_check=lambda d: isinstance(d, list) and len(d) > 0)
+
+    t.run("suggest: pair --with-tones (batch)",
+          ["suggest", "--term", "明月", "--mode", "pair", "--with-tones"],
+          json_check=lambda d: isinstance(d, list) and len(d) > 0
+                                and len(d[0]) == 3
+                                and isinstance(d[0][2], str)
+                                and all(c in "PZ?" for c in d[0][2]))
 
     t.run("suggest: head 模式",
           ["suggest", "--term", "春", "--mode", "head", "--length", "2"],
