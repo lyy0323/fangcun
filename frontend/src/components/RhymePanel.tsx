@@ -235,7 +235,10 @@ export function RhymePanel() {
                   }
                 }
               }
-              const color = tone === 'Z' ? '#557799' : '#559977';
+              const hasRhymeError = pos != null && validation.errors?.some(
+                e => e.position === pos && e.error_type === 'Rhyme'
+              );
+              const color = hasRhymeError ? '#cc4444' : tone === 'Z' ? '#557799' : '#559977';
               return (
                 <span
                   key={i}
