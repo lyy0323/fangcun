@@ -313,6 +313,32 @@ def main():
           ["suggest", "--term", "xyzabc", "--mode", "pair"],
           json_check=lambda d: isinstance(d, list) and len(d) == 0)
 
+    print("\n=== free-rhyme 测试 ===")
+
+    t.run("free-rhyme: help",
+          ["free-rhyme", "-h"], expect_rc=0, expect_json=False,
+          expect_stdout_contains="--text")
+
+    t.run("free-rhyme: 古体诗",
+          ["free-rhyme", "--text", "卖炭翁，伐薪烧炭南山中。满面尘灰烟火色，两鬓苍苍十指黑。"],
+          json_check=lambda d: len(d.get("candidates", [])) > 0 and len(d.get("groups", [])) > 0)
+
+    t.run("free-rhyme: pretty 模式",
+          ["free-rhyme", "--text", "床前明月光，疑是地上霜。举头望明月，低头思故乡。",
+           "--pretty"],
+          expect_json=False,
+          expect_stdout_contains="押韵组")
+
+    t.run("free-rhyme: merge-tones",
+          ["free-rhyme", "--text", "轻轻的我走了。正如我轻轻的来。",
+           "--rhyme-book", "Zhonghua_Tongyun", "--merge-tones"],
+          json_check=lambda d: "candidates" in d)
+
+    t.run("free-rhyme: 缺少 --text",
+          ["free-rhyme"],
+          expect_rc=2, expect_json=False,
+          expect_stderr_contains="--text")
+
     print("\n=== 边界 测试 ===")
 
     t.run("validate: 占位符 □",

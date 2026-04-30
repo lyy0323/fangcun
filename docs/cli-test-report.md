@@ -2,10 +2,10 @@
 
 | 项目 | 值 |
 |------|------|
-| 运行时间 | 2026-04-30 17:21:21 UTC+8 |
-| 总耗时 | 22.1s |
-| 用例总数 | 36 |
-| 通过 | 36 |
+| 运行时间 | 2026-04-30 17:46:37 UTC+8 |
+| 总耗时 | 27.4s |
+| 用例总数 | 41 |
+| 通过 | 41 |
 | 失败 | 0 |
 | 通过率 | 100% |
 
@@ -15,42 +15,47 @@
 
 | # | 时间 | 耗时 | 状态 | 用例 | 命令 | 备注 |
 |---|------|------|------|------|------|------|
-| 1 | 17:21:21.675 | 65ms | PASS | help: 主命令 | `python3 cli.py -h` |  |
-| 2 | 17:21:21.741 | 68ms | PASS | help: validate | `python3 cli.py validate -h` |  |
-| 3 | 17:21:21.809 | 69ms | PASS | help: rules | `python3 cli.py rules -h` |  |
-| 4 | 17:21:21.878 | 70ms | PASS | help: char | `python3 cli.py char -h` |  |
-| 5 | 17:21:21.949 | 77ms | PASS | help: rhyme | `python3 cli.py rhyme -h` |  |
-| 6 | 17:21:22.027 | 73ms | PASS | help: suggest | `python3 cli.py suggest -h` |  |
-| 7 | 17:21:22.100 | 605ms | PASS | validate: 五绝通过 | `python3 cli.py validate --text 白日依山尽黄河入海流欲穷千里目更上一层楼 --genre Shi` |  |
-| 8 | 17:21:22.705 | 676ms | PASS | validate: 五绝不通过 | `python3 cli.py validate --text 春眠不觉晓处处闻啼鸟夜来风雨声花落知多少 --genre Shi` |  |
-| 9 | 17:21:23.382 | 1248ms | PASS | validate: 词 (词林正韵) | `python3 cli.py validate --text 东风夜放花千树更吹落星如雨宝马雕车香满路凤箫声动玉壶光转一夜鱼龙舞蛾儿雪柳黄金缕笑语盈盈暗香去众里寻他千百度蓦然回首那人却在灯火阑珊处 --genre Ci --rhyme-book Cilinzhengyun` |  |
-| 10 | 17:21:24.630 | 594ms | PASS | validate: 字数不匹配 | `python3 cli.py validate --text 三个字 --genre Shi` |  |
-| 11 | 17:21:25.225 | 614ms | PASS | validate: 指定规则名 | `python3 cli.py validate --text 白日依山尽黄河入海流欲穷千里目更上一层楼 --genre Shi --rule 五绝仄起` |  |
-| 12 | 17:21:25.840 | 572ms | PASS | validate: pretty 模式 | `python3 cli.py validate --text 白日依山尽黄河入海流欲穷千里目更上一层楼 --genre Shi --pretty` |  |
-| 13 | 17:21:26.412 | 1355ms | PASS | validate: tone_pattern 存在 | `python3 cli.py validate --text 白日依山尽黄河入海流欲穷千里目更上一层楼 --genre Shi` |  |
-| 14 | 17:21:27.768 | 735ms | PASS | validate: rhyme 结构完整 | `python3 cli.py validate --text 白日依山尽黄河入海流欲穷千里目更上一层楼 --genre Shi` |  |
-| 15 | 17:21:28.504 | 74ms | PASS | validate: 缺少 --text | `python3 cli.py validate --genre Shi` |  |
-| 16 | 17:21:28.579 | 67ms | PASS | validate: 无效 genre | `python3 cli.py validate --text 测试 --genre Invalid` |  |
-| 17 | 17:21:28.646 | 575ms | PASS | rules: 诗规则 | `python3 cli.py rules --genre Shi` |  |
-| 18 | 17:21:29.222 | 2192ms | PASS | rules: 词规则数量 | `python3 cli.py rules --genre Ci` |  |
-| 19 | 17:21:31.339 | 604ms | PASS | rules: 搜索沁园春 | `python3 cli.py rules --genre Ci --search 沁园春` |  |
-| 20 | 17:21:31.944 | 595ms | PASS | rules: 搜索无结果 | `python3 cli.py rules --genre Shi --search 不存在的词牌` |  |
-| 21 | 17:21:32.539 | 556ms | PASS | char: 单字无 book | `python3 cli.py char --char 东` |  |
-| 22 | 17:21:33.096 | 583ms | PASS | char: 单字带 book | `python3 cli.py char --char 东 --book Pingshuiyun` |  |
-| 23 | 17:21:33.680 | 620ms | PASS | char: 多字批量 | `python3 cli.py char --char 明月 --book Pingshuiyun` |  |
-| 24 | 17:21:34.300 | 587ms | PASS | char: 不存在的字 | `python3 cli.py char --char 鑫` |  |
-| 25 | 17:21:34.887 | 585ms | PASS | char: 繁体字 (繁→简) | `python3 cli.py char --char 東 --book Pingshuiyun` |  |
-| 26 | 17:21:35.472 | 1399ms | PASS | rhyme: 一东 | `python3 cli.py rhyme --book Pingshuiyun --category 一东` |  |
-| 27 | 17:21:36.872 | 602ms | PASS | rhyme: 带 include | `python3 cli.py rhyme --book Pingshuiyun --category 一东 --include neighbor` |  |
-| 28 | 17:21:37.474 | 555ms | PASS | rhyme: 不存在的韵部 | `python3 cli.py rhyme --book Pingshuiyun --category 不存在` |  |
-| 29 | 17:21:38.030 | 683ms | PASS | suggest: pair 模式 | `python3 cli.py suggest --term 明月 --mode pair` |  |
-| 30 | 17:21:38.714 | 1221ms | PASS | suggest: head 模式 | `python3 cli.py suggest --term 春 --mode head --length 2` |  |
-| 31 | 17:21:39.935 | 591ms | PASS | suggest: tail 模式 | `python3 cli.py suggest --term 月 --mode tail --length 2 --tone P` |  |
-| 32 | 17:21:40.527 | 627ms | PASS | suggest: tongwei 模式 | `python3 cli.py suggest --term 春 --mode tongwei` |  |
-| 33 | 17:21:41.154 | 613ms | PASS | suggest: 无结果的词 | `python3 cli.py suggest --term xyzabc --mode pair` |  |
-| 34 | 17:21:41.768 | 1254ms | PASS | validate: 占位符 □ | `python3 cli.py validate --text 白日依山尽黄河入海流欲穷千里目更上一层□ --genre Shi` |  |
-| 35 | 17:21:43.023 | 669ms | PASS | validate: 带标点输入 | `python3 cli.py validate --text 白日依山尽，黄河入海流。欲穷千里目，更上一层楼。 --genre Shi` |  |
-| 36 | 17:21:43.693 | 75ms | PASS | 缺少子命令 | `python3 cli.py ` |  |
+| 1 | 17:46:37.910 | 126ms | PASS | help: 主命令 | `python3 cli.py -h` |  |
+| 2 | 17:46:38.036 | 94ms | PASS | help: validate | `python3 cli.py validate -h` |  |
+| 3 | 17:46:38.131 | 92ms | PASS | help: rules | `python3 cli.py rules -h` |  |
+| 4 | 17:46:38.223 | 106ms | PASS | help: char | `python3 cli.py char -h` |  |
+| 5 | 17:46:38.330 | 112ms | PASS | help: rhyme | `python3 cli.py rhyme -h` |  |
+| 6 | 17:46:38.443 | 102ms | PASS | help: suggest | `python3 cli.py suggest -h` |  |
+| 7 | 17:46:38.546 | 787ms | PASS | validate: 五绝通过 | `python3 cli.py validate --text 白日依山尽黄河入海流欲穷千里目更上一层楼 --genre Shi` |  |
+| 8 | 17:46:39.334 | 584ms | PASS | validate: 五绝不通过 | `python3 cli.py validate --text 春眠不觉晓处处闻啼鸟夜来风雨声花落知多少 --genre Shi` |  |
+| 9 | 17:46:39.919 | 569ms | PASS | validate: 词 (词林正韵) | `python3 cli.py validate --text 东风夜放花千树更吹落星如雨宝马雕车香满路凤箫声动玉壶光转一夜鱼龙舞蛾儿雪柳黄金缕笑语盈盈暗香去众里寻他千百度蓦然回首那人却在灯火阑珊处 --genre Ci --rhyme-book Cilinzhengyun` |  |
+| 10 | 17:46:40.488 | 581ms | PASS | validate: 字数不匹配 | `python3 cli.py validate --text 三个字 --genre Shi` |  |
+| 11 | 17:46:41.071 | 569ms | PASS | validate: 指定规则名 | `python3 cli.py validate --text 白日依山尽黄河入海流欲穷千里目更上一层楼 --genre Shi --rule 五绝仄起` |  |
+| 12 | 17:46:41.640 | 607ms | PASS | validate: pretty 模式 | `python3 cli.py validate --text 白日依山尽黄河入海流欲穷千里目更上一层楼 --genre Shi --pretty` |  |
+| 13 | 17:46:42.248 | 660ms | PASS | validate: tone_pattern 存在 | `python3 cli.py validate --text 白日依山尽黄河入海流欲穷千里目更上一层楼 --genre Shi` |  |
+| 14 | 17:46:42.908 | 643ms | PASS | validate: rhyme 结构完整 | `python3 cli.py validate --text 白日依山尽黄河入海流欲穷千里目更上一层楼 --genre Shi` |  |
+| 15 | 17:46:43.552 | 71ms | PASS | validate: 缺少 --text | `python3 cli.py validate --genre Shi` |  |
+| 16 | 17:46:43.624 | 68ms | PASS | validate: 无效 genre | `python3 cli.py validate --text 测试 --genre Invalid` |  |
+| 17 | 17:46:43.692 | 1333ms | PASS | rules: 诗规则 | `python3 cli.py rules --genre Shi` |  |
+| 18 | 17:46:45.026 | 722ms | PASS | rules: 词规则数量 | `python3 cli.py rules --genre Ci` |  |
+| 19 | 17:46:45.751 | 563ms | PASS | rules: 搜索沁园春 | `python3 cli.py rules --genre Ci --search 沁园春` |  |
+| 20 | 17:46:46.314 | 573ms | PASS | rules: 搜索无结果 | `python3 cli.py rules --genre Shi --search 不存在的词牌` |  |
+| 21 | 17:46:46.888 | 1210ms | PASS | char: 单字无 book | `python3 cli.py char --char 东` |  |
+| 22 | 17:46:48.098 | 571ms | PASS | char: 单字带 book | `python3 cli.py char --char 东 --book Pingshuiyun` |  |
+| 23 | 17:46:48.670 | 581ms | PASS | char: 多字批量 | `python3 cli.py char --char 明月 --book Pingshuiyun` |  |
+| 24 | 17:46:49.252 | 578ms | PASS | char: 不存在的字 | `python3 cli.py char --char 鑫` |  |
+| 25 | 17:46:49.831 | 1389ms | PASS | char: 繁体字 (繁→简) | `python3 cli.py char --char 東 --book Pingshuiyun` |  |
+| 26 | 17:46:51.220 | 602ms | PASS | rhyme: 一东 | `python3 cli.py rhyme --book Pingshuiyun --category 一东` |  |
+| 27 | 17:46:51.823 | 601ms | PASS | rhyme: 带 include | `python3 cli.py rhyme --book Pingshuiyun --category 一东 --include neighbor` |  |
+| 28 | 17:46:52.424 | 560ms | PASS | rhyme: 不存在的韵部 | `python3 cli.py rhyme --book Pingshuiyun --category 不存在` |  |
+| 29 | 17:46:52.985 | 3444ms | PASS | suggest: pair 模式 | `python3 cli.py suggest --term 明月 --mode pair` |  |
+| 30 | 17:46:56.430 | 1241ms | PASS | suggest: head 模式 | `python3 cli.py suggest --term 春 --mode head --length 2` |  |
+| 31 | 17:46:57.672 | 1098ms | PASS | suggest: tail 模式 | `python3 cli.py suggest --term 月 --mode tail --length 2 --tone P` |  |
+| 32 | 17:46:58.771 | 1629ms | PASS | suggest: tongwei 模式 | `python3 cli.py suggest --term 春 --mode tongwei` |  |
+| 33 | 17:47:00.401 | 736ms | PASS | suggest: 无结果的词 | `python3 cli.py suggest --term xyzabc --mode pair` |  |
+| 34 | 17:47:01.137 | 65ms | PASS | free-rhyme: help | `python3 cli.py free-rhyme -h` |  |
+| 35 | 17:47:01.203 | 610ms | PASS | free-rhyme: 古体诗 | `python3 cli.py free-rhyme --text 卖炭翁，伐薪烧炭南山中。满面尘灰烟火色，两鬓苍苍十指黑。` |  |
+| 36 | 17:47:01.814 | 1597ms | PASS | free-rhyme: pretty 模式 | `python3 cli.py free-rhyme --text 床前明月光，疑是地上霜。举头望明月，低头思故乡。 --pretty` |  |
+| 37 | 17:47:03.412 | 581ms | PASS | free-rhyme: merge-tones | `python3 cli.py free-rhyme --text 轻轻的我走了。正如我轻轻的来。 --rhyme-book Zhonghua_Tongyun --merge-tones` |  |
+| 38 | 17:47:03.994 | 71ms | PASS | free-rhyme: 缺少 --text | `python3 cli.py free-rhyme` |  |
+| 39 | 17:47:04.065 | 562ms | PASS | validate: 占位符 □ | `python3 cli.py validate --text 白日依山尽黄河入海流欲穷千里目更上一层□ --genre Shi` |  |
+| 40 | 17:47:04.627 | 572ms | PASS | validate: 带标点输入 | `python3 cli.py validate --text 白日依山尽，黄河入海流。欲穷千里目，更上一层楼。 --genre Shi` |  |
+| 41 | 17:47:05.200 | 72ms | PASS | 缺少子命令 | `python3 cli.py ` |  |
 
 ---
 
@@ -59,7 +64,7 @@
 **1. help: 主命令** (rc=0)
 ```
 $ python3 cli.py -h
-usage: fangcun [-h] {validate,rules,char,rhyme,suggest} ...  方寸 — 格律诗词校验工具 (Chinese classical poetry validator)  positio
+usage: fangcun [-h] {validate,rules,char,rhyme,suggest,free-rhyme} ...  方寸 — 格律诗词校验工具 (Chinese classical poetry validato
 ```
 
 **2. help: validate** (rc=0)
@@ -254,19 +259,49 @@ $ python3 cli.py suggest --term xyzabc --mode pair
 []
 ```
 
-**34. validate: 占位符 □** (rc=0)
+**34. free-rhyme: help** (rc=0)
+```
+$ python3 cli.py free-rhyme -h
+usage: fangcun free-rhyme [-h] --text TEXT                           [--rhyme-book {Pingshuiyun,Cilinzhengyun,Zhonghua_T
+```
+
+**35. free-rhyme: 古体诗** (rc=0)
+```
+$ python3 cli.py free-rhyme --text 卖炭翁，伐薪烧炭南山中。满面尘灰烟火色，两鬓苍苍十指黑。
+{"candidates": [{"categories": ["一东"], "char": "翁", "line": 0, "pos": 2}, {"categories": ["一东", "一送"], "char": "中", "lin
+```
+
+**36. free-rhyme: pretty 模式** (rc=0)
+```
+$ python3 cli.py free-rhyme --text 床前明月光，疑是地上霜。举头望明月，低头思故乡。 --pretty
+韵脚候选 (4 个):   第1句 [光] 七阳   第1句 [霜] 七阳   第2句 [月] 六月   第2句 [乡] 七阳  押韵组 (1 组):   组1: 第1句 - 第1句 - 第2句
+```
+
+**37. free-rhyme: merge-tones** (rc=0)
+```
+$ python3 cli.py free-rhyme --text 轻轻的我走了。正如我轻轻的来。 --rhyme-book Zhonghua_Tongyun --merge-tones
+{"candidates": [{"categories": ["三鹅_平", "九熬_仄"], "char": "了", "line": 0, "pos": 5}, {"categories": ["七哀_平"], "char": "来"
+```
+
+**38. free-rhyme: 缺少 --text** (rc=2)
+```
+$ python3 cli.py free-rhyme
+(empty)
+```
+
+**39. validate: 占位符 □** (rc=0)
 ```
 $ python3 cli.py validate --text 白日依山尽黄河入海流欲穷千里目更上一层□ --genre Shi
 {"is_valid": true, "rule": {"char_count": 20, "cipai": "Wujue", "genre": "Shi", "name": "五绝仄起"}, "chars": ["白", "日", "依"
 ```
 
-**35. validate: 带标点输入** (rc=0)
+**40. validate: 带标点输入** (rc=0)
 ```
 $ python3 cli.py validate --text 白日依山尽，黄河入海流。欲穷千里目，更上一层楼。 --genre Shi
 {"is_valid": true, "rule": {"char_count": 20, "cipai": "Wujue", "genre": "Shi", "name": "五绝仄起"}, "chars": ["白", "日", "依"
 ```
 
-**36. 缺少子命令** (rc=2)
+**41. 缺少子命令** (rc=2)
 ```
 $ python3 cli.py 
 (empty)

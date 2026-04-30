@@ -283,6 +283,47 @@ def cmd_suggest(args):
 
 
 # ---------------------------------------------------------------------------
+# free-rhyme — 自由韵脚检测
+# ---------------------------------------------------------------------------
+
+def cmd_free_rhyme(args):
+    text = args.text
+    lines = [l.strip() for l in text.replace("。", "\n").replace("！", "\n").replace("？", "\n").replace("；", "\n").split("\n") if l.strip()]
+    if not lines:
+        print(json.dumps({"error": "无有效诗句"}, ensure_ascii=False))
+        return 2
+
+    payload = {"lines": lines, "rhyme_book_name": args.rhyme_book}
+    if args.merge_tones:
+        payload["merge_tones"] = True
+
+    result = _post(CHECKER_URL, "/api/free_rhyme", payload)
+
+    if "error" in result and "candidates" not in result:
+        print(json.dumps(result, ensure_ascii=False))
+        return 2
+
+    if args.pretty:
+        candidates = result.get("candidates", [])
+        groups = result.get("groups", [])
+        print(f"\n韵脚候选 ({len(candidates)} 个):")
+        for c in candidates:
+            cats = ", ".join(c.get("categories", [])) or "无韵部"
+            print(f"  第{c['line']+1}句 [{c['char']}] {cats}")
+        if groups:
+            print(f"\n押韵组 ({len(groups)} 组):")
+            for i, g in enumerate(groups, 1):
+                pos_strs = [f"第{p['line']+1}句" for p in g["positions"]]
+                print(f"  组{i}: {' - '.join(pos_strs)}")
+        else:
+            print("\n未检测到押韵关系")
+        print()
+    else:
+        print(json.dumps(result, ensure_ascii=False))
+    return 0
+
+
+# ---------------------------------------------------------------------------
 # main
 # ---------------------------------------------------------------------------
 
@@ -322,9 +363,15 @@ def main():
     p.add_argument("--tone", default=None, choices=["P", "Z"])
     p.add_argument("--with-tones", action="store_true", help="附带逐字声调标注")
 
+    p = sub.add_parser("free-rhyme", help="自由诗/古体诗韵脚检测")
+    p.add_argument("--text", required=True, help="诗文（句号/分号/换行自动分句）")
+    p.add_argument("--rhyme-book", default="Pingshuiyun", choices=["Pingshuiyun", "Cilinzhengyun", "Zhonghua_Tongyun"])
+    p.add_argument("--merge-tones", action="store_true", help="合并平仄（新诗/歌词用）")
+    p.add_argument("--pretty", action="store_true", help="人类可读输出")
+
     args = parser.parse_args()
     try:
-        return {"validate": cmd_validate, "rules": cmd_rules, "char": cmd_char, "rhyme": cmd_rhyme, "suggest": cmd_suggest}[args.command](args)
+        return {"validate": cmd_validate, "rules": cmd_rules, "char": cmd_char, "rhyme": cmd_rhyme, "suggest": cmd_suggest, "free-rhyme": cmd_free_rhyme}[args.command](args)
     except Exception as e:
         print(json.dumps({"error": str(e)}, ensure_ascii=False), file=sys.stderr)
         return 2
