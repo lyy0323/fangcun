@@ -229,6 +229,11 @@ def stats_routes():
     date = request.args.get("date")
     return jsonify(get_route_stats(date))
 
+@app.route("/api/_stats/keys")
+@limiter.exempt
+def stats_keys():
+    return jsonify([])
+
 @app.route("/dashboard")
 @limiter.exempt
 def dashboard():
