@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { BoardProvider } from './context/BoardContext';
 import { TopBar } from './components/TopBar';
 import { GridEditor } from './components/GridEditor';
@@ -7,9 +7,10 @@ import { RhymePanel } from './components/RhymePanel';
 import { GenreSelector } from './components/GenreSelector';
 import { InspirationBoard } from './components/InspirationBoard';
 import { Dictionary } from './components/Dictionary';
-import { useBoardContext, useActiveBoard } from './context/BoardContext';
+import { useBoardContext, useActiveBoard, createBoard } from './context/BoardContext';
 import { Lightbulb, BookOpen, PanelLeftClose, PanelRightClose } from 'lucide-react';
 import Slides from './slides/Slides';
+import { track } from './lib/api';
 
 // Android WebView 始终走移动端布局（部分设备 viewport >= 1024px 会误触桌面模式）
 const isAndroid = navigator.userAgent.includes('FangcunAndroid');
@@ -60,11 +61,51 @@ function MobileDrawer({ side, open, onClose, title, children }: {
 }
 
 function Layout() {
-  const { state } = useBoardContext();
+  const { state, dispatch } = useBoardContext();
   const board = useActiveBoard();
   const [mobilePanel, setMobilePanel] = useState<'left' | 'right' | null>(null);
+  const ciyunHandled = useRef(false);
 
   const togglePanel = (p: 'left' | 'right') => setMobilePanel(prev => prev === p ? null : p);
+
+  // 次韵导入：从 URL params 创建预填画板
+  useEffect(() => {
+    if (ciyunHandled.current) return;
+    const params = new URLSearchParams(window.location.search);
+    if (!params.has('ciyun')) return;
+    ciyunHandled.current = true;
+
+    const genre = params.get('genre') as 'Shi' | 'Ci' | null;
+    const rule = params.get('rule');
+    const charCount = parseInt(params.get('chars') || '0', 10);
+    const title = params.get('title') || '';
+    const rhymesRaw = params.get('rhymes') || '';
+    const book = params.get('book') || '';
+
+    if (!genre || !rule || !charCount) {
+      window.history.replaceState({}, '', '/');
+      return;
+    }
+
+    const newBoard = createBoard(genre, rule, charCount);
+    if (title) newBoard.title = title;
+    if (book) newBoard.rhymeBookName = book;
+
+    // 填入韵脚字：格式 "pos:char,pos:char,..."
+    if (rhymesRaw) {
+      for (const pair of rhymesRaw.split(',')) {
+        const [posStr, char] = pair.split(':');
+        const pos = parseInt(posStr, 10);
+        if (!isNaN(pos) && char && pos < newBoard.sections[0].poemChars.length) {
+          newBoard.sections[0].poemChars[pos] = char;
+        }
+      }
+    }
+
+    dispatch({ type: 'ADD_BOARD', board: newBoard });
+    track('import_ciyun', { genre, rule });
+    window.history.replaceState({}, '', '/');
+  }, [dispatch]);
 
   // 字典韵部点击联动：移动端自动打开韵部面板
   useEffect(() => {

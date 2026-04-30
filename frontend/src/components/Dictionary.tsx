@@ -4,7 +4,7 @@ import { charLookup, dictionarySearch, allusionSearch, type AllusionEntry } from
 import { SendHorizontal, ChevronsDown, ChevronsUp } from 'lucide-react';
 import { AllusionPopup } from './AllusionPopup';
 
-type TabId = 'rhyme' | 'head' | 'tail' | 'allusion' | 'pair';
+type TabId = 'rhyme' | 'head' | 'tail' | 'allusion' | 'pair' | 'tongwei';
 
 const LENGTH_CONFIGS = [
   { value: '2', count: 2 },
@@ -42,7 +42,7 @@ const TONE_OPTIONS: { value: string; type: 'all' | 'P' | 'Z' }[] = [
 ];
 
 const TAB_LABELS: Record<TabId, string> = {
-  rhyme: '韵部', head: '词首', tail: '词末', allusion: '典故', pair: '对语',
+  rhyme: '韵部', head: '词首', tail: '词末', allusion: '典故', pair: '对语', tongwei: '同位',
 };
 
 export function Dictionary() {
@@ -74,8 +74,8 @@ export function Dictionary() {
   const bookName = board?.rhymeBookName ?? 'Pingshuiyun';
   const isSingle = term.length <= 1;
   const visibleTabs: TabId[] = isSingle
-    ? ['rhyme', 'head', 'tail', 'allusion', 'pair']
-    : ['allusion', 'pair'];
+    ? ['rhyme', 'head', 'tail', 'allusion', 'pair', 'tongwei']
+    : ['allusion', 'pair', 'tongwei'];
 
   // 当前 tab 不在可见列表中时，自动校正到第一个可见 tab
   const effectiveTab = visibleTabs.includes(tab) ? tab : visibleTabs[0];
@@ -97,7 +97,7 @@ export function Dictionary() {
       return;
     }
     // 根据输入长度决定实际使用的 tab（多字时只有 allusion 和 pair 可见）
-    const curTab = (q.length > 1 && tab !== 'allusion') ? 'pair' : tab;
+    const curTab = (q.length > 1 && !['allusion', 'pair', 'tongwei'].includes(tab)) ? 'pair' : tab;
     setSearchedTerm(q);
     setLoading(true);
     try {
@@ -111,8 +111,8 @@ export function Dictionary() {
         setAllusionResult(r);
         setRhymeResult(null);
         setPhraseResult([]);
-      } else if (curTab === 'pair') {
-        const r = await dictionarySearch({ term: q, mode: 'pair' });
+      } else if (curTab === 'pair' || curTab === 'tongwei') {
+        const r = await dictionarySearch({ term: q, mode: curTab });
         setPhraseResult(r as [string, number][]);
         setRhymeResult(null);
         setAllusionResult([]);
@@ -331,7 +331,7 @@ export function Dictionary() {
 
         {/* 词首/词末/对语结果（可点击填入网格） */}
         {tab !== 'rhyme' && tab !== 'allusion' && phraseResult.length > 0 && (() => {
-          const isPairDisabled = effectiveTab === 'pair' && board?.genre !== 'Shi';
+          const isPairDisabled = (effectiveTab === 'pair' || effectiveTab === 'tongwei') && board?.genre !== 'Shi';
           // 对语点击：如果有 pairQuery.insertAt，直接写入该位置
           const handlePairClick = (word: string) => {
             if (state.pairQuery && board) {
@@ -347,7 +347,7 @@ export function Dictionary() {
             }
           };
           const clickMode = effectiveTab === 'tail' ? 'backward' as const
-            : effectiveTab === 'pair' ? 'pair' as const
+            : (effectiveTab === 'pair' || effectiveTab === 'tongwei') ? 'pair' as const
             : 'forward' as const;
           return (
             <div className="py-1 leading-7 text-sm break-all">
@@ -356,7 +356,7 @@ export function Dictionary() {
                   key={word}
                   className={`inline mr-2 whitespace-nowrap rounded px-0.5 transition-colors ${isPairDisabled ? 'text-[var(--text)]' : 'cursor-pointer hover:text-[var(--accent)] hover:bg-[var(--accent-light)]'}`}
                   onClick={isPairDisabled ? undefined : () => {
-                    if (effectiveTab === 'pair') handlePairClick(word);
+                    if (effectiveTab === 'pair' || effectiveTab === 'tongwei') handlePairClick(word);
                     else state.insertCharFn?.(word, clickMode);
                   }}
                 >

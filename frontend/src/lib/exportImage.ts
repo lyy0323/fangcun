@@ -2,7 +2,7 @@
 // 诗词图片导出 — Canvas 绘制引擎
 // ============================================================================
 
-export type ThemeKey = '素白' | '朱砂' | '墨韵' | '竹青' | '藏蓝' | '烟紫' | '秋棠' | '霜灰' | '纸感' | '棉花糖' | '鱼肚白' | '极光' | '春水' | '暮山' | '星河' | '薄荷' | '大理石' | '晨暮' | '丹霞' | '碧落' | '苍翠' | '鎏金' | '西湖';
+export type ThemeKey = '素白' | '朱砂' | '墨韵' | '竹青' | '藏蓝' | '烟紫' | '秋棠' | '霜灰' | '纸感' | '棉花糖' | '鱼肚白' | '极光' | '春水' | '暮山' | '星河' | '薄荷' | '大理石' | '晨暮' | '丹霞' | '碧落' | '苍翠' | '鎏金' | '西湖' | '金乌' | '烟雨' | '枯藤' | '青瓷' | '残雪' | '芭蕉' | '蝶梦' | '桃源' | '鹊桥' | '琉璃';
 
 interface ColorTheme {
   bg: string;
@@ -63,21 +63,61 @@ export const THEMES: Record<ThemeKey, ColorTheme> = {
     { x: 1.0, y: 0.7, size: 0.5, color: '#E8A8B0', layers: 5, seed: 3.2 },
     { x: 0.7, y: -0.05, size: 0.4, color: '#E0B0B8', layers: 4, seed: 7.8 },
   ], titleText: '#6A3040', text: '#3A3030', accent: '#D8A0A8', muted: '#908878' },
+  '金乌': { bg: '#1A1020', gradient: { colors: ['#18122A', '#1E1630', '#221838', '#2A1838', '#4A1828', '#A04020', '#D88030'], angle: 180 }, titleText: '#F0D8A0', text: '#F0E0C8', accent: '#4A1828', muted: '#C89060' },
+  '烟雨': { bg: '#E8EAF0', blobs: [
+    { x: -0.15, y: 0.15, size: 0.7, color: '#B0B8C8', layers: 6, seed: 1.2 },
+    { x: 1.1, y: 0.4, size: 0.6, color: '#A0AABB', layers: 5, seed: 3.8 },
+    { x: 0.3, y: 1.15, size: 0.5, color: '#BCC4D0', layers: 4, seed: 6.5 },
+    { x: -0.1, y: 0.85, size: 0.35, color: '#98A8B8', layers: 3, seed: 8.1 },
+  ], text: '#2A3040', accent: '#C0C8D4', muted: '#788090' },
+  '枯藤': { bg: '#E8E4DE', splitBg: { top: '#EAE4DA', bottom: '#D0C8BE', blend: 300 }, blobs: [
+    { x: -0.1, y: 0.5, size: 0.5, color: '#D8CCAF', layers: 3, seed: 2.1 },
+    { x: 1.0, y: 0.7, size: 0.4, color: '#D0C0A0', layers: 3, seed: 7.1 },
+    { x: 0.7, y: 0.1, size: 0.35, color: '#C8B8A0', layers: 2, seed: 8.7 },
+  ], text: '#4A4038', accent: '#C8C0B0', muted: '#8A8070' },
+  '青瓷': { bg: '#E8F0EE', topoColor: '#5A9A8A', titleText: '#EEF4F2', text: '#1A3830', accent: '#3A7868', muted: '#78A898' },
+  '残雪': { bg: '#F0F4F8', blobs: [
+    { x: -0.1, y: 0.6, size: 0.65, color: '#C8D8E8', layers: 5, seed: 0.3 },
+    { x: 1.1, y: -0.1, size: 0.55, color: '#D0DDE8', layers: 4, seed: 4.1 },
+    { x: 0.8, y: 1.1, size: 0.4, color: '#B8CCE0', layers: 3, seed: 7.0 },
+  ], text: '#1A2840', accent: '#C0D0E0', muted: '#7888A0' },
+  '芭蕉': { bg: '#1A2A1A', blobs: [
+    { x: -0.15, y: 0.1, size: 0.7, color: '#1A4A28', layers: 6, seed: 0.8 },
+    { x: 1.1, y: 0.35, size: 0.6, color: '#285A30', layers: 5, seed: 3.5 },
+    { x: 0.3, y: 1.15, size: 0.45, color: '#204A20', layers: 4, seed: 6.2 },
+  ], titleText: '#C8E0B8', text: '#C0D8B0', accent: '#1A3A1A', muted: '#68A058' },
+  '蝶梦': { bg: '#F0E8F6', blobs: [
+    { x: -0.15, y: -0.1, size: 0.65, color: '#D0B0E8', layers: 6, seed: 1.5 },
+    { x: 1.15, y: 0.35, size: 0.55, color: '#C8A0E0', layers: 5, seed: 4.0 },
+    { x: 0.2, y: 1.1, size: 0.5, color: '#E0C0F0', layers: 4, seed: 7.2 },
+    { x: -0.1, y: 0.6, size: 0.3, color: '#D8B8E8', layers: 3, seed: 9.0 },
+  ], text: '#3A2050', accent: '#D0B8E0', muted: '#9878B0' },
+  '桃源': { bg: '#FDF0F0', blobs: [
+    { x: -0.15, y: 0.2, size: 0.6, color: '#F0C0B8', layers: 5, seed: 0.6 },
+    { x: 1.1, y: -0.1, size: 0.55, color: '#F0D0B8', layers: 5, seed: 3.3 },
+    { x: 0.8, y: 1.1, size: 0.5, color: '#E8B8B0', layers: 5, seed: 5.8 },
+    { x: 1.15, y: 0.7, size: 0.35, color: '#F0C8C0', layers: 4, seed: 8.5 },
+  ], text: '#5A2828', accent: '#E8C0B8', muted: '#B88080' },
+  '鹊桥': { bg: '#0E1028', blobs: [
+    { x: -0.15, y: 0.15, size: 0.6, color: '#2A1848', layers: 5, seed: 1.0 },
+    { x: 1.1, y: 0.55, size: 0.55, color: '#482040', layers: 5, seed: 3.7 },
+    { x: 0.7, y: -0.15, size: 0.4, color: '#1A1840', layers: 4, seed: 6.8 },
+    { x: 1.05, y: 1.1, size: 0.35, color: '#401838', layers: 3, seed: 9.3 },
+  ], titleText: '#E8C0D8', text: '#D8C0E0', accent: '#2A1840', muted: '#7858A0' },
+  '琉璃': { bg: '#F2F0F8', gradient: { colors: ['#E8D8F0', '#D8E0F8', '#D0F0F0', '#E0F0D8', '#F0E8D0', '#F0D8E0', '#E8D8F0'], angle: 150 }, text: '#3A3050', accent: '#D0C8E0', muted: '#8878A0' },
 };
 
 export const THEME_KEYS: ThemeKey[] = [
-  // 纯色浅色
+  // ---- 浅色纯色 ----
   '素白', '朱砂', '竹青', '藏蓝', '烟紫', '秋棠', '霜灰',
-  // 纯色深色
-  '墨韵',
-  // 微渐变
-  '纸感', '极光', '薄荷', '晨暮',
-  // 纹理
-  '大理石',
-  // 等高线
-  '丹霞', '碧落', '苍翠', '鎏金',
-  // 花式blob
-  '棉花糖', '鱼肚白', '春水', '暮山', '星河', '西湖',
+  // ---- 浅色渐变/纹理 ----
+  '纸感', '大理石', '薄荷', '晨暮', '琉璃',
+  // ---- 浅色等高线 ----
+  '丹霞', '碧落', '苍翠', '鎏金', '青瓷',
+  // ---- 浅色 blob ----
+  '棉花糖', '蝶梦', '桃源', '鱼肚白', '春水', '西湖', '暮山', '烟雨', '残雪', '枯藤',
+  // ---- 深色 ----
+  '墨韵', '极光', '金乌', '星河', '鹊桥', '芭蕉',
 ];
 
 // ============================================================================
@@ -827,7 +867,17 @@ export function renderToCanvas(data: ExportData): HTMLCanvasElement {
   const wmFontSize = 18;
   const logoSize = 22;
   const logoGap = 6;
-  ctx.fillStyle = colors.muted;
+
+  // 采样水印区域背景亮度，决定水印颜色
+  const sampleData = ctx.getImageData(W - 200, height - 60, 170, 35).data;
+  let brightness = 0;
+  for (let i = 0; i < sampleData.length; i += 16) {
+    brightness += sampleData[i] * 0.299 + sampleData[i + 1] * 0.587 + sampleData[i + 2] * 0.114;
+  }
+  brightness /= (sampleData.length / 16);
+  const isDarkBg = brightness < 128;
+
+  ctx.fillStyle = isDarkBg ? 'rgba(255,255,255,0.45)' : colors.muted;
   ctx.font = `${wmFontSize}px system-ui, -apple-system, "Helvetica Neue", sans-serif`;
   ctx.textBaseline = 'bottom';
 
@@ -839,10 +889,9 @@ export function renderToCanvas(data: ExportData): HTMLCanvasElement {
   const wmY = height - 25;
 
   if (hasLogo) {
-    const isDark = theme === '墨韵' || theme === '极光' || theme === '星河';
-    if (isDark) ctx.filter = 'invert(1) hue-rotate(180deg)';
+    if (isDarkBg) ctx.filter = 'invert(1) hue-rotate(180deg)';
     ctx.drawImage(data.logo!, wmX, wmY - logoSize + 2, logoSize, logoSize);
-    if (isDark) ctx.filter = 'none';
+    if (isDarkBg) ctx.filter = 'none';
   }
   ctx.textAlign = 'left';
   ctx.fillText(wmText, wmX + (hasLogo ? logoSize + logoGap : 0), wmY);
