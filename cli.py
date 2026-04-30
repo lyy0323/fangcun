@@ -17,56 +17,89 @@
 """
 
 import argparse
+import http.client
 import json
 import os
+import ssl
 import sys
-import urllib.request
-import urllib.error
 import urllib.parse
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 CHECKER_URL = os.environ.get("FANGCUN_CHECKER_URL", "https://checker.sjtuguoxue.space")
 DICT_URL = os.environ.get("FANGCUN_DICT_URL", "https://write.sjtuguoxue.space")
 
+_ctx = ssl.create_default_context()
+_conns: dict[str, http.client.HTTPSConnection] = {}
 
-# ---------------------------------------------------------------------------
-# HTTP 客户端
-# ---------------------------------------------------------------------------
+
+def _conn(base: str) -> http.client.HTTPSConnection:
+    parsed = urllib.parse.urlparse(base)
+    host = parsed.hostname
+    port = parsed.port or 443
+    key = f"{host}:{port}"
+    c = _conns.get(key)
+    if c:
+        try:
+            c.request("HEAD", "/", headers={"Connection": "keep-alive"})
+            c.getresponse().read()
+            return c
+        except Exception:
+            try:
+                c.close()
+            except Exception:
+                pass
+    c = http.client.HTTPSConnection(host, port, timeout=15, context=_ctx)
+    _conns[key] = c
+    return c
+
 
 def _get(base: str, path: str):
-    url = f"{base}{path}"
     try:
-        req = urllib.request.Request(url)
-        with urllib.request.urlopen(req, timeout=15) as resp:
-            return json.loads(resp.read())
-    except urllib.error.HTTPError as e:
-        body = e.read().decode(errors="replace")
-        try:
-            return json.loads(body)
-        except Exception:
-            return {"error": f"HTTP {e.code}: {body[:200]}"}
-    except urllib.error.URLError as e:
-        return {"error": f"连接失败: {e.reason}", "hint": f"检查网络或设置 FANGCUN_CHECKER_URL 环境变量（当前: {base}）"}
+        c = _conn(base)
+        c.request("GET", path, headers={"Connection": "keep-alive"})
+        resp = c.getresponse()
+        body = resp.read()
+        return json.loads(body)
+    except Exception as e:
+        return {"error": str(e)}
 
 
 def _post(base: str, path: str, data: dict):
-    url = f"{base}{path}"
-    body = json.dumps(data).encode()
     try:
-        req = urllib.request.Request(url, data=body, headers={"Content-Type": "application/json"})
-        with urllib.request.urlopen(req, timeout=15) as resp:
-            return json.loads(resp.read())
-    except urllib.error.HTTPError as e:
-        resp_body = e.read().decode(errors="replace")
-        try:
-            return json.loads(resp_body)
-        except Exception:
-            return {"error": f"HTTP {e.code}: {resp_body[:200]}"}
-    except urllib.error.URLError as e:
-        return {"error": f"连接失败: {e.reason}", "hint": f"检查网络或设置 FANGCUN_CHECKER_URL 环境变量（当前: {base}）"}
+        c = _conn(base)
+        body = json.dumps(data).encode()
+        c.request("POST", path, body=body, headers={
+            "Content-Type": "application/json",
+            "Connection": "keep-alive",
+        })
+        resp = c.getresponse()
+        return json.loads(resp.read())
+    except Exception as e:
+        return {"error": str(e)}
+
+
+def _get_fresh(base: str, path: str):
+    parsed = urllib.parse.urlparse(base)
+    c = http.client.HTTPSConnection(parsed.hostname, parsed.port or 443, timeout=15, context=_ctx)
+    try:
+        c.request("GET", path)
+        return json.loads(c.getresponse().read())
+    except Exception as e:
+        return {"error": str(e)}
+    finally:
+        c.close()
+
+
+def _get_many(base: str, paths: list[str]) -> list:
+    if len(paths) <= 1:
+        return [_get(base, paths[0])] if paths else []
+    with ThreadPoolExecutor(max_workers=min(len(paths), 8)) as pool:
+        futs = [pool.submit(_get_fresh, base, p) for p in paths]
+        return [f.result() for f in futs]
 
 
 # ---------------------------------------------------------------------------
-# validate — 核心检测
+# validate
 # ---------------------------------------------------------------------------
 
 def cmd_validate(args):
@@ -108,97 +141,89 @@ def cmd_validate(args):
 
 
 def _pretty_print(result):
-    RED = "\033[91m"
-    GREEN = "\033[92m"
-    RESET = "\033[0m"
-    EM = "　"
+    R, G, X = "\033[91m", "\033[92m", "\033[0m"
     tone_map = {"P": "平", "Z": "仄", "A": "中", "?": "?"}
 
     rule = result.get("closest_rule")
     print(f"\n{'='*60}")
     if rule:
         print(f"体裁: {rule['name']}")
-    rhyme_name = result.get("rhyme_name")
-    if rhyme_name:
-        print(f"押韵: {rhyme_name}")
+    if result.get("rhyme_name"):
+        print(f"押韵: {result['rhyme_name']}")
     print(f"结果: {'通过' if result.get('is_valid') else '不通过'}")
 
-    error_positions = {e["position"] for e in result.get("errors", [])}
-    rhyme_positions = set(result.get("rhyme_positions") or [])
+    err_pos = {e["position"] for e in result.get("errors", [])}
+    rhy_pos = set(result.get("rhyme_positions") or [])
 
     for seg in result.get("display_segments", []):
-        text_line = ""
-        rule_line = ""
+        tl, rl = "", ""
         for i, ch in enumerate(seg["text_chars"]):
             gi = seg["start_index"] + i
-            if gi in error_positions:
-                text_line += f"{RED}{ch}{RESET}"
-            else:
-                text_line += ch
+            tl += f"{R}{ch}{X}" if gi in err_pos else ch
             item = seg["rule_items"][i] if i < len(seg["rule_items"]) else {}
-            rule_line += tone_map.get(item.get("tone", "?"), "?")
-            if gi in rhyme_positions:
-                text_line += EM
-                rule_line += f"{GREEN}韵{RESET}"
-        print(f"\n{text_line}")
-        print(rule_line)
+            rl += tone_map.get(item.get("tone", "?"), "?")
+            if gi in rhy_pos:
+                tl += "　"
+                rl += f"{G}韵{X}"
+        print(f"\n{tl}")
+        print(rl)
 
     if result.get("errors"):
         print(f"\n--- 错误 ({len(result['errors'])}) ---")
         for e in result["errors"]:
-            exp = e.get("expected", "")
-            act = e.get("actual", "")
-            detail = f" (expected={exp}, actual={act})" if exp else ""
-            print(f"  [{e['position']:>3d}] {e['character']}  {e['message']}{detail}")
+            exp, act = e.get("expected", ""), e.get("actual", "")
+            d = f" (expected={exp}, actual={act})" if exp else ""
+            print(f"  [{e['position']:>3d}] {e['character']}  {e['message']}{d}")
     elif result.get("is_valid"):
         print("\n--- 格律通过 ---")
     print(f"{'='*60}\n")
 
 
 # ---------------------------------------------------------------------------
-# rules — 规则列表
+# rules
 # ---------------------------------------------------------------------------
 
 def cmd_rules(args):
     path = f"/api/rules/list?genre={args.genre}"
     if args.search:
         path += f"&search={urllib.parse.quote(args.search)}"
-    result = _get(CHECKER_URL, path)
-    print(json.dumps(result, ensure_ascii=False))
+    print(json.dumps(_get(CHECKER_URL, path), ensure_ascii=False))
     return 0
 
 
 # ---------------------------------------------------------------------------
-# char — 单字/多字音韵查询
+# char — 并发批量查询
 # ---------------------------------------------------------------------------
 
 def cmd_char(args):
     chars = list(args.char)
-    book_param = f"&book={urllib.parse.quote(args.book)}" if args.book else ""
+    bk = f"&book={urllib.parse.quote(args.book)}" if args.book else ""
 
     if len(chars) == 1:
-        result = _get(CHECKER_URL, f"/api/char/lookup?char={urllib.parse.quote(chars[0])}{book_param}")
-        print(json.dumps(result, ensure_ascii=False))
-    else:
-        results = []
-        for ch in chars:
-            r = _get(CHECKER_URL, f"/api/char/lookup?char={urllib.parse.quote(ch)}{book_param}")
-            if "error" not in r:
-                tones = r.get("tones", [])
-                tone = "P" if tones == ["平"] else ("Z" if tones and all(t != "平" for t in tones) else "?")
-                entry = {"char": ch, "tones": tones, "tone": tone}
-                if args.book:
-                    cats = r.get("rhyme_categories", [])
-                    entry["rhymes"] = [c["name"] for c in cats] if isinstance(cats, list) else cats
-                results.append(entry)
-            else:
-                results.append({"char": ch, "tones": [], "tone": "?"})
-        print(json.dumps(results, ensure_ascii=False))
+        print(json.dumps(_get(CHECKER_URL, f"/api/char/lookup?char={urllib.parse.quote(chars[0])}{bk}"), ensure_ascii=False))
+        return 0
+
+    paths = [f"/api/char/lookup?char={urllib.parse.quote(ch)}{bk}" for ch in chars]
+    raw = _get_many(CHECKER_URL, paths)
+
+    results = []
+    for ch, r in zip(chars, raw):
+        if "error" in r:
+            results.append({"char": ch, "tones": [], "tone": "?"})
+            continue
+        tones = r.get("tones", [])
+        tone = "P" if tones == ["平"] else ("Z" if tones and all(t != "平" for t in tones) else "?")
+        entry = {"char": ch, "tones": tones, "tone": tone}
+        if args.book:
+            cats = r.get("rhyme_categories", [])
+            entry["rhymes"] = [c["name"] for c in cats] if isinstance(cats, list) else cats
+        results.append(entry)
+    print(json.dumps(results, ensure_ascii=False))
     return 0
 
 
 # ---------------------------------------------------------------------------
-# rhyme — 韵部字表
+# rhyme
 # ---------------------------------------------------------------------------
 
 def cmd_rhyme(args):
@@ -211,7 +236,7 @@ def cmd_rhyme(args):
 
 
 # ---------------------------------------------------------------------------
-# suggest — 词语联想
+# suggest — 并发获取声调
 # ---------------------------------------------------------------------------
 
 def cmd_suggest(args):
@@ -228,25 +253,37 @@ def cmd_suggest(args):
         print(json.dumps(result, ensure_ascii=False))
         return 2
 
-    if args.with_tones and isinstance(result, list):
-        enhanced = []
-        for item in result[:30]:
-            word = item[0] if isinstance(item, (list, tuple)) else item
-            freq = item[1] if isinstance(item, (list, tuple)) and len(item) > 1 else 0
-            tones = ""
-            for ch in word:
-                r = _get(CHECKER_URL, f"/api/char/lookup?char={urllib.parse.quote(ch)}")
-                t = r.get("tones", [])
-                tones += "P" if t == ["平"] else ("Z" if t and all(x != "平" for x in t) else "?")
-            enhanced.append([word, freq, tones])
-        print(json.dumps(enhanced, ensure_ascii=False))
-    else:
+    if not args.with_tones or not isinstance(result, list):
         print(json.dumps(result, ensure_ascii=False))
+        return 0
+
+    items = result[:30]
+    all_chars = set()
+    for item in items:
+        word = item[0] if isinstance(item, (list, tuple)) else item
+        all_chars.update(word)
+
+    char_list = list(all_chars)
+    paths = [f"/api/char/lookup?char={urllib.parse.quote(ch)}" for ch in char_list]
+    raw = _get_many(CHECKER_URL, paths)
+
+    tone_map = {}
+    for ch, r in zip(char_list, raw):
+        t = r.get("tones", [])
+        tone_map[ch] = "P" if t == ["平"] else ("Z" if t and all(x != "平" for x in t) else "?")
+
+    enhanced = []
+    for item in items:
+        word = item[0] if isinstance(item, (list, tuple)) else item
+        freq = item[1] if isinstance(item, (list, tuple)) and len(item) > 1 else 0
+        tones = "".join(tone_map.get(c, "?") for c in word)
+        enhanced.append([word, freq, tones])
+    print(json.dumps(enhanced, ensure_ascii=False))
     return 0
 
 
 # ---------------------------------------------------------------------------
-# 主入口
+# main
 # ---------------------------------------------------------------------------
 
 def main():
@@ -257,38 +294,37 @@ def main():
     )
     sub = parser.add_subparsers(dest="command", required=True)
 
-    p_val = sub.add_parser("validate", help="校验诗词格律")
-    p_val.add_argument("--text", required=True, help="诗词文本（标点自动忽略）")
-    p_val.add_argument("--genre", required=True, choices=["Shi", "Ci"], help="Shi(诗) / Ci(词)")
-    p_val.add_argument("--rhyme-book", default="Pingshuiyun", choices=["Pingshuiyun", "Cilinzhengyun", "Zhonghua_Tongyun"])
-    p_val.add_argument("--rule", default=None, help="指定规则名")
-    p_val.add_argument("--longpu", action="store_true", help="仅匹配龙谱")
-    p_val.add_argument("--pretty", action="store_true", help="彩色人类可读输出")
+    p = sub.add_parser("validate", help="校验诗词格律")
+    p.add_argument("--text", required=True, help="诗词文本（标点自动忽略）")
+    p.add_argument("--genre", required=True, choices=["Shi", "Ci"])
+    p.add_argument("--rhyme-book", default="Pingshuiyun", choices=["Pingshuiyun", "Cilinzhengyun", "Zhonghua_Tongyun"])
+    p.add_argument("--rule", default=None, help="指定规则名")
+    p.add_argument("--longpu", action="store_true")
+    p.add_argument("--pretty", action="store_true", help="彩色人类可读输出")
 
-    p_rules = sub.add_parser("rules", help="列出格律规则")
-    p_rules.add_argument("--genre", required=True, choices=["Shi", "Ci"])
-    p_rules.add_argument("--search", default=None, help="按名称/词牌搜索")
+    p = sub.add_parser("rules", help="列出格律规则")
+    p.add_argument("--genre", required=True, choices=["Shi", "Ci"])
+    p.add_argument("--search", default=None)
 
-    p_char = sub.add_parser("char", help="查字声调与韵部（支持多字）")
-    p_char.add_argument("--char", required=True, help="汉字（单字或多字如「明月」）")
-    p_char.add_argument("--book", default=None, help="韵书名")
+    p = sub.add_parser("char", help="查字声调与韵部（支持多字）")
+    p.add_argument("--char", required=True, help="汉字（单字或多字如「明月」）")
+    p.add_argument("--book", default=None)
 
-    p_rhyme = sub.add_parser("rhyme", help="查韵部字表")
-    p_rhyme.add_argument("--book", required=True, choices=["Pingshuiyun", "Cilinzhengyun", "Zhonghua_Tongyun"])
-    p_rhyme.add_argument("--category", required=True, help="韵部名（如 一东）")
-    p_rhyme.add_argument("--include", default=None, help="关联韵部（如 neighbor,ye_ping）")
+    p = sub.add_parser("rhyme", help="查韵部字表")
+    p.add_argument("--book", required=True, choices=["Pingshuiyun", "Cilinzhengyun", "Zhonghua_Tongyun"])
+    p.add_argument("--category", required=True, help="韵部名（如 一东）")
+    p.add_argument("--include", default=None)
 
-    p_sug = sub.add_parser("suggest", help="词语/对仗联想")
-    p_sug.add_argument("--term", required=True, help="查询词")
-    p_sug.add_argument("--mode", required=True, choices=["head", "tail", "pair", "tongwei"])
-    p_sug.add_argument("--length", type=int, default=None)
-    p_sug.add_argument("--tone", default=None, choices=["P", "Z"])
-    p_sug.add_argument("--with-tones", action="store_true", help="附带逐字声调标注")
+    p = sub.add_parser("suggest", help="词语/对仗联想")
+    p.add_argument("--term", required=True)
+    p.add_argument("--mode", required=True, choices=["head", "tail", "pair", "tongwei"])
+    p.add_argument("--length", type=int, default=None)
+    p.add_argument("--tone", default=None, choices=["P", "Z"])
+    p.add_argument("--with-tones", action="store_true", help="附带逐字声调标注")
 
     args = parser.parse_args()
-    handler = {"validate": cmd_validate, "rules": cmd_rules, "char": cmd_char, "rhyme": cmd_rhyme, "suggest": cmd_suggest}
     try:
-        return handler[args.command](args)
+        return {"validate": cmd_validate, "rules": cmd_rules, "char": cmd_char, "rhyme": cmd_rhyme, "suggest": cmd_suggest}[args.command](args)
     except Exception as e:
         print(json.dumps({"error": str(e)}, ensure_ascii=False), file=sys.stderr)
         return 2
