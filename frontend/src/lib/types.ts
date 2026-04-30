@@ -110,8 +110,8 @@ export interface RhymeGroup {
 
 export interface RhymeRelation {
   pos1: number;
-  pos2: number;
-  relation: string;  // "ye_ping" | "ye_ze" | "neighbor" etc.
+  pos2: number | number[];
+  relation: string;
 }
 
 export interface ValidationResult {

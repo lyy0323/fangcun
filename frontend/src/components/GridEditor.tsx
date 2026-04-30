@@ -89,8 +89,15 @@ function getPunctuationAt(
 function buildRhymeColorMap(v: ValidationResult | null): Map<number, string> {
   const map = new Map<number, string>();
   if (!v) return map;
-  const groups = v.rhyme_groups ?? [];
+  const rawGroups = v.rhyme_groups ?? [];
   const relations = v.rhyme_relations ?? [];
+
+  // 去重：多个 group 的 positions 集合若为子集关系，只保留最大的
+  const groups = rawGroups
+    .map(g => ({ ...g, posSet: new Set(g.positions) }))
+    .filter((g, i, arr) => !arr.some((other, j) =>
+      j !== i && other.posSet.size > g.posSet.size && g.positions.every(p => other.posSet.has(p))
+    ));
 
   const groupOf = groups.map((_, i) => i);
   const find = (i: number): number => groupOf[i] === i ? i : (groupOf[i] = find(groupOf[i]));
@@ -102,8 +109,12 @@ function buildRhymeColorMap(v: ValidationResult | null): Map<number, string> {
   for (const rel of relations) {
     if (rel.relation === 'neighbor') {
       const ga = posToGroup.get(rel.pos1);
-      const gb = posToGroup.get(rel.pos2);
-      if (ga != null && gb != null) union(ga, gb);
+      // pos2 可能是数字或数组
+      const pos2list = Array.isArray(rel.pos2) ? rel.pos2 : [rel.pos2];
+      for (const p2 of pos2list) {
+        const gb = posToGroup.get(p2);
+        if (ga != null && gb != null) union(ga, gb);
+      }
     }
   }
 
@@ -135,7 +146,10 @@ function buildRhymeColorMap(v: ValidationResult | null): Map<number, string> {
   });
 
   for (const rel of relations) {
-    if (rel.relation.startsWith('ye_')) map.set(rel.pos2, YE_COLOR);
+    if (rel.relation.startsWith('ye_')) {
+      const pos2list = Array.isArray(rel.pos2) ? rel.pos2 : [rel.pos2];
+      for (const p of pos2list) map.set(p, YE_COLOR);
+    }
   }
   return map;
 }
