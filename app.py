@@ -238,24 +238,23 @@ def dashboard():
 # APK 下载代理（可选，需配置 CDN_AUTH_KEY）
 # ============================================================================
 
-_CDN_DOMAIN = os.environ.get("CDN_DOMAIN", "")
-_APK_PATH = os.environ.get("APK_PATH", "")
-_CDN_AUTH_KEY = os.environ.get("CDN_AUTH_KEY", "").strip()
-
-def _sign_cdn_url(path: str, key: str, expire_sec: int = 3600) -> str:
+def _sign_cdn_url(path: str, key: str, domain: str, expire_sec: int = 3600) -> str:
     ts = int(time.time()) + expire_sec
     rand = os.urandom(16).hex()
     uid = "0"
     s = f"{path}-{ts}-{rand}-{uid}-{key}"
     h = hashlib.md5(s.encode()).hexdigest()
-    return f"{_CDN_DOMAIN}{path}?auth_key={ts}-{rand}-{uid}-{h}"
+    return f"{domain}{path}?auth_key={ts}-{rand}-{uid}-{h}"
 
 @app.route("/download/android")
 @limiter.exempt
 def download_android():
-    if not _CDN_AUTH_KEY or not _CDN_DOMAIN:
+    cdn_domain = os.environ.get("CDN_DOMAIN", "").strip()
+    apk_path = os.environ.get("APK_PATH", "").strip()
+    cdn_key = os.environ.get("CDN_AUTH_KEY", "").strip()
+    if not cdn_key or not cdn_domain:
         return "Download not configured", 503
-    url = _sign_cdn_url(_APK_PATH, _CDN_AUTH_KEY, expire_sec=3600)
+    url = _sign_cdn_url(apk_path, cdn_key, cdn_domain, expire_sec=3600)
     return redirect(url)
 
 # ============================================================================
