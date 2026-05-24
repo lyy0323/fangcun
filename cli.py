@@ -236,6 +236,10 @@ def cmd_rhyme(args):
     path = f"/api/rhyme/lookup?book={urllib.parse.quote(args.book)}&category={urllib.parse.quote(args.category)}"
     if args.include:
         path += f"&include={urllib.parse.quote(args.include)}"
+    if args.limit is not None:
+        path += f"&limit={args.limit}"
+    if args.offset is not None:
+        path += f"&offset={args.offset}"
     result = _get(CHECKER_URL, path)
     print(json.dumps(result, ensure_ascii=False))
     return 0 if "error" not in result else 2
@@ -363,6 +367,8 @@ def main():
     p.add_argument("--book", required=True, choices=["Pingshuiyun", "Cilinzhengyun", "Zhonghua_Tongyun"])
     p.add_argument("--category", required=True, help="韵部名（如 一东）")
     p.add_argument("--include", default=None)
+    p.add_argument("--limit", type=int, default=None, help="返回字数上限")
+    p.add_argument("--offset", type=int, default=None, help="跳过前 N 个字")
 
     p = sub.add_parser("suggest", help="词语/对仗联想")
     p.add_argument("--term", required=True)

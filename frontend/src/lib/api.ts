@@ -49,9 +49,13 @@ export function rhymeLookup(
   book: string,
   category: string,
   include?: string,
+  limit?: number,
+  offset?: number,
 ): Promise<RhymeLookupResult | { primary: RhymeLookupResult; related: { relation: string; category: RhymeLookupResult }[] }> {
   let url = `/rhyme/lookup?book=${enc(book)}&category=${enc(category)}`;
   if (include) url += `&include=${enc(include)}`;
+  if (limit != null) url += `&limit=${limit}`;
+  if (offset != null) url += `&offset=${offset}`;
   return get(url, CHECKER_BASE);
 }
 

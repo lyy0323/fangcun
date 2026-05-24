@@ -374,6 +374,8 @@
   <tr><td>book</td><td>string</td><td><span class="badge badge-optional">可选</span></td><td>韵书名，默认 <code>Pingshuiyun</code></td></tr>
   <tr><td>category</td><td>string</td><td><span class="badge badge-required">必填</span></td><td>韵部名，如 <code>一东</code></td></tr>
   <tr><td>include</td><td>string</td><td><span class="badge badge-optional">可选</span></td><td>包含关联韵部，逗号分隔（如 <code>neighbor</code>）</td></tr>
+  <tr><td>limit</td><td>int</td><td><span class="badge badge-optional">可选</span></td><td>返回字数上限。不传则全量返回（行为不变），传入时 <code>total</code> 仍为完整数量</td></tr>
+  <tr><td>offset</td><td>int</td><td><span class="badge badge-optional">可选</span></td><td>跳过前 N 个字，默认 <code>0</code>。与 <code>limit</code> 配合使用可分页</td></tr>
 </table>
 
 <h3>示例</h3>
