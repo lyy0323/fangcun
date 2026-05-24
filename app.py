@@ -141,15 +141,24 @@ def dict_search():
     tone = request.args.get("tone", "all")
 
     if mode == "pair":
-        return jsonify(dict_db.lookup_pairs(term))
+        result = dict_db.lookup_pairs(term)
+    elif mode == "tongwei":
+        result = dict_db.lookup_tongwei(term)
+    elif mode in ("head", "tail"):
+        result = dict_db.lookup_phrases(term, mode, length, tone)
+    else:
+        return jsonify({"error": f"无效模式: {mode}"}), 400
 
-    if mode == "tongwei":
-        return jsonify(dict_db.lookup_tongwei(term))
+    limit = request.args.get("limit")
+    offset = request.args.get("offset")
+    if isinstance(result, list) and (limit is not None or offset is not None):
+        o = int(offset) if offset else 0
+        if limit is not None:
+            result = result[o:o + int(limit)]
+        else:
+            result = result[o:]
 
-    if mode in ("head", "tail"):
-        return jsonify(dict_db.lookup_phrases(term, mode, length, tone))
-
-    return jsonify({"error": f"无效模式: {mode}"}), 400
+    return jsonify(result)
 
 # ---------- GET /api/dictionary/allusion ----------
 

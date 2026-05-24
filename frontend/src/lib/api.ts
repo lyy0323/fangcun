@@ -94,10 +94,14 @@ export function dictionarySearch(params: {
   mode: 'head' | 'tail' | 'pair' | 'tongwei';
   length?: string;
   tone?: string;
+  limit?: number;
+  offset?: number;
 }): Promise<[string, number][] | Record<string, [string, number][]>> {
   let url = `/dictionary/search?term=${enc(params.term)}&mode=${params.mode}`;
   if (params.length) url += `&length=${params.length}`;
   if (params.tone) url += `&tone=${params.tone}`;
+  if (params.limit != null) url += `&limit=${params.limit}`;
+  if (params.offset != null) url += `&offset=${params.offset}`;
   return get(url);
 }
 

@@ -460,6 +460,8 @@
   <tr><td>mode</td><td>string</td><td><span class="badge badge-optional">可选</span></td><td><code>head</code>（以此字开头）、<code>tail</code>（以此字结尾）、<code>pair</code>（对仗字/词）、<code>tongwei</code>（同位词，对语的对语）。默认 <code>head</code></td></tr>
   <tr><td>length</td><td>string</td><td><span class="badge badge-optional">可选</span></td><td>词语长度（<code>2</code>、<code>3</code>...），<code>all</code> 返回所有长度。默认 <code>2</code></td></tr>
   <tr><td>tone</td><td>string</td><td><span class="badge badge-optional">可选</span></td><td>末字声调过滤：<code>P</code>（平）或 <code>Z</code>（仄）。默认不过滤</td></tr>
+  <tr><td>limit</td><td>int</td><td><span class="badge badge-optional">可选</span></td><td>返回结果数上限。不传则全量返回</td></tr>
+  <tr><td>offset</td><td>int</td><td><span class="badge badge-optional">可选</span></td><td>跳过前 N 条结果，默认 <code>0</code></td></tr>
 </table>
 
 <h3>示例 — 首字联想</h3>

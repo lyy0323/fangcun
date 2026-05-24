@@ -258,6 +258,10 @@ def cmd_suggest(args):
         path += f"&length={args.length}"
     if args.tone:
         path += f"&tone={args.tone}"
+    if args.limit is not None:
+        path += f"&limit={args.limit}"
+    if args.offset is not None:
+        path += f"&offset={args.offset}"
 
     result = _get(DICT_URL, path)
 
@@ -378,6 +382,8 @@ def main():
     p.add_argument("--mode", required=True, choices=["head", "tail", "pair", "tongwei"])
     p.add_argument("--length", type=int, default=None)
     p.add_argument("--tone", default=None, choices=["P", "Z"])
+    p.add_argument("--limit", type=int, default=None, help="返回结果数上限")
+    p.add_argument("--offset", type=int, default=None, help="跳过前 N 条结果")
     p.add_argument("--with-tones", action="store_true", help="附带逐字声调标注")
 
     p = sub.add_parser("free-rhyme", help="自由诗/古体诗韵脚检测")
