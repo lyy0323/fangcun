@@ -30,6 +30,7 @@ export function validateMeter(params: {
   rhyme_book_name: string;
   rule_name?: string;
   ensure_longpu?: boolean;
+  include_punctuation?: boolean;
 }): Promise<ValidationResult> {
   return post('/validate_meter', params, CHECKER_BASE);
 }

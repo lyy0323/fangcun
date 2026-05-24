@@ -233,6 +233,7 @@
   <tr><td>rhyme_book_name</td><td>string</td><td><span class="badge badge-optional">可选</span></td><td>韵书名，默认 <code>Pingshuiyun</code></td></tr>
   <tr><td>rule_name</td><td>string</td><td><span class="badge badge-optional">可选</span></td><td>指定规则名（如 <code>五绝仄起</code>），不传则自动匹配最接近的</td></tr>
   <tr><td>ensure_longpu</td><td>bool</td><td><span class="badge badge-optional">可选</span></td><td>仅匹配龙谱规则，默认 <code>false</code></td></tr>
+  <tr><td>include_punctuation</td><td>bool</td><td><span class="badge badge-optional">可选</span></td><td>是否检测句读标点，默认 <code>false</code>。为 <code>true</code> 时，<code>poem_text</code> 应带标点，检测器将校验韵(。)、句(，)、读(、)标点是否正确</td></tr>
 </table>
 
 <h3>请求示例</h3>
@@ -312,6 +313,10 @@
   <tr><td>rhyme_chars</td><td>押韵字列表</td></tr>
   <tr><td>display_segments[]</td><td>分段显示数据。<code>tone</code>：<code>P</code>=平、<code>Z</code>=仄、<code>A</code>=中（可平可仄）</td></tr>
 </table>
+
+<div class="callout">
+  <strong>LLM / Agent 填词建议：</strong>填词时强烈建议开启 <code>"include_punctuation": true</code>。词牌句读结构复杂（韵、句、读交替），标点检测会返回每个位置应使用的标点类型（韵→句号、句→逗号、读→顿号），帮助模型准确断句，避免句读错位。
+</div>
 
 <hr>
 
