@@ -114,6 +114,8 @@ def cmd_validate(args):
         payload["ensure_longpu"] = True
     if args.include_punctuation:
         payload["include_punctuation"] = True
+    if args.warnings:
+        payload["warnings"] = args.warnings if len(args.warnings) > 1 else args.warnings[0]
 
     result = _post(CHECKER_URL, "/api/validate_meter", payload)
 
@@ -353,6 +355,7 @@ def main():
     p.add_argument("--rule", default=None, help="指定规则名")
     p.add_argument("--longpu", action="store_true")
     p.add_argument("--include-punctuation", action="store_true", help="检测句读标点（poem_text 需带标点）")
+    p.add_argument("--warnings", nargs="+", choices=["default", "2gram", "rhyme_duplicate", "none"], help="重字检测模式")
     p.add_argument("--pretty", action="store_true", help="彩色人类可读输出")
 
     p = sub.add_parser("rules", help="列出格律规则")

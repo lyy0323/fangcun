@@ -218,7 +218,7 @@
 
 <!-- ==================== 1. 校验格律 ==================== -->
 <h2 id="validate">校验格律</h2>
-<p>检测诗词的平仄和押韵是否符合规则。这是核心接口。</p>
+<p>核心接口。检测诗词的平仄和押韵是否符合格律规则。返回逐字谱面、结构化错误（含 <code>expected</code>/<code>actual</code>）、韵部信息。</p>
 
 <div class="endpoint-line">
   <span class="method method-post">POST</span>
@@ -228,13 +228,24 @@
 <h3>请求体 (JSON)</h3>
 <table>
   <tr><th>字段</th><th>类型</th><th></th><th>说明</th></tr>
-  <tr><td>poem_text</td><td>string</td><td><span class="badge badge-required">必填</span></td><td>诗词文本（标点、空格自动忽略，只提取汉字）</td></tr>
-  <tr><td>genre</td><td>string</td><td><span class="badge badge-optional">可选</span></td><td><code>Shi</code> 或 <code>Ci</code>，默认 <code>Shi</code></td></tr>
-  <tr><td>rhyme_book_name</td><td>string</td><td><span class="badge badge-optional">可选</span></td><td>韵书名，默认 <code>Pingshuiyun</code></td></tr>
-  <tr><td>rule_name</td><td>string</td><td><span class="badge badge-optional">可选</span></td><td>指定规则名（如 <code>五绝仄起</code>），不传则自动匹配最接近的</td></tr>
+  <tr><td>poem_text</td><td>string</td><td><span class="badge badge-required">必填</span></td><td>诗词文本（标点自动忽略，只提取汉字）</td></tr>
+  <tr><td>genre</td><td>string</td><td><span class="badge badge-optional">可选</span></td><td><code>Shi</code>（诗）或 <code>Ci</code>（词），默认 <code>Shi</code></td></tr>
+  <tr><td>rhyme_book_name</td><td>string</td><td><span class="badge badge-optional">可选</span></td><td>韵书名，默认 <code>Pingshuiyun</code>。可选：<code>Pingshuiyun</code>（平水韵）、<code>Cilinzhengyun</code>（词林正韵，词用旧韵时务必选此项）、<code>Zhonghua_Tongyun</code>（中华通韵）</td></tr>
+  <tr><td>rule_name</td><td>string</td><td><span class="badge badge-optional">可选</span></td><td>指定规则名（如 <code>沁园春_龙谱_格一</code>），不传则自动匹配</td></tr>
   <tr><td>ensure_longpu</td><td>bool</td><td><span class="badge badge-optional">可选</span></td><td>仅匹配龙谱规则，默认 <code>false</code></td></tr>
+  <tr><td>warnings</td><td>string | string[]</td><td><span class="badge badge-optional">可选</span></td><td>重字检测模式，默认 <code>default</code>。可选值见下方</td></tr>
   <tr><td>include_punctuation</td><td>bool</td><td><span class="badge badge-optional">可选</span></td><td>是否检测句读标点，默认 <code>false</code>。为 <code>true</code> 时，<code>poem_text</code> 应带标点，检测器将校验韵(。)、句(，)、读(、)标点是否正确</td></tr>
 </table>
+
+<h3>warnings 可选值</h3>
+<table>
+  <tr><th>值</th><th>说明</th></tr>
+  <tr><td><code>default</code></td><td>标准重字检测（叠词豁免），不传时默认</td></tr>
+  <tr><td><code>2gram</code></td><td>连续两字组合（2-gram）重复检测</td></tr>
+  <tr><td><code>rhyme_duplicate</code></td><td>仅检测韵脚位置之间的重字</td></tr>
+  <tr><td><code>none</code></td><td>不检测重字，不可与其他值组合</td></tr>
+</table>
+<p>支持数组组合，如 <code>["default", "rhyme_duplicate"]</code>（两种检测结果拼接返回）。</p>
 
 <h3>请求示例</h3>
 <pre><code>curl -X POST https://write.sjtuguoxue.space/api/validate_meter \
@@ -245,74 +256,44 @@
     "rhyme_book_name": "Pingshuiyun"
   }'</span></code></pre>
 
-<h3>响应示例 — 格律通过</h3>
-<pre><code>{
-  <span class="key">"is_valid"</span>: <span class="bool">true</span>,
-  <span class="key">"closest_rule"</span>: {
-    <span class="key">"name"</span>: <span class="string">"五绝仄起"</span>,
-    <span class="key">"genre"</span>: <span class="string">"Shi"</span>,
-    <span class="key">"cipai"</span>: <span class="string">"Wujue"</span>,
-    <span class="key">"char_count"</span>: <span class="number">20</span>
-  },
-  <span class="key">"errors"</span>: [],
-  <span class="key">"warnings"</span>: [],
-  <span class="key">"rhyme_name"</span>: <span class="string">"十一尤"</span>,
-  <span class="key">"rhyme_positions"</span>: [<span class="number">9</span>, <span class="number">19</span>],
-  <span class="key">"rhyme_chars"</span>: [<span class="string">"流"</span>, <span class="string">"楼"</span>],
-  <span class="key">"rhyme_groups"</span>: [
-    { <span class="key">"positions"</span>: [<span class="number">9</span>, <span class="number">19</span>], <span class="key">"type"</span>: <span class="string">"same"</span> }
-  ],
-  <span class="key">"rhyme_relations"</span>: [],
-  <span class="key">"display_segments"</span>: [
-    {
-      <span class="key">"start_index"</span>: <span class="number">0</span>,
-      <span class="key">"text_chars"</span>: [<span class="string">"白"</span>, <span class="string">"日"</span>, <span class="string">"依"</span>, <span class="string">"山"</span>, <span class="string">"尽"</span>, <span class="string">"黄"</span>, <span class="string">"河"</span>, <span class="string">"入"</span>, <span class="string">"海"</span>, <span class="string">"流"</span>],
-      <span class="key">"rule_items"</span>: [
-        { <span class="key">"tone"</span>: <span class="string">"A"</span> }, { <span class="key">"tone"</span>: <span class="string">"Z"</span> }, { <span class="key">"tone"</span>: <span class="string">"A"</span> },
-        { <span class="key">"tone"</span>: <span class="string">"P"</span> }, { <span class="key">"tone"</span>: <span class="string">"Z"</span> }, { <span class="key">"tone"</span>: <span class="string">"P"</span> },
-        { <span class="key">"tone"</span>: <span class="string">"P"</span> }, { <span class="key">"tone"</span>: <span class="string">"A"</span> }, { <span class="key">"tone"</span>: <span class="string">"Z"</span> }, { <span class="key">"tone"</span>: <span class="string">"P"</span> }
-      ]
-    }
-  ]
-}</code></pre>
-
-<h3>响应示例 — 有错误</h3>
-<pre><code>{
-  <span class="key">"is_valid"</span>: <span class="bool">false</span>,
-  <span class="key">"closest_rule"</span>: {
-    <span class="key">"name"</span>: <span class="string">"五绝仄起首句入韵"</span>,
-    <span class="key">"char_count"</span>: <span class="number">20</span>
-  },
-  <span class="key">"errors"</span>: [
-    {
-      <span class="key">"position"</span>: <span class="number">1</span>,
-      <span class="key">"character"</span>: <span class="string">"风"</span>,
-      <span class="key">"error_type"</span>: <span class="string">"Tone"</span>,
-      <span class="key">"message"</span>: <span class="string">"应为仄, 实为平"</span>
-    },
-    {
-      <span class="key">"position"</span>: <span class="number">6</span>,
-      <span class="key">"character"</span>: <span class="string">"雨"</span>,
-      <span class="key">"error_type"</span>: <span class="string">"Tone"</span>,
-      <span class="key">"message"</span>: <span class="string">"应为平, 实为仄"</span>
-    }
-  ],
-  <span class="key">"rhyme_name"</span>: <span class="string">"五微"</span>,
-  <span class="key">"rhyme_chars"</span>: [<span class="string">"开"</span>, <span class="string">"飞"</span>, <span class="string">"归"</span>]
-}</code></pre>
-
-<h3>响应字段说明</h3>
+<h3>响应字段</h3>
 <table>
-  <tr><th>字段</th><th>说明</th></tr>
-  <tr><td>is_valid</td><td>是否完全通过校验</td></tr>
-  <tr><td>closest_rule</td><td>匹配到的最接近规则（名称、体裁、词牌、字数）</td></tr>
-  <tr><td>errors[]</td><td>错误列表，每项含位置 (0-indexed)、字符、错误类型 (<code>Tone</code>/<code>Rhyme</code>)、描述</td></tr>
-  <tr><td>warnings[]</td><td>警告列表（如重复用字）</td></tr>
-  <tr><td>rhyme_name</td><td>推断的韵部名（一韵到底时）</td></tr>
-  <tr><td>rhyme_positions</td><td>押韵位置（0-indexed）</td></tr>
-  <tr><td>rhyme_chars</td><td>押韵字列表</td></tr>
-  <tr><td>display_segments[]</td><td>分段显示数据。<code>tone</code>：<code>P</code>=平、<code>Z</code>=仄、<code>A</code>=中（可平可仄）</td></tr>
+  <tr><th>字段</th><th>类型</th><th>说明</th></tr>
+  <tr><td>is_valid</td><td>bool</td><td>格律是否通过</td></tr>
+  <tr><td>closest_rule</td><td>object</td><td>匹配的规则（name, genre, cipai, char_count）</td></tr>
+  <tr><td>chars</td><td>string[]</td><td>清洗后的汉字数组</td></tr>
+  <tr><td>tone_pattern</td><td>string[]</td><td>逐字期望声调：<code>P</code>(平) / <code>Z</code>(仄) / <code>A</code>(中，不限)</td></tr>
+  <tr><td>errors</td><td>array</td><td>错误列表（见下方）</td></tr>
+  <tr><td>warnings</td><td>array</td><td>警告列表（如重字提示）</td></tr>
+  <tr><td>rhyme_name</td><td>string?</td><td>检测到的韵部名（如 <code>十一尤</code>），换韵时为 <code>(换韵)</code></td></tr>
+  <tr><td>rhyme_positions</td><td>int[]</td><td>韵脚所在位置（0-based）</td></tr>
+  <tr><td>rhyme_chars</td><td>string[]</td><td>韵脚字</td></tr>
+  <tr><td>display_segments</td><td>array</td><td>分段显示数据。<code>tone</code>：<code>P</code>=平、<code>Z</code>=仄、<code>A</code>=中（可平可仄）</td></tr>
 </table>
+
+<h3>error 对象</h3>
+<table>
+  <tr><th>字段</th><th>类型</th><th>说明</th></tr>
+  <tr><td>position</td><td>int</td><td>出错位置（0-based）</td></tr>
+  <tr><td>character</td><td>string</td><td>出错的字</td></tr>
+  <tr><td>error_type</td><td>string</td><td><code>Tone</code>（平仄）或 <code>Rhyme</code>（押韵）</td></tr>
+  <tr><td>expected</td><td>string</td><td>期望值（Tone: <code>P</code>/<code>Z</code>；Rhyme: 目标韵部名）</td></tr>
+  <tr><td>actual</td><td>string</td><td>实际值（Tone: <code>P</code>/<code>Z</code>；Rhyme: 实际韵部名）</td></tr>
+  <tr><td>message</td><td>string</td><td>人类可读描述</td></tr>
+</table>
+
+<h3>warning 对象</h3>
+<table>
+  <tr><th>字段</th><th>类型</th><th>说明</th></tr>
+  <tr><td>positions</td><td>int[]</td><td>出现位置（0-based）</td></tr>
+  <tr><td>character</td><td>string</td><td>重复的字（2gram 模式为两字组合）</td></tr>
+  <tr><td>warning_type</td><td>string</td><td><code>Duplicate</code>（标准重字）、<code>Duplicate_2gram</code>（2-gram）、<code>Rhyme_Duplicate</code>（韵脚重字）</td></tr>
+  <tr><td>message</td><td>string</td><td>人类可读描述</td></tr>
+</table>
+
+<div class="callout">
+  <strong>AI Agent 提示：</strong>用 <code>tone_pattern</code> 了解全局谱面要求，用 error 的 <code>expected</code>/<code>actual</code> 定位需替换的字及目标声调。修字后重新调用 validate 验证。
+</div>
 
 <div class="callout">
   <strong>LLM / Agent 填词建议：</strong>填词时强烈建议开启 <code>"include_punctuation": true</code>。词牌句读结构复杂（韵、句、读交替），标点检测会返回每个位置应使用的标点类型（韵→句号、句→逗号、读→顿号），帮助模型准确断句，避免句读错位。
