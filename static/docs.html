@@ -165,6 +165,7 @@
     <a href="#dictionary">词语联想</a>
     <a href="#allusion">典故检索</a>
     <a href="#free-rhyme">自由诗韵脚检测</a>
+    <a href="#stats-summary">调用统计摘要</a>
 
   </nav>
 </aside>
@@ -649,6 +650,58 @@
 </table>
 
 <div class="callout">分组算法：前向贪心 — 取首个未分组字的韵部为锚集，向后扫描共享韵部的字拉入组，锚集不扩展。仅返回 ≥2 成员的组。</div>
+
+<hr>
+
+<!-- ==================== 调用统计摘要 ==================== -->
+<h2 id="stats-summary">调用统计摘要</h2>
+<p>返回指定日期的关键调用指标摘要。<code>export_image</code>（导出图片）为北极星指标，置于顶层。</p>
+
+<div class="endpoint-line">
+  <span class="method method-get">GET</span>
+  <span class="endpoint">/api/stats/summary</span>
+</div>
+
+<table>
+  <tr><th>参数</th><th>类型</th><th></th><th>说明</th></tr>
+  <tr><td>date</td><td>string</td><td><span class="badge badge-optional">可选</span></td><td>日期，格式 <code>YYYY-MM-DD</code>（UTC+8）。缺省返回当天</td></tr>
+</table>
+
+<h3>示例</h3>
+<pre><code>curl https://write.sjtuguoxue.space/api/stats/summary?date=2026-06-03</code></pre>
+<pre><code>{
+  <span class="key">"date"</span>: <span class="string">"2026-06-03"</span>,
+  <span class="key">"export_image"</span>: <span class="number">12</span>,
+  <span class="key">"total_api_calls"</span>: <span class="number">123</span>,
+  <span class="key">"total_events"</span>: <span class="number">45</span>,
+  <span class="key">"api_calls"</span>: {
+    <span class="key">"validate_meter"</span>: <span class="number">50</span>,
+    <span class="key">"dictionary/search"</span>: <span class="number">25</span>,
+    <span class="key">"char/definitions"</span>: <span class="number">30</span>
+  },
+  <span class="key">"events"</span>: {
+    <span class="key">"export_image"</span>: <span class="number">12</span>,
+    <span class="key">"create_board"</span>: <span class="number">10</span>,
+    <span class="key">"copy_text"</span>: <span class="number">8</span>
+  },
+  <span class="key">"sources"</span>: {
+    <span class="key">"frontend"</span>: <span class="number">100</span>,
+    <span class="key">"api"</span>: <span class="number">50</span>,
+    <span class="key">"android"</span>: <span class="number">18</span>
+  }
+}</code></pre>
+
+<h3>响应字段说明</h3>
+<table>
+  <tr><th>字段</th><th>说明</th></tr>
+  <tr><td>date</td><td>统计日期</td></tr>
+  <tr><td>export_image</td><td>北极星指标 — 导出图片次数</td></tr>
+  <tr><td>total_api_calls</td><td>当日 API 调用总量（不含前端事件）</td></tr>
+  <tr><td>total_events</td><td>当日前端事件总量</td></tr>
+  <tr><td>api_calls</td><td>各 API 路由调用量，按次数降序</td></tr>
+  <tr><td>events</td><td>各前端事件调用量，按次数降序</td></tr>
+  <tr><td>sources</td><td>按来源分布（frontend / api / android），按次数降序</td></tr>
+</table>
 
 <hr>
 

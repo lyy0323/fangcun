@@ -10,6 +10,7 @@
 """
 
 import json, os, sys, hashlib, time
+from datetime import datetime, timezone, timedelta
 
 from flask import Flask, request, jsonify, g, redirect
 from flask_cors import CORS
@@ -27,6 +28,8 @@ except Exception:
     _STATS_AVAILABLE = False
     def record_call(source, route): pass
     def get_route_stats(date=None): return []
+
+_UTC8 = timezone(timedelta(hours=8))
 
 # ============================================================================
 # 初始化
@@ -85,7 +88,7 @@ def validate_input():
 @app.after_request
 def track_api_call(response):
     """记录 API 调用统计（可选）"""
-    if _STATS_AVAILABLE and request.path.startswith("/api/") and not request.path.startswith("/api/_") and response.status_code < 400:
+    if _STATS_AVAILABLE and request.path.startswith("/api/") and not request.path.startswith("/api/_") and not request.path.startswith("/api/stats/") and response.status_code < 400:
         try:
             record_call("api", request.path)
         except Exception:
@@ -231,6 +234,50 @@ def track_event():
     return jsonify({"ok": True})
 
 # ---------- 统计端点 ----------
+
+@app.route("/api/stats/summary")
+@limiter.exempt
+def stats_summary():
+    date = request.args.get("date")
+    if not date:
+        date = datetime.now(_UTC8).strftime("%Y-%m-%d")
+    rows = get_route_stats(date)
+
+    total_api_calls = 0
+    total_events = 0
+    north_star = 0
+    api_calls = {}
+    events = {}
+    sources = {}
+
+    for r in rows:
+        route, count, source = r["route"], r["call_count"], r["source"]
+        sources[source] = sources.get(source, 0) + count
+
+        if route.startswith("_event:"):
+            total_events += count
+            event_name = route.split(":")[1] if ":" in route[7:] else route[7:]
+            events[event_name] = events.get(event_name, 0) + count
+            if event_name == "export_image":
+                north_star += count
+        else:
+            total_api_calls += count
+            short = route.replace("/api/", "", 1) if route.startswith("/api/") else route
+            api_calls[short] = api_calls.get(short, 0) + count
+
+    def _sorted_desc(d):
+        return dict(sorted(d.items(), key=lambda x: x[1], reverse=True))
+
+    return jsonify({
+        "date": date,
+        "export_image": north_star,
+        "total_api_calls": total_api_calls,
+        "total_events": total_events,
+        "api_calls": _sorted_desc(api_calls),
+        "events": _sorted_desc(events),
+        "sources": _sorted_desc(sources),
+    })
+
 
 @app.route("/api/_stats/routes")
 @limiter.exempt
