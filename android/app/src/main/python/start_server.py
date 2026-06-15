@@ -23,18 +23,21 @@ def start(base_dir):
     # 1. 环境变量 —— 必须在 import app 之前设置
     os.environ["FANGCUN_CONFIG_DIR"] = config_dir
 
-    # 2. 注入 api_keys 桩模块（Android 端 record_call 转发到线上统计）
+    # 2. 注入 api_keys 桩模块（Android 端 record_call 异步转发到线上统计）
     stub = types.ModuleType("api_keys")
     _remote_url = "https://write.sjtuguoxue.space"
+    import threading
     def _record_call(source, route):
-        try:
-            import json
-            data = json.dumps({"source": source, "route": route}).encode()
-            req = urllib.request.Request(f"{_remote_url}/api/_ping", data=data,
-                                        headers={"Content-Type": "application/json"})
-            urllib.request.urlopen(req, timeout=3)
-        except Exception:
-            pass
+        def _send():
+            try:
+                import json
+                data = json.dumps({"source": source, "route": route}).encode()
+                req = urllib.request.Request(f"{_remote_url}/api/_ping", data=data,
+                                            headers={"Content-Type": "application/json"})
+                urllib.request.urlopen(req, timeout=3)
+            except Exception:
+                pass
+        threading.Thread(target=_send, daemon=True).start()
     stub.record_call = _record_call
     stub.get_route_stats = lambda date=None: []
     sys.modules["api_keys"] = stub
@@ -82,6 +85,28 @@ def start(base_dir):
                                 content_type=resp.headers.get("Content-Type", "application/json"))
         except Exception as e:
             return Response(str(e), status=502)
+
+    @app.route("/api/_proxy/submit", methods=["POST"])
+    def _proxy_submit():
+        import json
+        body = request.get_json(force=True, silent=True) or {}
+        data = json.dumps(body).encode()
+        auth = request.headers.get("Authorization", "")
+        try:
+            req = urllib.request.Request(
+                "https://sjtuguoxue.space/api/submit/",
+                data=data,
+                headers={"Content-Type": "application/json", "Authorization": auth},
+                method="POST",
+            )
+            with urllib.request.urlopen(req, timeout=15, context=_ssl_ctx) as resp:
+                body = resp.read()
+                return Response(body, status=resp.status, content_type="application/json")
+        except urllib.error.HTTPError as e:
+            body = e.read()
+            return Response(body, status=e.code, content_type="application/json")
+        except Exception as e:
+            return Response(json.dumps({"ok": False, "error": str(e)}), status=502, content_type="application/json")
 
     @app.route("/")
     def _android_index():

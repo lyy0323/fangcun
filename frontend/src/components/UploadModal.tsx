@@ -170,6 +170,7 @@ export function UploadModal({ onClose }: { onClose: () => void }) {
   };
 
   const hasKey = apiKey.trim().length > 0;
+  const hasAuthor = items.every(it => it.author.trim().length > 0);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center" onClick={onClose}>
@@ -245,10 +246,24 @@ export function UploadModal({ onClose }: { onClose: () => void }) {
         </div>
 
         {/* Footer */}
-        <div className="px-5 py-3 border-t border-[var(--border)]">
+        <div className="px-5 py-3 border-t border-[var(--border)] space-y-2">
+          {!hasAuthor && (
+            <div className="flex gap-1.5 items-center">
+              <span className="text-[10px] text-red-500 shrink-0">署名</span>
+              <input
+                type="text"
+                placeholder="作者笔名（必填）"
+                className="flex-1 px-2 py-1 text-xs border border-red-300 rounded bg-[var(--bg-input)] focus:outline-none focus:border-[var(--accent)]"
+                onChange={e => {
+                  const v = e.target.value.trim();
+                  setItems(prev => prev.map(it => ({ ...it, author: v })));
+                }}
+              />
+            </div>
+          )}
           <button
             onClick={handleUpload}
-            disabled={uploading || done || !hasKey}
+            disabled={uploading || done || !hasKey || !hasAuthor}
             className={[
               'w-full py-2 rounded-lg text-sm font-medium transition-all disabled:opacity-40',
               done ? 'bg-emerald-100 text-emerald-700' : 'bg-[var(--accent)] text-white hover:opacity-90',

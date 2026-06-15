@@ -166,9 +166,7 @@ export function track(event: string, props?: Record<string, string | number>) {
 
 // ---------- 作品上传 ----------
 
-const SUBMIT_URL = IS_ANDROID
-  ? 'https://write.sjtuguoxue.space/api/_proxy/submit'
-  : `${BASE}/_proxy/submit`;
+const SUBMIT_URL = `${BASE}/_proxy/submit`;
 
 export interface SubmitData {
   author: string;

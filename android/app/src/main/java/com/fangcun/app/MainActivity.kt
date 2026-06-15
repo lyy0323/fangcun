@@ -140,8 +140,9 @@ class MainActivity : Activity() {
             webViewClient = object : WebViewClient() {
                 override fun onPageFinished(view: WebView?, url: String?) {
                     // 页面加载完成，注入 Android 标记和状态栏高度，切换到 WebView
+                    android.util.Log.d("Fangcun", "statusBarHeightDp=$statusBarHeightDp px=${getStatusBarHeightPx()} density=${resources.displayMetrics.density}")
                     view?.evaluateJavascript(
-                        "window.__FANGCUN_ANDROID__ = true; window.__STATUS_BAR_HEIGHT__ = $statusBarHeightDp;", null
+                        "window.__FANGCUN_ANDROID__ = true; window.__STATUS_BAR_HEIGHT__ = $statusBarHeightDp; console.log('STATUS_BAR_HEIGHT=' + $statusBarHeightDp);", null
                     )
                     serverReady = true
                     if (!poemAnimRunning) {
@@ -190,9 +191,11 @@ class MainActivity : Activity() {
         setContentView(root)
 
         // 沉浸式状态栏（必须在 setContentView 之后）
+        // 让内容延伸到状态栏/刘海区域
         window.statusBarColor = Color.TRANSPARENT
         window.navigationBarColor = Color.TRANSPARENT
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            window.setDecorFitsSystemWindows(false)
             window.insetsController?.setSystemBarsAppearance(
                 WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS,
                 WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS

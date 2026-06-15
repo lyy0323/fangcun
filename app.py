@@ -306,7 +306,9 @@ def dashboard():
 @limiter.exempt
 def proxy_submit():
     import urllib.request
-    data = request.get_data()
+    body = request.get_json(force=True, silent=True) or {}
+    print(f"[proxy_submit] body: {json.dumps(body, ensure_ascii=False)[:500]}, content_length: {request.content_length}")
+    data = json.dumps(body).encode()
     auth = request.headers.get("Authorization", "")
     try:
         req = urllib.request.Request(
@@ -315,12 +317,12 @@ def proxy_submit():
             headers={"Content-Type": "application/json", "Authorization": auth},
             method="POST",
         )
-        with urllib.request.urlopen(req, timeout=15) as resp:
-            body = resp.read()
-            return app.response_class(body, status=resp.status, mimetype="application/json")
+        with urllib.request.urlopen(req, timeout=30) as resp:
+            result = resp.read()
+            return app.response_class(result, status=resp.status, mimetype="application/json")
     except urllib.error.HTTPError as e:
-        body = e.read()
-        return app.response_class(body, status=e.code, mimetype="application/json")
+        result = e.read()
+        return app.response_class(result, status=e.code, mimetype="application/json")
     except Exception as e:
         return jsonify({"ok": False, "error": str(e)}), 502
 

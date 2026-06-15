@@ -662,12 +662,24 @@ export function TopBar() {
 
   const [showUpload, setShowUpload] = useState(false);
 
-  const statusBarH = (window as any).__STATUS_BAR_HEIGHT__ ?? 0;
+  const isAndroid = navigator.userAgent.includes('FangcunAndroid');
+  const [safeTop, setSafeTop] = useState(0);
+  useEffect(() => {
+    if (!isAndroid) return;
+    const check = () => {
+      const h = (window as any).__STATUS_BAR_HEIGHT__ ?? 0;
+      if (h > 0) { setSafeTop(Math.min(h, 24)); return; }
+      // Poll until value is injected by native
+      const t = setTimeout(check, 100);
+      return () => clearTimeout(t);
+    };
+    check();
+  }, [isAndroid]);
 
   return (
     <header
-      className="border-b border-[var(--border)] bg-[var(--bg-card)] flex items-center px-3 gap-2 shrink-0 relative z-40"
-      style={{ height: 48 + statusBarH, paddingTop: statusBarH }}
+      className="h-12 border-b border-[var(--border)] bg-[var(--bg-card)] flex items-center px-3 gap-2 shrink-0 relative z-40"
+      style={safeTop ? { height: 48 + safeTop, paddingTop: safeTop } : undefined}
     >
       {/* 画板切换 */}
       <div className="relative">

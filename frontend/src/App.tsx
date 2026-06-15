@@ -66,6 +66,10 @@ function Layout() {
   const [mobilePanel, setMobilePanel] = useState<'left' | 'right' | null>(null);
   const ciyunHandled = useRef(false);
 
+  // Android safe area offset for fixed buttons
+  const safeTop = isAndroid ? Math.min((window as any).__STATUS_BAR_HEIGHT__ ?? 0, 24) : 0;
+  const btnTop = 56 + safeTop; // 56px = top-14 default
+
   const togglePanel = (p: 'left' | 'right') => setMobilePanel(prev => prev === p ? null : p);
 
   // 次韵导入：从 URL params 创建预填画板
@@ -134,14 +138,16 @@ function Layout() {
             <div className={`flex-1 flex flex-col items-center overflow-y-auto ${lgPad} relative`}>
               {/* 移动端侧边触发按钮 */}
               <button
-                className={`${lgHide} fixed left-3 top-14 z-20 w-8 h-8 rounded-lg bg-[var(--bg-card)] border border-[var(--border)]  flex items-center justify-center text-[var(--text-secondary)] hover:bg-[var(--accent-light)] hover:text-[var(--accent)]`}
+                className={`${lgHide} fixed left-3 z-20 w-8 h-8 rounded-lg bg-[var(--bg-card)] border border-[var(--border)]  flex items-center justify-center text-[var(--text-secondary)] hover:bg-[var(--accent-light)] hover:text-[var(--accent)]`}
+                style={{ top: btnTop }}
                 onClick={() => togglePanel('left')}
                 title="灵感板"
               >
                 <Lightbulb size={16} />
               </button>
               <button
-                className={`${lgHide} fixed right-3 top-14 z-20 w-8 h-8 rounded-lg bg-[var(--bg-card)] border border-[var(--border)]  flex items-center justify-center text-[var(--text-secondary)] hover:bg-[var(--accent-light)] hover:text-[var(--accent)]`}
+                className={`${lgHide} fixed right-3 z-20 w-8 h-8 rounded-lg bg-[var(--bg-card)] border border-[var(--border)]  flex items-center justify-center text-[var(--text-secondary)] hover:bg-[var(--accent-light)] hover:text-[var(--accent)]`}
+                style={{ top: btnTop }}
                 onClick={() => togglePanel('right')}
                 title="韵部"
               >
