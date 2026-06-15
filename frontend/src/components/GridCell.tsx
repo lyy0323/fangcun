@@ -11,6 +11,10 @@ interface Props {
   hasSepAfter?: boolean;
   sepWidth?: number;
   punctuation?: string;
+  hasPunctSlot?: boolean;
+  auxBefore?: string[];
+  auxAfter?: string[];
+  onPunctClick?: (gi: number) => void;
   candidates?: string[];
   cellW?: number;
   charBoxSize?: number;
@@ -20,6 +24,10 @@ interface Props {
   isSelected?: boolean;
   immersive?: boolean;
   onClickCell: (e: React.MouseEvent) => void;
+  onCharHover?: () => void;
+  onCharHoverEnd?: () => void;
+  onCharTouchStart?: () => void;
+  onCharTouchEnd?: () => void;
   onClickCandidate?: (char: string) => void;
   onAddCandidate?: () => void;
   onRemoveCandidate?: (char: string) => void;
@@ -34,9 +42,11 @@ const TONE_SYMBOL: Record<string, string> = {
 export function GridCell({
   char, globalIndex, isCursor, isError, isRhyme, rhymeColor, isSelected, immersive,
   ruleItem,
-  hasSepAfter, sepWidth = 12, punctuation, candidates,
+  hasSepAfter, sepWidth = 12, punctuation, hasPunctSlot, auxBefore, auxAfter, candidates,
+  onPunctClick,
   cellW = 30, charBoxSize = 28, fontSize = 14, punctW = 14, candidateSize = 24,
-  onClickCell, onClickCandidate, onAddCandidate, onRemoveCandidate,
+  onClickCell, onCharHover, onCharHoverEnd, onCharTouchStart, onCharTouchEnd,
+  onClickCandidate, onAddCandidate, onRemoveCandidate,
 }: Props) {
   const isEmpty = char === PLACEHOLDER;
   const hasCandidates = candidates && candidates.length > 0;
@@ -48,6 +58,16 @@ export function GridCell({
       style={hasSepAfter ? { marginRight: sepWidth } : undefined}
       data-gi={globalIndex}
     >
+      {/* 辅助标点（开方向） */}
+      {auxBefore && auxBefore.length > 0 && (
+        <div className="flex flex-col items-center" style={{ width: punctW, marginBottom: 2 }}>
+          <div style={{ height: toneSize + 4 }} />
+          <div className="flex items-center justify-center text-[var(--accent)]" style={{ height: charBoxSize, fontSize: fontSize * 0.85 }}>
+            {auxBefore.join('')}
+          </div>
+          <div style={{ height: 2 }} className="mt-px" />
+        </div>
+      )}
       <div className="flex flex-col items-center" style={{ width: cellW, marginBottom: 2 }}>
         {/* 平仄符号 */}
         <div className="font-mono leading-none" style={{
@@ -59,6 +79,7 @@ export function GridCell({
         </div>
         {/* 字格 */}
         <div
+          data-charbox={globalIndex}
           className={[
             'flex items-center justify-center rounded transition-all cursor-pointer',
             !immersive && isEmpty ? 'bg-[var(--grid-empty)] border border-dashed border-[var(--grid-empty-border)]' : '',
@@ -73,6 +94,11 @@ export function GridCell({
             ...(!immersive && isRhyme && !isEmpty && !isError && rhymeColor ? { color: rhymeColor, fontWeight: 600 } : {}),
           }}
           onClick={(e) => onClickCell(e)}
+          onMouseEnter={onCharHover}
+          onMouseLeave={onCharHoverEnd}
+          onTouchStart={onCharTouchStart}
+          onTouchEnd={onCharTouchEnd}
+          onTouchMove={onCharTouchEnd}
         >
           {isEmpty ? '' : char}
         </div>
@@ -126,12 +152,23 @@ export function GridCell({
         )}
       </div>
 
-      {/* 标点 */}
-      {punctuation && (
+      {/* 辅助标点（关方向）— 紧跟字格 */}
+      {auxAfter && auxAfter.length > 0 && (
         <div className="flex flex-col items-center" style={{ width: punctW, marginBottom: 2 }}>
           <div style={{ height: toneSize + 4 }} />
+          <div className="flex items-center justify-center text-[var(--accent)]" style={{ height: charBoxSize, fontSize: fontSize * 0.85 }}>
+            {auxAfter.join('')}
+          </div>
+          <div style={{ height: 2 }} className="mt-px" />
+        </div>
+      )}
+      {/* 常规标点 */}
+      {(punctuation || hasPunctSlot) && (
+        <div className="flex flex-col items-center cursor-pointer hover:opacity-70 transition-opacity" style={{ width: punctW, marginBottom: 2 }}
+          onClick={(e) => { e.stopPropagation(); onPunctClick?.(globalIndex); }}>
+          <div style={{ height: toneSize + 4 }} />
           <div className="flex items-center justify-center text-[var(--text-secondary)]" style={{ height: charBoxSize, fontSize }}>
-            {punctuation}
+            {punctuation || <span className="w-2 h-2 rounded-full border border-dashed border-[var(--grid-empty-border)] opacity-0 group-hover:opacity-50 transition-opacity" />}
           </div>
           <div style={{ height: 2 }} className="mt-px" />
         </div>

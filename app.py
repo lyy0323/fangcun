@@ -201,10 +201,15 @@ def docs():
 
 VALID_EVENTS = {
     'export_image', 'copy_text',
-    'create_board', 'delete_board',
+    'create_board', 'delete_board', 'switch_board',
     'import_poem', 'import_boards', 'export_boards', 'import_ciyun',
-    'create_folder', 'delete_folder', 'move_board',
+    'create_folder', 'delete_folder', 'rename_folder', 'sort_folder', 'move_board',
     'add_inspiration', 'toggle_immersive',
+    'switch_rhyme_book', 'select_rhyme_category',
+    'add_section', 'delete_section', 'move_section',
+    'save_image', 'long_press_image', 'switch_theme',
+    'fill_date', 'switch_date_format', 'fill_preface', 'fill_footnote', 'fill_author',
+    'upload_poem',
 }
 
 @app.route("/api/_ping", methods=["POST"])
@@ -294,6 +299,30 @@ def stats_keys():
 @limiter.exempt
 def dashboard():
     return app.send_static_file("dashboard.html")
+
+# ---------- 上传代理（绕过 CORS）----------
+
+@app.route("/api/_proxy/submit", methods=["POST"])
+@limiter.exempt
+def proxy_submit():
+    import urllib.request
+    data = request.get_data()
+    auth = request.headers.get("Authorization", "")
+    try:
+        req = urllib.request.Request(
+            "https://sjtuguoxue.space/api/submit/",
+            data=data,
+            headers={"Content-Type": "application/json", "Authorization": auth},
+            method="POST",
+        )
+        with urllib.request.urlopen(req, timeout=15) as resp:
+            body = resp.read()
+            return app.response_class(body, status=resp.status, mimetype="application/json")
+    except urllib.error.HTTPError as e:
+        body = e.read()
+        return app.response_class(body, status=e.code, mimetype="application/json")
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)}), 502
 
 # ============================================================================
 # APK 下载代理（可选，需配置 CDN_AUTH_KEY）

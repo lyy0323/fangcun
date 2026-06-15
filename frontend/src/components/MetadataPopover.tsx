@@ -1,16 +1,19 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { Solar } from 'lunar-javascript';
 import { useBoardContext, useActiveBoard } from '../context/BoardContext';
 import { lunarToGregorian } from '../lib/dateConvert';
 import { resolveAuthor } from '../lib/types';
+import { track } from '../lib/api';
 import type { BoardMetadata } from '../lib/types';
-import { ChevronDown } from 'lucide-react';
+import { ChevronDown, Info, Eye, EyeOff } from 'lucide-react';
 
 export function MetadataPopover({ onClose }: { onClose: () => void }) {
   const { dispatch } = useBoardContext();
   const board = useActiveBoard();
   const [dateError, setDateError] = useState<string>('');
   const [dateFormatOpen, setDateFormatOpen] = useState(false);
+  const trackedRef = useRef({ date: false, preface: false, footnote: false, author: false });
+  const [dateInfoOpen, setDateInfoOpen] = useState(false);
   if (!board) return null;
 
   const metadata = board.metadata || {};
@@ -96,6 +99,7 @@ export function MetadataPopover({ onClose }: { onClose: () => void }) {
       type: 'UPDATE_METADATA',
       metadata: { dateFormat: newFormat, ...(convertedDate !== currentDate ? { date: convertedDate } : {}) }
     });
+    track('switch_date_format', { format: newFormat });
     setDateError('');
   };
 
@@ -127,7 +131,10 @@ export function MetadataPopover({ onClose }: { onClose: () => void }) {
               <input
                 type="text"
                 value={metadata.author ?? ''}
-                onChange={e => update('author', e.target.value)}
+                onChange={e => {
+                  update('author', e.target.value);
+                  if (e.target.value.trim() && !trackedRef.current.author) { trackedRef.current.author = true; track('fill_author'); }
+                }}
                 onBlur={e => {
                   if (e.target.value === '') {
                     dispatch({ type: 'UPDATE_METADATA', metadata: { author: undefined } });
@@ -151,7 +158,37 @@ export function MetadataPopover({ onClose }: { onClose: () => void }) {
 
         {/* 日期 */}
         <div>
-          <label className="text-[10px] text-[var(--text-secondary)] mb-1 block">日期</label>
+          <div className="flex items-center gap-1.5 mb-1">
+            <label className="text-[10px] text-[var(--text-secondary)]">日期</label>
+            {!metadata.date && (
+            <button
+              className="text-[9px] text-[var(--text-muted)] hover:text-[var(--accent)] border border-[var(--border)] hover:border-[var(--accent)] rounded-full px-1.5 py-px transition-colors"
+              onClick={() => {
+                const val = dateFormat === 'Gregorian' ? todayStr : todayLunar;
+                update('date', val);
+                setDateError('');
+                if (!trackedRef.current.date) { trackedRef.current.date = true; track('fill_date', { format: dateFormat }); }
+              }}
+            >今天</button>
+            )}
+            <div className="relative">
+              <button
+                className="w-3.5 h-3.5 rounded-full flex items-center justify-center text-[var(--text-muted)] hover:text-[var(--accent)] transition-colors"
+                onClick={() => setDateInfoOpen(v => !v)}
+              >
+                <Info size={10} />
+              </button>
+              {dateInfoOpen && (
+                <>
+                <div className="fixed inset-0 z-[9]" onClick={() => setDateInfoOpen(false)} />
+                <div className="absolute left-1/2 -translate-x-1/2 top-5 z-10 bg-[var(--bg-card)] border border-[var(--border)] rounded-lg shadow-lg p-2 text-[10px] text-[var(--text-muted)] whitespace-nowrap">
+                  <div>创建：{new Date(board.createdAt).toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai', year: 'numeric', month: '2-digit', day: '2-digit' })}</div>
+                  <div>修改：{new Date(board.updatedAt).toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai', year: 'numeric', month: '2-digit', day: '2-digit' })}</div>
+                </div>
+                </>
+              )}
+            </div>
+          </div>
           <div className="flex gap-1.5">
             <input
               type="text"
@@ -160,6 +197,7 @@ export function MetadataPopover({ onClose }: { onClose: () => void }) {
                 const value = e.target.value;
                 update('date', value);
                 setDateError(validateDate(value));
+                if (value.trim() && !trackedRef.current.date) { trackedRef.current.date = true; track('fill_date', { format: dateFormat }); }
               }}
               onKeyDown={e => {
                 if (e.key === 'Tab' && !metadata.date) {
@@ -204,14 +242,40 @@ export function MetadataPopover({ onClose }: { onClose: () => void }) {
           {dateFormat === 'Lunar' && !dateError && !metadata.date && (
             <div className="text-[10px] text-[var(--text-muted)] mt-0.5">干支年+月+日，如 甲辰年三月初一</div>
           )}
+          {metadata.date && (
+            <button
+              className="flex items-center gap-1 mt-1 text-[10px] text-[var(--text-muted)] hover:text-[var(--accent)] transition-colors"
+              onClick={() => dispatch({ type: 'UPDATE_METADATA', metadata: { dateHidden: !metadata.dateHidden } })}
+            >
+              {metadata.dateHidden ? <EyeOff size={10} /> : <Eye size={10} />}
+              <span>{metadata.dateHidden ? '导出时隐藏' : '导出时显示'}</span>
+            </button>
+          )}
         </div>
+
+        {/* 作品编号（实验性） */}
+        {localStorage.getItem('fangcun_legacy_id') === '1' && (
+        <div>
+          <label className="text-[10px] text-[var(--text-secondary)] mb-1 block">编号</label>
+          <input
+            type="text"
+            value={metadata.legacyId || ''}
+            onChange={e => update('legacyId', e.target.value)}
+            placeholder="作品编号（可选）"
+            className={inputClass}
+          />
+        </div>
+        )}
 
         {/* 序 */}
         <div>
           <label className="text-[10px] text-[var(--text-secondary)] mb-1 block">序</label>
           <textarea
             value={metadata.preface || ''}
-            onChange={e => update('preface', e.target.value)}
+            onChange={e => {
+              update('preface', e.target.value);
+              if (e.target.value.trim() && !trackedRef.current.preface) { trackedRef.current.preface = true; track('fill_preface'); }
+            }}
             placeholder="序言..."
             rows={3}
             className={`${inputClass} resize-none`}
@@ -223,7 +287,10 @@ export function MetadataPopover({ onClose }: { onClose: () => void }) {
           <label className="text-[10px] text-[var(--text-secondary)] mb-1 block">脚注</label>
           <textarea
             value={metadata.footnote || ''}
-            onChange={e => update('footnote', e.target.value)}
+            onChange={e => {
+              update('footnote', e.target.value);
+              if (e.target.value.trim() && !trackedRef.current.footnote) { trackedRef.current.footnote = true; track('fill_footnote'); }
+            }}
             placeholder="脚注..."
             rows={2}
             className={`${inputClass} resize-none`}

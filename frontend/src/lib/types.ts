@@ -10,12 +10,14 @@ export interface InspirationCard {
 }
 
 export interface BoardMetadata {
-  author?: string;            // undefined → 继承全局默认；'' → 显式不署名；非空 → 画板级署名
-  date?: string;              // 日期文本（用户输入，如"2024-04-04"或"甲辰年三月初一"）
-  dateFormat?: 'Gregorian' | 'Lunar';  // 日期格式
-  rhymeBook?: string;        // 韵书（平水韵/词林正韵/中华通韵，仅标注用途）
-  preface?: string;          // 序言文本
-  footnote?: string;         // 脚注文本
+  author?: string;
+  date?: string;
+  dateFormat?: 'Gregorian' | 'Lunar';
+  dateHidden?: boolean;
+  rhymeBook?: string;
+  preface?: string;
+  footnote?: string;
+  legacyId?: string;
 }
 
 export function resolveAuthor(metadata?: BoardMetadata): string {
@@ -32,6 +34,13 @@ export interface PoemSection {
   candidatesMap: Record<number, string[]>;
   lines?: string[];
   immersive?: boolean;
+  punctOverrides?: Record<number, string>;
+  auxMarks?: Record<number, string[]>;
+  sectionDate?: string;
+  sectionDateHidden?: boolean;
+  sectionPreface?: string;
+  sectionFootnote?: string;
+  sectionLegacyId?: string;
 }
 
 export interface Board {

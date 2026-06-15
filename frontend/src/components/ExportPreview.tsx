@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { useBoardContext, useActiveBoard } from '../context/BoardContext';
 import { PLACEHOLDER, resolveAuthor } from '../lib/types';
 import type { PoemSection, ValidationResult } from '../lib/types';
+import type { TextAlign } from '../lib/exportImage';
 import {
   renderToCanvas,
   loadExportFonts,
@@ -24,16 +25,44 @@ import { X, Download, Loader, Check } from 'lucide-react';
 // 从 Board 构建诗句行
 // ============================================================================
 
-function buildSectionLines(genre: 'Shi' | 'Ci' | 'Free', sec: PoemSection, validation: ValidationResult | null): string[] {
+function buildSectionLines(genre: 'Shi' | 'Ci' | 'Free', sec: PoemSection, validation: ValidationResult | null, align?: TextAlign): string[] {
   if (genre === 'Free') {
-    return sec.lines ?? [];
+    const rawLines = sec.lines ?? [];
+    if (align !== 'justify') return rawLines;
+    // Justify: merge single newlines (empty strings between non-empty lines), preserve double+ newlines
+    const merged: string[] = [];
+    let buf = '';
+    for (let i = 0; i < rawLines.length; i++) {
+      if (rawLines[i] === '') {
+        // Check if this is part of consecutive empty lines (double+ newline)
+        if (buf) { merged.push(buf); buf = ''; }
+        let count = 0;
+        while (i < rawLines.length && rawLines[i] === '') { count++; i++; }
+        i--; // adjust for loop increment
+        if (count >= 1) merged.push(''); // preserve paragraph break
+      } else {
+        buf += rawLines[i];
+      }
+    }
+    if (buf) merged.push(buf);
+    // Wrap at 20 chars per line, track paragraph-end lines
+    const wrapped: string[] = [];
+    for (const seg of merged) {
+      if (seg === '') { wrapped.push(''); continue; }
+      const chars = [...seg];
+      for (let j = 0; j < chars.length; j += 20) {
+        wrapped.push(chars.slice(j, j + 20).join(''));
+      }
+    }
+    return wrapped;
   }
   const chars = sec.poemChars;
   const rhymeSet = new Set(validation?.rhyme_positions ?? []);
   const sentenceLen =
     genre === 'Shi' ? (sec.charCount % 7 === 0 ? 7 : 5) : 0;
 
-  const getPunct = (gi: number): string => {
+  // Default punctuation (ignores overrides) — used for line-break decisions
+  const getDefaultPunct = (gi: number): string => {
     if (genre === 'Shi') {
       const posInCouplet = gi % (sentenceLen * 2);
       const isSentenceEnd =
@@ -57,56 +86,79 @@ function buildSectionLines(genre: 'Shi' | 'Ci' | 'Free', sec: PoemSection, valid
     return '';
   };
 
+  // Display punctuation (with user overrides) — used for actual text
+  const getDisplayPunct = (gi: number): string => {
+    if (sec.punctOverrides && gi in sec.punctOverrides) return sec.punctOverrides[gi];
+    return getDefaultPunct(gi);
+  };
+
   if (genre === 'Shi') {
     const coupletLen = sentenceLen * 2;
     const lines: string[] = [];
     for (let start = 0; start < chars.length; start += coupletLen) {
+      const OPENING = new Set(['「', '《', '“', '‘']);
       let line = '';
       for (let i = start; i < Math.min(start + coupletLen, chars.length); i++) {
+        const am = sec.auxMarks?.[i];
+        if (am) { for (const m of am) { if (OPENING.has(m)) line += m; } }
         line += chars[i] === PLACEHOLDER ? '□' : chars[i];
-        line += getPunct(i);
+        if (am) { for (const m of am) { if (!OPENING.has(m)) line += m; } }
+        line += getDisplayPunct(i);
       }
-      if (line && !/[。，]$/.test(line)) line += '。';
+      if (line && !/[，。、；：？！]$/.test(line)) line += '。';
       lines.push(line);
     }
     return lines;
   }
 
-  let fullText = '';
-  for (let i = 0; i < chars.length; i++) {
-    fullText += chars[i] === PLACEHOLDER ? '□' : chars[i];
-    fullText += getPunct(i);
-  }
-  if (fullText.length > 0 && !/[。，、]$/.test(fullText)) {
-    fullText += '。';
-  }
-
-  const lines: string[] = [];
+  // Ci: build per-char text segments, split by default 。 positions
+  const OPENING_CI = new Set(['「', '《', '“', '‘']);
+  const segments: string[] = [];
   let cur = '';
-  for (const ch of fullText) {
-    cur += ch;
-    if (ch === '。') {
-      lines.push(cur);
+  for (let i = 0; i < chars.length; i++) {
+    const am = sec.auxMarks?.[i];
+    if (am) { for (const m of am) { if (OPENING_CI.has(m)) cur += m; } }
+    cur += chars[i] === PLACEHOLDER ? '□' : chars[i];
+    if (am) { for (const m of am) { if (!OPENING_CI.has(m)) cur += m; } }
+    cur += getDisplayPunct(i);
+    if (getDefaultPunct(i) === '。') {
+      segments.push(cur);
       cur = '';
     }
   }
-  if (cur.trim()) lines.push(cur);
-  return lines;
+  if (cur.trim()) {
+    if (!/[，。、；：？！]$/.test(cur)) cur += '。';
+    segments.push(cur);
+  }
+  return segments;
 }
 
-function buildAllPoemLines(board: Board, validations: (ValidationResult | null)[]): { lines: string[]; titleLines: Set<number> } {
+function buildAllPoemLines(board: Board, validations: (ValidationResult | null)[], align?: TextAlign): { lines: string[]; titleLines: Set<number>; metaLines: Set<number> } {
   const allLines: string[] = [];
   const titleLines = new Set<number>();
+  const metaLines = new Set<number>();
   board.sections.forEach((sec, idx) => {
     const v = validations[idx] ?? null;
     if (idx > 0) allLines.push('');
+    if (sec.sectionPreface) {
+      metaLines.add(allLines.length);
+      allLines.push(sec.sectionPreface);
+    }
     if (sec.title) {
       titleLines.add(allLines.length);
       allLines.push(sec.title);
     }
-    allLines.push(...buildSectionLines(board.genre, sec, v));
+    allLines.push(...buildSectionLines(board.genre, sec, v, align));
+    if (sec.sectionFootnote) {
+      metaLines.add(allLines.length);
+      allLines.push(sec.sectionFootnote);
+    }
+    if (sec.sectionDate && !sec.sectionDateHidden) {
+      metaLines.add(allLines.length);
+      allLines.push(convertGregorianToChinese(sec.sectionDate));
+    }
   });
-  return { lines: allLines, titleLines };
+  return { lines: allLines, titleLines, metaLines };
 }
 
 // ============================================================================
@@ -176,9 +228,11 @@ export function ExportPreview({ onClose }: { onClose: () => void }) {
   const [loading, setLoading] = useState(true);
   const [canvasEl, setCanvasEl] = useState<HTMLCanvasElement | null>(null);
   const [downloadState, setDownloadState] = useState<'idle' | 'saving' | 'done'>('idle');
+  const [align, setAlign] = useState<TextAlign>('center');
   const previewRef = useRef<HTMLDivElement>(null);
 
-  const { lines, titleLines } = board ? buildAllPoemLines(board, state.validations) : { lines: [] as string[], titleLines: new Set<number>() };
+  const isFree = board?.genre === 'Free';
+  const { lines, titleLines, metaLines } = board ? buildAllPoemLines(board, state.validations, isFree ? align : undefined) : { lines: [] as string[], titleLines: new Set<number>(), metaLines: new Set<number>() };
 
   // 预加载各字体的"文"字用于选择器预览
   useEffect(() => { loadFontPreviews(); }, []);
@@ -190,7 +244,7 @@ export function ExportPreview({ onClose }: { onClose: () => void }) {
       : board.sections[0].charCount;
     setLoading(true);
     const metadata = board.metadata || {};
-    const rawDate = metadata.date || '';
+    const rawDate = (!metadata.dateHidden && metadata.date) || '';
     const preface = metadata.preface || '';
     const footnote = metadata.footnote || '';
     const author = resolveAuthor(metadata);
@@ -198,10 +252,17 @@ export function ExportPreview({ onClose }: { onClose: () => void }) {
     // 转换公历日期为中文数字格式
     const date = rawDate ? convertGregorianToChinese(rawDate) : '';
 
-    const allText = board.title + lines.join('') + date + preface + footnote + author;
+    const exportTitle = (() => {
+      let t = board.title;
+      if (localStorage.getItem('fangcun_title_spacing') === '1' && [...t].length === 2) {
+        t = [...t].join(' ');
+      }
+      return t;
+    })();
+    const allText = exportTitle + lines.join('') + date + preface + footnote + author;
     const [, logo] = await Promise.all([loadExportFonts(allText, fontKey), loadLogo()]);
     const canvas = renderToCanvas({
-      title: board.title,
+      title: exportTitle,
       lines,
       charCount: sectionCharCount,
       genre: board.genre,
@@ -214,10 +275,12 @@ export function ExportPreview({ onClose }: { onClose: () => void }) {
       author,
       sectionCount: board.sections.length,
       titleLines,
+      metaLines,
+      align: isFree ? align : undefined,
     });
     setCanvasEl(canvas);
     setLoading(false);
-  }, [board, theme, fontKey]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [board, theme, fontKey, align]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     render();
@@ -237,8 +300,10 @@ export function ExportPreview({ onClose }: { onClose: () => void }) {
   const handleDownload = async () => {
     if (!canvasEl || !board || downloadState !== 'idle') return;
     setDownloadState('saving');
+    const isAndroid = !!window.AndroidBridge?.saveImage;
     await downloadCanvas(canvasEl, board.title, theme);
     track('export_image', { theme, genre: board.genre });
+    if (isAndroid) track('save_image', { theme, genre: board.genre });
     setDownloadState('done');
     setTimeout(() => setDownloadState('idle'), 1500);
   };
@@ -268,7 +333,9 @@ export function ExportPreview({ onClose }: { onClose: () => void }) {
 
         {/* 预览区 */}
         <div className="flex-1 overflow-y-auto px-4 py-4 relative">
-          <div ref={previewRef} className="rounded-lg overflow-hidden shadow-sm" />
+          <div ref={previewRef} className="rounded-lg overflow-hidden shadow-sm"
+            onContextMenu={() => { if (board) track('long_press_image', { theme, genre: board.genre }); }}
+          />
           {loading && (
             <div className="absolute inset-0 flex items-center justify-center bg-[var(--bg-card)]/80">
               <Loader size={20} className="animate-spin text-[var(--text-muted)]" />
@@ -278,6 +345,32 @@ export function ExportPreview({ onClose }: { onClose: () => void }) {
 
         {/* 底栏：字体 + 配色 + 下载 */}
         <div className="px-4 py-3 border-t border-[var(--border)] flex flex-col gap-2.5">
+          {/* 对齐方式（仅自由诗） */}
+          {isFree && (
+          <div className="flex gap-0.5 border border-[var(--border)] rounded-lg p-0.5 w-fit">
+            {([
+              ['left', 'M2 3h8M2 7h6M2 11h8M2 15h5'],
+              ['center', 'M1 3h10M3 7h6M1 11h10M2 15h8'],
+              // ['right', 'M4 3h8M6 7h6M4 11h8M7 15h5'],
+              ['justify', 'M2 3h8M2 7h8M2 11h8M2 15h8'],
+            ] as [TextAlign, string][]).map(([mode, d]) => (
+              <button
+                key={mode}
+                onClick={() => setAlign(mode)}
+                className={`w-8 h-7 rounded flex items-center justify-center transition-colors ${
+                  align === mode
+                    ? 'bg-[var(--accent)] text-white'
+                    : 'text-[var(--text-muted)] hover:bg-[var(--accent-light)]'
+                }`}
+                title={{ left: '左对齐', center: '居中', right: '右对齐', justify: '两端对齐' }[mode]}
+              >
+                <svg width="12" height="18" viewBox="0 0 12 18" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+                  <path d={d} />
+                </svg>
+              </button>
+            ))}
+          </div>
+          )}
           {/* 字体选择 */}
           <div className="flex flex-wrap gap-1.5">
             {FONT_OPTIONS.map((f) => (
@@ -314,7 +407,7 @@ export function ExportPreview({ onClose }: { onClose: () => void }) {
               return (
               <button
                 key={k}
-                onClick={() => setTheme(k)}
+                onClick={() => { setTheme(k); track('switch_theme', { theme: k }); }}
                 className="w-6 h-6 rounded-full transition-all shrink-0"
                 style={{
                   ...bgStyle,

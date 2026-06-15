@@ -12,6 +12,7 @@ import android.provider.MediaStore
 import android.util.Base64
 import android.view.View
 import android.view.WindowInsetsController
+import android.net.Uri
 import android.webkit.*
 import android.os.Handler
 import android.os.Looper
@@ -37,6 +38,8 @@ class MainActivity : Activity() {
     private var poemAnimRunning = false
     private var serverReady = false
     private lateinit var splashPoem: String
+    private var fileChooserCallback: ValueCallback<Array<Uri>>? = null
+    private val FILE_CHOOSER_REQUEST = 1001
 
     private val splashPoems = arrayOf(
         "可叹故人成白鸟，长追明月过天河",
@@ -136,9 +139,9 @@ class MainActivity : Activity() {
             }
             webViewClient = object : WebViewClient() {
                 override fun onPageFinished(view: WebView?, url: String?) {
-                    // 页面加载完成，注入 Android 标记，切换到 WebView
+                    // 页面加载完成，注入 Android 标记和状态栏高度，切换到 WebView
                     view?.evaluateJavascript(
-                        "window.__FANGCUN_ANDROID__ = true;", null
+                        "window.__FANGCUN_ANDROID__ = true; window.__STATUS_BAR_HEIGHT__ = $statusBarHeightDp;", null
                     )
                     serverReady = true
                     if (!poemAnimRunning) {
@@ -158,11 +161,22 @@ class MainActivity : Activity() {
                 }
             }
             webChromeClient = object : WebChromeClient() {
-                // 拦截 window.open()
                 override fun onCreateWindow(
                     view: WebView?, isDialog: Boolean,
                     isUserGesture: Boolean, resultMsg: android.os.Message?
                 ): Boolean = false
+
+                override fun onShowFileChooser(
+                    webView: WebView?,
+                    callback: ValueCallback<Array<Uri>>?,
+                    params: FileChooserParams?
+                ): Boolean {
+                    fileChooserCallback?.onReceiveValue(null)
+                    fileChooserCallback = callback
+                    val intent = params?.createIntent() ?: return false
+                    startActivityForResult(intent, FILE_CHOOSER_REQUEST)
+                    return true
+                }
             }
 
             // 添加 JS 桥接（图片保存）
@@ -321,6 +335,29 @@ class MainActivity : Activity() {
                 }
             }
         }
+        @JavascriptInterface
+        fun getStatusBarHeight(): Int {
+            return statusBarHeightDp
+        }
+    }
+
+    // ---- 状态栏高度（dp）----
+
+    private val statusBarHeightDp: Int by lazy {
+        val px = getStatusBarHeightPx()
+        (px / resources.displayMetrics.density).toInt()
+    }
+
+    private fun getStatusBarHeightPx(): Int {
+        // 方式 1：android.R.dimen.status_bar_height（最常见）
+        val resId = resources.getIdentifier("status_bar_height", "dimen", "android")
+        if (resId > 0) return resources.getDimensionPixelSize(resId)
+        // 方式 2：decorView 可见区域
+        val frame = android.graphics.Rect()
+        window.decorView.getWindowVisibleDisplayFrame(frame)
+        if (frame.top > 0) return frame.top
+        // 兜底 24dp
+        return (24 * resources.displayMetrics.density).toInt()
     }
 
     // ---- 版本检查 ----
@@ -373,6 +410,20 @@ class MainActivity : Activity() {
                 if (conn.responseCode == 200) return
             } catch (_: Exception) { }
             Thread.sleep(500)
+        }
+    }
+
+    // ---- 文件选择器回调 ----
+
+    @Deprecated("Deprecated in Java")
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: android.content.Intent?) {
+        @Suppress("DEPRECATION")
+        super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode == FILE_CHOOSER_REQUEST) {
+            val result = if (resultCode == RESULT_OK && data?.data != null)
+                arrayOf(data.data!!) else null
+            fileChooserCallback?.onReceiveValue(result)
+            fileChooserCallback = null
         }
     }
 

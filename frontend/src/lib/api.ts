@@ -163,3 +163,53 @@ export function track(event: string, props?: Record<string, string | number>) {
     body: JSON.stringify({ event, props, source }),
   }).catch(() => {});
 }
+
+// ---------- 作品上传 ----------
+
+const SUBMIT_URL = IS_ANDROID
+  ? 'https://write.sjtuguoxue.space/api/_proxy/submit'
+  : `${BASE}/_proxy/submit`;
+
+export interface SubmitData {
+  author: string;
+  title: string;
+  content: string;
+  date: string;
+  type?: string;
+  genre?: string;
+  preface?: string;
+  footnote?: string;
+  legacy_id?: string | null;
+  relations?: { id: string; type: string }[];
+}
+
+export interface SubmitResult {
+  ok: boolean;
+  uuid?: string;
+  legacy_id?: string;
+  title?: string;
+  author?: string;
+  type?: string;
+  genre?: string;
+  error?: string;
+}
+
+export async function submitPoem(data: SubmitData, apiKey: string): Promise<SubmitResult> {
+  let res: Response;
+  try {
+    res = await fetch(SUBMIT_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
+      body: JSON.stringify(data),
+    });
+  } catch (e) {
+    return { ok: false, error: `网络错误：${e instanceof Error ? e.message : String(e)}` };
+  }
+  try {
+    const json = await res.json();
+    if (!res.ok && !json.error) json.error = `HTTP ${res.status}`;
+    return json;
+  } catch {
+    return { ok: false, error: `HTTP ${res.status}: ${res.statusText}` };
+  }
+}

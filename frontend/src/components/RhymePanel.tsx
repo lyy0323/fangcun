@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useBoardContext, useActiveBoard } from '../context/BoardContext';
-import { rhymeLookup, rhymeList, charLookup } from '../lib/api';
+import { rhymeLookup, rhymeList, charLookup, track } from '../lib/api';
 import type { RhymeLookupResult } from '../lib/types';
 import { RefreshCw, RotateCcw, ChevronDown } from 'lucide-react';
 
@@ -85,6 +85,9 @@ export function RhymePanel() {
     setManualOpen(false);
   }, [bookName]);
 
+  // 自由诗：渲染阶段推断韵部名（primitive string，避免对象引用变化触发无意义重载）
+  const inferredFreeCategory = isFree ? inferFreeCategory() : null;
+
   // 韵部推断变化时自动加载（除非用户手动覆盖了）
   useEffect(() => {
     if (manualOverride) {
@@ -92,14 +95,15 @@ export function RhymePanel() {
       return;
     }
     if (isFree) {
-      const cat = inferFreeCategory();
-      if (cat) loadCategory(cat);
+      if (inferredFreeCategory) loadCategory(inferredFreeCategory);
       else { setRhymeCatName(null); setRhymeChars([]); setRhymeTotal(0); }
       return;
     }
     if (rhymeName && !isHuanyun) {
-      const firstName = rhymeName.split(',')[0].trim();
-      loadCategory(firstName);
+      // 有出韵错误时，优先显示 error.expected 韵部（目标韵部）
+      const rhymeError = validation?.errors?.find(e => e.error_type === 'Rhyme' && e.expected);
+      const targetCat = rhymeError?.expected ?? rhymeName.split(',')[0].trim();
+      loadCategory(targetCat);
     } else if (isHuanyun) {
       const ch = inferHuanyunCategory();
       if (ch) {
@@ -118,7 +122,7 @@ export function RhymePanel() {
       setRhymeTotal(0);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [rhymeName, bookName, manualOverride, boardId, freeRhyme]);
+  }, [rhymeName, bookName, manualOverride, boardId, inferredFreeCategory]);
 
   // 加载韵部列表（打开选韵列表时，或韵书变化后重新加载）
   useEffect(() => {
@@ -132,6 +136,7 @@ export function RhymePanel() {
   const selectCategory = (name: string) => {
     setManualOverride(name);
     setManualOpen(false);
+    track('select_rhyme_category', { category: name });
   };
 
   // 联动：字典韵部点击 → 切换到对应韵部
@@ -139,6 +144,7 @@ export function RhymePanel() {
     if (state.rhymeOverride) {
       setManualOverride(state.rhymeOverride);
       setManualOpen(false);
+      track('select_rhyme_category', { category: state.rhymeOverride });
       dispatch({ type: 'SET_RHYME_OVERRIDE', category: null });
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -154,7 +160,7 @@ export function RhymePanel() {
     charLookup(ch, bookName)
       .then(data => {
         const cat = data.rhyme_categories?.[0];
-        if (cat) setManualOverride(cat.name);
+        if (cat) { setManualOverride(cat.name); track('select_rhyme_category', { category: cat.name }); }
       })
       .catch(() => {});
   };
@@ -186,6 +192,7 @@ export function RhymePanel() {
                 className={`w-full text-left px-3 py-1.5 text-sm hover:bg-[var(--accent-light)] transition-colors ${o.value === bookName ? 'bg-[var(--accent-light)] text-[var(--accent)]' : ''}`}
                 onClick={() => {
                   dispatch({ type: 'UPDATE_METADATA', metadata: { rhymeBook: o.value } });
+                  track('switch_rhyme_book', { book: o.value });
                   setBookOpen(false);
                 }}
               >

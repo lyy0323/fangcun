@@ -558,6 +558,23 @@ function drawTextCentered(
   }
 }
 
+
+// 横排标点 → 竖排标点映射（用于标题竖排绘制）
+const VERTICAL_PUNCT: Record<string, string> = {
+  '，': '︐', '。': '︒', '？': '︖', '！': '︕',
+  '、': '︑', '：': '︓', '；': '︔',
+  '（': '︵', '）': '︶', '〔': '︹', '〕': '︺',
+  '《': '︽', '》': '︾', '〈': '︿', '〉': '﹀',
+  '「': '﹁', '」': '﹂', '『': '﹃', '』': '﹄',
+  '【': '︻', '】': '︼', '〖': '︗', '〗': '︘',
+  '—': '︱', '…': '︙',
+  '\u201c': '﹃', '\u201d': '﹄', '\u2018': '﹁', '\u2019': '﹂',
+};
+
+function toVerticalChar(ch: string): string {
+  return VERTICAL_PUNCT[ch] ?? ch;
+}
+
 /** 竖排文字，返回底部 Y 坐标 */
 function drawVerticalText(
   ctx: CanvasRenderingContext2D,
@@ -570,7 +587,7 @@ function drawVerticalText(
   ctx.textBaseline = 'middle';
   const chars = [...text];
   chars.forEach((ch, i) => {
-    ctx.fillText(ch, x, startY + i * spacing);
+    ctx.fillText(toVerticalChar(ch), x, startY + i * spacing);
   });
   return startY + (chars.length - 1) * spacing;
 }
@@ -654,13 +671,14 @@ function drawPreface(
   genre: 'Shi' | 'Ci' | 'Free',
   centerX: number,
   maxW: number,
+  align?: TextAlign,
 ) {
   ctx.fillStyle = colors.muted;
   ctx.font = exportFont(400, META_PREFACE_FONT);
   const spacing = META_PREFACE_FONT * 0.08;
   const lines = wrapText(ctx, text, maxW, spacing);
-  // 诗：始终居中（与正文对齐）；词：单行居中、多行左对齐
-  const centered = genre === 'Shi' || lines.length === 1;
+  // 诗：始终居中（与正文对齐）；词/自由诗：跟随对齐方式
+  const centered = genre === 'Shi' || (genre === 'Free' && (!align || align === 'center'));
 
   lines.forEach((line, i) => {
     const y = startY + i * META_PREFACE_LH + META_PREFACE_LH / 2;
@@ -682,6 +700,7 @@ function drawFooter(
   genre: 'Shi' | 'Ci' | 'Free',
   centerX: number,
   maxW: number,
+  align?: TextAlign,
 ) {
   ctx.fillStyle = colors.muted;
   ctx.font = exportFont(400, META_FOOTER_FONT);
@@ -691,8 +710,8 @@ function drawFooter(
   // 脚注（在日期上方）
   if (footnote) {
     const lines = wrapText(ctx, footnote, maxW, spacing);
-    // 诗：始终居中（与正文对齐）；词：单行居中、多行左对齐
-    const centered = genre === 'Shi' || lines.length === 1;
+    // 诗：始终居中（与正文对齐）；词/自由诗：跟随对齐方式
+    const centered = genre === 'Shi' || (genre === 'Free' && (!align || align === 'center'));
     lines.forEach((line, i) => {
       const lineY = y + i * META_FOOTER_LH + META_FOOTER_LH / 2;
       if (centered) {
@@ -704,13 +723,14 @@ function drawFooter(
     y += lines.length * META_FOOTER_LH;
   }
 
-  // 日期（诗居中，词左对齐）
+  // 日期（跟随对齐方式）
   if (date) {
     const lineY = y + META_FOOTER_LH / 2;
-    if (genre === 'Ci') {
-      drawTextLeft(ctx, date, PAD_X, lineY, spacing);
-    } else {
+    const dateCentered = genre === 'Shi' || (genre === 'Free' && (!align || align === 'center'));
+    if (dateCentered) {
       drawTextCentered(ctx, date, centerX, lineY, spacing);
+    } else {
+      drawTextLeft(ctx, date, PAD_X, lineY, spacing);
     }
   }
 }
@@ -718,6 +738,8 @@ function drawFooter(
 // ============================================================================
 // 主绘制
 // ============================================================================
+
+export type TextAlign = 'left' | 'center' | 'right' | 'justify';
 
 export interface ExportData {
   title: string;
@@ -733,6 +755,8 @@ export interface ExportData {
   author?: string;
   sectionCount?: number;
   titleLines?: Set<number>;
+  metaLines?: Set<number>;
+  align?: TextAlign;
 }
 
 export function renderToCanvas(data: ExportData): HTMLCanvasElement {
@@ -758,7 +782,8 @@ export function renderToCanvas(data: ExportData): HTMLCanvasElement {
 
   const titleBlockH = measureTitleBlockHeight(title);
   const titleRegionH = TITLE_PAD_TOP + titleBlockH;
-  const poemTotalH = lines.length * lineHeight;
+  const paraBreaks = data.align === 'justify' ? lines.filter(l => l === '').length : 0;
+  const poemTotalH = lines.length * lineHeight - paraBreaks * lineHeight * 0.2;
   const authorH = author ? 40 : 0;  // 署名行高度
   const belowPoemPad = lineHeight + footerH + authorH + 70;
   const contentH = prefaceH + poemTotalH + belowPoemPad;
@@ -822,7 +847,7 @@ export function renderToCanvas(data: ExportData): HTMLCanvasElement {
   // ---- 计算诗句实际位置 ----
   const poemTopBound = titleRegionH + (height - titleRegionH - contentH);  // = height - contentH
   const watermarkY = height - 70;
-  const poemBottomLimit = watermarkY - lineHeight - footerH - authorH;
+  const poemBottomLimit = watermarkY - 20 - footerH - authorH - lineHeight;
 
   // 诗：沉底；词：居中
   const poemStartY = genre === 'Shi'
@@ -835,31 +860,37 @@ export function renderToCanvas(data: ExportData): HTMLCanvasElement {
   // ---- 序言（紧贴诗句上方） ----
   if (preface) {
     const prefaceY = poemStartY - prefaceH;
-    drawPreface(ctx, preface, colors, prefaceY, genre, metaCenterX, metaMaxW);
+    drawPreface(ctx, preface, colors, prefaceY, genre, metaCenterX, metaMaxW, data.align);
   }
 
   // ---- 诗句 ----
-  drawPoemLines(ctx, lines, colors, fontSize, lineHeight, poemTopBound + prefaceH, poemBottomLimit, genre, data.titleLines);
-
-  // ---- 日期 / 脚注（作品下方） ----
-  if (date || footnote) {
-    const footerY = poemBottomLimit + 20;
-    drawFooter(ctx, date, footnote, colors, footerY, genre, metaCenterX, metaMaxW);
-  }
+  drawPoemLines(ctx, lines, colors, fontSize, lineHeight, poemTopBound + prefaceH, poemBottomLimit, genre, data.titleLines, data.align, data.metaLines);
 
   // ---- 署名（底部，格式 "- 署名 -"；诗居中，词左对齐） ----
+  const authorY = watermarkY - 30;
   if (author) {
     const authorFontSize = 32;
     ctx.fillStyle = colors.muted;
     ctx.font = exportFont(400, authorFontSize);
     ctx.textBaseline = 'middle';
-    if (genre === 'Ci') {
+    const a = data.align;
+    if (genre === 'Ci' || a === 'left' || a === 'justify') {
       ctx.textAlign = 'left';
-      ctx.fillText(`${author} /`, PAD_X, watermarkY - 30);
+      ctx.fillText(`${author} /`, PAD_X, authorY);
+    } else if (a === 'right') {
+      ctx.textAlign = 'right';
+      ctx.fillText(`/ ${author}`, W - PAD_X, authorY);
     } else {
       ctx.textAlign = 'center';
-      ctx.fillText(`- ${author} -`, W / 2, watermarkY - 30);
+      ctx.fillText(`- ${author} -`, W / 2, authorY);
     }
+  }
+
+  // ---- 日期 / 脚注（紧贴署名上方） ----
+  if (date || footnote) {
+    const footerBottom = authorY - (author ? 20 : 10);
+    const footerY = footerBottom - footerH;
+    drawFooter(ctx, date, footnote, colors, footerY, genre, metaCenterX, metaMaxW, data.align);
   }
 
   // ---- 水印（右下角贴边，logo + 文字） ----
@@ -1062,6 +1093,65 @@ function drawTextLeft(
   }
 }
 
+function drawTextRight(
+  ctx: CanvasRenderingContext2D,
+  text: string,
+  rightX: number,
+  y: number,
+  spacing: number,
+) {
+  const chars = [...text];
+  if (chars.length === 0) return;
+
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'middle';
+
+  let totalW = 0;
+  const widths = chars.map((ch) => {
+    const w = ctx.measureText(ch).width;
+    totalW += w;
+    return w;
+  });
+  totalW += spacing * (chars.length - 1);
+
+  let curX = rightX - totalW;
+  for (let i = 0; i < chars.length; i++) {
+    ctx.fillText(chars[i], curX, y);
+    curX += widths[i] + spacing;
+  }
+}
+
+function drawTextJustified(
+  ctx: CanvasRenderingContext2D,
+  text: string,
+  leftX: number,
+  rightX: number,
+  y: number,
+) {
+  const chars = [...text];
+  if (chars.length <= 1) {
+    drawTextLeft(ctx, text, leftX, y, 0);
+    return;
+  }
+
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'middle';
+
+  let totalCharW = 0;
+  const widths = chars.map((ch) => {
+    const w = ctx.measureText(ch).width;
+    totalCharW += w;
+    return w;
+  });
+  const gap = (rightX - leftX - totalCharW) / (chars.length - 1);
+
+  let curX = leftX;
+  for (let i = 0; i < chars.length; i++) {
+    ctx.fillText(chars[i], curX, y);
+    curX += widths[i] + gap;
+  }
+}
+
 function drawPoemLines(
   ctx: CanvasRenderingContext2D,
   lines: string[],
@@ -1072,6 +1162,8 @@ function drawPoemLines(
   bottomLimit: number,
   genre: 'Shi' | 'Ci' | 'Free',
   titleLines?: Set<number>,
+  align?: TextAlign,
+  metaLines?: Set<number>,
 ) {
   if (lines.length === 0) return;
 
@@ -1099,13 +1191,32 @@ function drawPoemLines(
       drawTextLeft(ctx, line, PAD_X, y, letterSpacing);
     });
   } else if (genre === 'Free') {
-    // 自由诗：居中，逐行判断末尾标点决定偏移
+    const a = align ?? 'center';
+    const rightX = W - PAD_X;
+    // For justify: accumulate extra offset at paragraph breaks (empty lines)
+    let paraOffset = 0;
     lines.forEach((line, i) => {
-      if (!line) return;
-      const y = startY + i * actualLineH + actualLineH / 2;
-      const hasPunct = /[，。！？、；：""''…—]$/.test(line);
-      const cx = hasPunct ? W / 2 + fontSize * 0.5 : W / 2;
-      drawTextCentered(ctx, line, cx, y, letterSpacing);
+      if (!line) {
+        if (a === 'justify') paraOffset -= actualLineH * 0.2;
+        return;
+      }
+      const y = startY + i * actualLineH + paraOffset + actualLineH / 2;
+      if (a === 'left') {
+        drawTextLeft(ctx, line, PAD_X, y, letterSpacing);
+      } else if (a === 'right') {
+        drawTextRight(ctx, line, rightX, y, letterSpacing);
+      } else if (a === 'justify') {
+        const isLastOfPara = [...line].length < 20 || i === lines.length - 1 || lines[i + 1] === '';
+        if (isLastOfPara) {
+          drawTextLeft(ctx, line, PAD_X, y, letterSpacing);
+        } else {
+          drawTextJustified(ctx, line, PAD_X, rightX, y);
+        }
+      } else {
+        const hasPunct = /[，。！？、；：""''…—]$/.test(line);
+        const cx = hasPunct ? W / 2 + fontSize * 0.5 : W / 2;
+        drawTextCentered(ctx, line, cx, y, letterSpacing);
+      }
     });
   } else {
     // 诗：居中，右移半字宽补偿末尾标点；小标题严格居中
@@ -1113,8 +1224,16 @@ function drawPoemLines(
     lines.forEach((line, i) => {
       if (!line) return;
       const y = startY + i * actualLineH + actualLineH / 2;
-      const cx = titleLines?.has(i) ? W / 2 : centerX;
-      drawTextCentered(ctx, line, cx, y, letterSpacing);
+      if (metaLines?.has(i)) {
+        ctx.fillStyle = colors.muted;
+        ctx.font = exportFont(400, fontSize * 0.75);
+        drawTextCentered(ctx, line, W / 2, y, fontSize * 0.75 * 0.08);
+        ctx.fillStyle = colors.text;
+        ctx.font = exportFont(400, fontSize);
+      } else {
+        const cx = titleLines?.has(i) ? W / 2 : centerX;
+        drawTextCentered(ctx, line, cx, y, letterSpacing);
+      }
     });
   }
 }

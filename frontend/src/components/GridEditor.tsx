@@ -4,14 +4,20 @@ import { track } from '../lib/api';
 import { useValidation } from '../hooks/useValidation';
 import { GridCell } from './GridCell';
 import { PLACEHOLDER } from '../lib/types';
+import { Solar } from 'lunar-javascript';
+import { lunarToGregorian } from '../lib/dateConvert';
 import type { ValidationResult } from '../lib/types';
-import { X, ChevronUp, ChevronDown, Eye } from 'lucide-react';
+import { X, ChevronUp, ChevronDown, Eye, EyeOff, ScrollText, Info } from 'lucide-react';
 
 // ============================================================================
 // Constants
 // ============================================================================
 
 const DEFAULT_CELL = 30;
+const STANDARD_PUNCTS = ['，', '。', '、', '；', '：', '？', '！'];  // ，。、；：？！
+const AUX_MARKS = ['「', '」', '《', '》', '“', '”', '‘', '’'];  // 「」《》“”‘’
+const OPENING_AUX = new Set(['「', '《', '“', '‘']);  // 开方向 → 字前
+const CLOSING_AUX = new Set(['」', '》', '”', '’']);  // 关方向 → 字后
 const PUNCT_WIDTH = 14;
 const SEP_WIDTH = 12;
 const ORDINALS = ['一', '二', '三', '四', '五', '六', '七', '八', '九', '十'];
@@ -70,7 +76,12 @@ function getPunctuationAt(
   sentenceLen: number,
   rhymeSet: Set<number>,
   v: ValidationResult | null,
+  overrides?: Record<number, string>,
 ): string | undefined {
+  if (overrides && gi in overrides) {
+    const val = overrides[gi];
+    return val === '' ? undefined : val;
+  }
   if (genre === 'Shi') {
     const pos = gi % (sentenceLen * 2);
     const isEnd = pos === sentenceLen - 1 || pos === sentenceLen * 2 - 1;
@@ -158,6 +169,139 @@ function buildRhymeColorMap(v: ValidationResult | null): Map<number, string> {
 // Component
 // ============================================================================
 
+
+// ---- Section Date Input (matches MetadataPopover UX) ----
+
+function SectionDateInput({ section, sectionIdx, board, dateFormat, dispatch }: {
+  section: { id: string; sectionDate?: string; sectionDateHidden?: boolean };
+  sectionIdx: number;
+  board: { createdAt: number; updatedAt: number };
+  dateFormat: 'Gregorian' | 'Lunar';
+  dispatch: (action: any) => void;
+}) {
+  const [formatOpen, setFormatOpen] = useState(false);
+  const [infoOpen, setInfoOpen] = useState(false);
+  const todayUTC8 = new Date(Date.now() + 8 * 3600_000);
+  const todayStr = todayUTC8.toISOString().slice(0, 10);
+  const todayLunar = (() => {
+    try {
+      const [y, m, d] = todayStr.split('-').map(Number);
+      const lunar = Solar.fromYmd(y, m, d).getLunar();
+      return `${lunar.getYearInGanZhi()}年${lunar.getMonthInChinese()}月${lunar.getDayInChinese()}`;
+    } catch { return ''; }
+  })();
+  const placeholder = dateFormat === 'Gregorian' ? todayStr : todayLunar;
+
+  const convertDate = (value: string, from: string, to: string): string => {
+    if (!value.trim()) return value;
+    try {
+      if (to === 'Lunar' && from === 'Gregorian') {
+        const match = value.match(/^(\d{4})[-/.](\d{1,2})[-/.](\d{1,2})$/);
+        if (!match) return value;
+        const solar = Solar.fromYmd(parseInt(match[1]), parseInt(match[2]), parseInt(match[3]));
+        const lunar = solar.getLunar();
+        return `${lunar.getYearInGanZhi()}年${lunar.getMonthInChinese()}月${lunar.getDayInChinese()}`;
+      } else if (to === 'Gregorian' && from === 'Lunar') {
+        return lunarToGregorian(value);
+      }
+    } catch {}
+    return value;
+  };
+
+  return (
+    <div>
+      <div className="flex items-center gap-1.5 mb-0.5">
+        <label className="text-[10px] text-[var(--text-secondary)]">日期</label>
+        {!section.sectionDate && (
+        <button
+          className="text-[9px] text-[var(--text-muted)] hover:text-[var(--accent)] border border-[var(--border)] hover:border-[var(--accent)] rounded-full px-1.5 py-px transition-colors"
+          onClick={() => {
+            const val = dateFormat === 'Gregorian' ? todayStr : todayLunar;
+            dispatch({ type: 'UPDATE_SECTION_META', sectionIndex: sectionIdx, field: 'sectionDate', value: val });
+          }}
+        >今天</button>
+        )}
+        <div className="relative">
+          <button
+            className="w-3.5 h-3.5 rounded-full flex items-center justify-center text-[var(--text-muted)] hover:text-[var(--accent)] transition-colors"
+            onClick={() => setInfoOpen(v => !v)}
+          >
+            <Info size={10} />
+          </button>
+          {infoOpen && (
+            <>
+            <div className="fixed inset-0 z-[9]" onClick={() => setInfoOpen(false)} />
+            <div className="absolute left-0 bottom-full mb-1 z-10 bg-[var(--bg-card)] border border-[var(--border)] rounded-lg shadow-lg p-2 text-[10px] text-[var(--text-muted)] whitespace-nowrap">
+              <div>创建：{new Date(board.createdAt).toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai', year: 'numeric', month: '2-digit', day: '2-digit' })}</div>
+              <div>修改：{new Date(board.updatedAt).toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai', year: 'numeric', month: '2-digit', day: '2-digit' })}</div>
+            </div>
+            </>
+          )}
+        </div>
+      </div>
+      <div className="flex gap-1.5">
+        <input
+          type="text"
+          defaultValue={section.sectionDate || ''}
+          key={`${section.id}-sdate-${section.sectionDate || ''}-${dateFormat}`}
+          onBlur={e => dispatch({ type: 'UPDATE_SECTION_META', sectionIndex: sectionIdx, field: 'sectionDate', value: e.target.value.trim() })}
+          onKeyDown={e => {
+            if (e.key === 'Tab' && !section.sectionDate) {
+              e.preventDefault();
+              dispatch({ type: 'UPDATE_SECTION_META', sectionIndex: sectionIdx, field: 'sectionDate', value: placeholder });
+            }
+          }}
+          placeholder={placeholder}
+          className="flex-1 px-2 py-1 text-xs border border-[var(--border)] rounded bg-[var(--bg-input)] focus:outline-none focus:border-[var(--accent)]"
+        />
+        <div className="relative">
+          <button
+            className="flex items-center gap-0.5 px-1.5 py-1 text-[10px] border border-[var(--border)] rounded bg-[var(--bg-input)] hover:border-[var(--accent)] transition-colors"
+            onClick={() => setFormatOpen(v => !v)}
+          >
+            <span>{dateFormat === 'Gregorian' ? '公历' : '农历'}</span>
+            <ChevronDown size={8} className={`text-[var(--text-muted)] transition-transform ${formatOpen ? 'rotate-180' : ''}`} />
+          </button>
+          {formatOpen && (
+            <>
+              <div className="fixed inset-0 z-40" onClick={() => setFormatOpen(false)} />
+              <div className="absolute right-0 bottom-full mb-1 z-50 border border-[var(--border)] rounded-lg overflow-hidden shadow-lg" style={{ backgroundColor: 'var(--bg-card)' }}>
+                {(['Gregorian', 'Lunar'] as const).map(fmt => (
+                  <button
+                    key={fmt}
+                    className={`w-full text-left px-3 py-1 text-xs whitespace-nowrap hover:bg-[var(--accent-light)] transition-colors ${fmt === dateFormat ? 'bg-[var(--accent-light)] text-[var(--accent)]' : ''}`}
+                    onClick={() => {
+                      if (fmt !== dateFormat && section.sectionDate) {
+                        const converted = convertDate(section.sectionDate, dateFormat, fmt);
+                        if (converted !== section.sectionDate) {
+                          dispatch({ type: 'UPDATE_SECTION_META', sectionIndex: sectionIdx, field: 'sectionDate', value: converted });
+                        }
+                      }
+                      dispatch({ type: 'UPDATE_METADATA', metadata: { dateFormat: fmt } });
+                      setFormatOpen(false);
+                    }}
+                  >
+                    {fmt === 'Gregorian' ? '公历' : '农历'}
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+      {section.sectionDate && (
+        <button
+          className="flex items-center gap-1 mt-1 text-[10px] text-[var(--text-muted)] hover:text-[var(--accent)] transition-colors"
+          onClick={() => dispatch({ type: 'UPDATE_SECTION_META', sectionIndex: sectionIdx, field: 'sectionDateHidden', value: !section.sectionDateHidden })}
+        >
+          {section.sectionDateHidden ? <EyeOff size={10} /> : <Eye size={10} />}
+          <span>{section.sectionDateHidden ? '导出时隐藏' : '导出时显示'}</span>
+        </button>
+      )}
+    </div>
+  );
+}
+
 export function GridEditor() {
   const { state, dispatch } = useBoardContext();
   const board = useActiveBoard();
@@ -174,6 +318,24 @@ export function GridEditor() {
   const [immersiveHint, setImmersiveHint] = useState<number | null>(null);
   const [inputFocused, setInputFocused] = useState(true);
   const hintTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const [punctPickerAt, setPunctPickerAt] = useState<number | null>(null);
+  const [auxPickerAt, setAuxPickerAt] = useState<number | null>(null);
+  const [confirmClearPunct, setConfirmClearPunct] = useState<number | null>(null);
+  const auxTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const [sectionMetaOpen, setSectionMetaOpen] = useState<number | null>(null);
+  const [gridWidth, setGridWidth] = useState<number>(0);
+
+  // Measure grid width for metadata area alignment (max child row width)
+  useEffect(() => {
+    if (sectionMetaOpen == null) return;
+    const el = containerRef.current?.querySelector(`[data-section="${sectionMetaOpen}"]`) as HTMLElement | null;
+    if (!el) return;
+    let maxW = 0;
+    for (const child of el.children) {
+      maxW = Math.max(maxW, (child as HTMLElement).offsetWidth);
+    }
+    if (maxW > 0) setGridWidth(maxW);
+  }, [sectionMetaOpen, si]);
 
   const enterImmersive = useCallback((sectionIdx: number) => {
     dispatch({ type: 'TOGGLE_IMMERSIVE', sectionIndex: sectionIdx });
@@ -192,6 +354,73 @@ export function GridEditor() {
   cursorRef.current = cursor;
 
   useValidation();
+
+  const pickerRef = useRef<HTMLDivElement>(null);
+  const blurTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const closePickers = useCallback(() => { setPunctPickerAt(null); setAuxPickerAt(null); setConfirmClearPunct(null); }, []);
+
+  // Close pickers on outside mousedown (instant, no delay)
+  useEffect(() => {
+    if (punctPickerAt == null && auxPickerAt == null) return;
+    const handler = (e: MouseEvent) => {
+      if (pickerRef.current?.contains(e.target as Node)) return;
+      closePickers();
+    };
+    document.addEventListener('mousedown', handler, true);
+    return () => document.removeEventListener('mousedown', handler, true);
+  }, [punctPickerAt, auxPickerAt, closePickers]);
+
+  // Desktop: auto-close on blur 0.5s (aux picker only, not punct picker)
+  const startBlurTimer = useCallback(() => {
+    if (punctPickerAt != null) return;
+    clearTimeout(blurTimerRef.current);
+    blurTimerRef.current = setTimeout(closePickers, 500);
+  }, [closePickers, punctPickerAt]);
+  const cancelBlurTimer = useCallback(() => { clearTimeout(blurTimerRef.current); }, []);
+
+  // Compute popup position relative to the section's positioned ancestor
+  const getPickerPos = useCallback((gi: number) => {
+    const sectionEl = containerRef.current?.querySelector(`[data-section="${si}"]`) as HTMLElement | null;
+    const el = sectionEl?.querySelector(`[data-charbox="${gi}"]`) as HTMLElement | null;
+    if (!el) return { top: 0, left: 0, arrowOffset: 0 };
+    const wrap = el.closest('[data-section-wrap]') as HTMLElement | null;
+    if (!wrap) return { top: 0, left: 0, arrowOffset: 0 };
+    const elRect = el.getBoundingClientRect();
+    const wRect = wrap.getBoundingClientRect();
+    const targetX = elRect.left - wRect.left + elRect.width / 2;
+    const wrapW = wrap.offsetWidth;
+    const popupHalf = 110;
+    const pad = 8;
+    const clampedX = Math.max(popupHalf + pad, Math.min(wrapW - popupHalf - pad, targetX));
+    return {
+      top: elRect.bottom - wRect.top + 4,
+      left: clampedX,
+      arrowOffset: targetX - clampedX,
+    };
+  }, [si]);
+
+  // Position for punct picker: arrow points at the punctuation mark (right of char + aux closing marks)
+  const getPunctPickerPos = useCallback((gi: number) => {
+    const sectionEl = containerRef.current?.querySelector(`[data-section="${si}"]`) as HTMLElement | null;
+    const cellEl = sectionEl?.querySelector(`[data-gi="${gi}"]`) as HTMLElement | null;
+    const charEl = sectionEl?.querySelector(`[data-charbox="${gi}"]`) as HTMLElement | null;
+    if (!cellEl || !charEl) return { top: 0, left: 0, arrowOffset: 0 };
+    const wrap = cellEl.closest('[data-section-wrap]') as HTMLElement | null;
+    if (!wrap) return { top: 0, left: 0, arrowOffset: 0 };
+    const cellRect = cellEl.getBoundingClientRect();
+    const charRect = charEl.getBoundingClientRect();
+    const wRect = wrap.getBoundingClientRect();
+    const targetX = cellRect.right - wRect.left - (cellRect.right - charRect.right) / 2;
+    const wrapW = wrap.offsetWidth;
+    const popupHalf = 110;
+    const pad = 8;
+    const clampedX = Math.max(popupHalf + pad, Math.min(wrapW - popupHalf - pad, targetX));
+    return {
+      top: charRect.bottom - wRect.top + 4,
+      left: clampedX,
+      arrowOffset: targetX - clampedX,
+    };
+  }, [si]);
 
   // Reset cursor on board/section switch
   useEffect(() => {
@@ -495,7 +724,11 @@ export function GridEditor() {
         const sRuleName = sV?.closest_rule?.name ?? '';
 
         return (
-          <div key={section.id} className={`relative ${sectionIdx > 0 ? 'mt-5 pt-5 border-t border-dashed border-[var(--border)]' : ''}`}>
+          <div key={section.id} data-section-wrap className={`relative ${sectionIdx > 0 ? 'mt-5 pt-5 border-t border-dashed border-[var(--border)]' : ''}`}
+            onPointerDownCapture={(e) => {
+              if ((e.target as HTMLElement).closest('[data-move-btn]')) return;
+              if (!isActive) dispatch({ type: 'SET_ACTIVE_SECTION', sectionIndex: sectionIdx });
+            }}>
             {/* Section header (multi-section) */}
             {multiSection && (
               <div className={`flex items-center mb-3 px-1 ${section.immersive ? 'justify-center' : ''}`} onClick={e => e.stopPropagation()}>
@@ -527,18 +760,27 @@ export function GridEditor() {
                       <button
                         className="w-5 h-5 rounded flex items-center justify-center text-[var(--text-muted)] hover:text-[var(--accent)] disabled:opacity-0 transition-colors"
                         disabled={sectionIdx === 0}
-                        onClick={(e) => { e.stopPropagation(); dispatch({ type: 'MOVE_SECTION', sectionIndex: sectionIdx, direction: 'up' }); }}
+                        onClick={(e) => { e.stopPropagation(); dispatch({ type: 'MOVE_SECTION', sectionIndex: sectionIdx, direction: 'up' }); track('move_section', { direction: 'up' }); }}
                         title="上移"
+                        data-move-btn
                       >
                         <ChevronUp size={12} />
                       </button>
                       <button
                         className="w-5 h-5 rounded flex items-center justify-center text-[var(--text-muted)] hover:text-[var(--accent)] disabled:opacity-0 transition-colors"
                         disabled={sectionIdx === board.sections.length - 1}
-                        onClick={(e) => { e.stopPropagation(); dispatch({ type: 'MOVE_SECTION', sectionIndex: sectionIdx, direction: 'down' }); }}
+                        onClick={(e) => { e.stopPropagation(); dispatch({ type: 'MOVE_SECTION', sectionIndex: sectionIdx, direction: 'down' }); track('move_section', { direction: 'down' }); }}
                         title="下移"
+                        data-move-btn
                       >
                         <ChevronDown size={12} />
+                      </button>
+                      <button
+                        className={`w-5 h-5 rounded flex items-center justify-center transition-colors ${sectionMetaOpen === sectionIdx ? 'text-[var(--accent)] bg-[var(--accent-light)]' : 'text-[var(--text-muted)] hover:text-[var(--accent)] hover:bg-[var(--accent-light)]'}`}
+                        onClick={(e) => { e.stopPropagation(); setSectionMetaOpen(sectionMetaOpen === sectionIdx ? null : sectionIdx); }}
+                        title="本首注释"
+                      >
+                        <ScrollText size={12} />
                       </button>
                       <button
                         className="w-5 h-5 rounded flex items-center justify-center text-[var(--text-muted)] hover:text-[var(--accent)] hover:bg-[var(--accent-light)] transition-colors"
@@ -555,7 +797,7 @@ export function GridEditor() {
                           if (hasContent) {
                             setConfirmDeleteSection(sectionIdx);
                           } else {
-                            dispatch({ type: 'DELETE_SECTION', sectionIndex: sectionIdx });
+                            dispatch({ type: 'DELETE_SECTION', sectionIndex: sectionIdx }); track('delete_section');
                           }
                         }}
                         title="删除"
@@ -578,10 +820,40 @@ export function GridEditor() {
                 </button>
                 <button
                   className="px-3 py-1 text-xs rounded-md bg-red-500 text-white hover:bg-red-600"
-                  onClick={() => { dispatch({ type: 'DELETE_SECTION', sectionIndex: sectionIdx }); setConfirmDeleteSection(null); }}
+                  onClick={() => { dispatch({ type: 'DELETE_SECTION', sectionIndex: sectionIdx }); track('delete_section'); setConfirmDeleteSection(null); }}
                 >
                   删除
                 </button>
+              </div>
+            )}
+
+            {/* Per-section 编号 + 序（正文上方） */}
+            {multiSection && sectionMetaOpen === sectionIdx && !section.immersive && (
+              <div className="mb-2 mx-auto max-h-32 overflow-y-auto space-y-2" style={gridWidth ? { width: gridWidth } : undefined} onClick={e => e.stopPropagation()}>
+                {localStorage.getItem('fangcun_legacy_id') === '1' && (
+                <div>
+                  <label className="text-[10px] text-[var(--text-secondary)] mb-0.5 block">编号</label>
+                  <input
+                    type="text"
+                    defaultValue={section.sectionLegacyId || ''}
+                    key={`${section.id}-slegacy`}
+                    onBlur={e => dispatch({ type: 'UPDATE_SECTION_META', sectionIndex: sectionIdx, field: 'sectionLegacyId', value: e.target.value.trim() })}
+                    placeholder="本首编号"
+                    className="w-full px-2 py-1 text-xs border border-[var(--border)] rounded bg-[var(--bg-input)] focus:outline-none focus:border-[var(--accent)]"
+                  />
+                </div>
+                )}
+                <div>
+                  <label className="text-[10px] text-[var(--text-secondary)] mb-0.5 block">序</label>
+                  <textarea
+                    defaultValue={section.sectionPreface || ''}
+                    key={`${section.id}-spreface`}
+                    onBlur={e => dispatch({ type: 'UPDATE_SECTION_META', sectionIndex: sectionIdx, field: 'sectionPreface', value: e.target.value.trim() })}
+                    placeholder="本首序言"
+                    rows={2}
+                    className="w-full px-2 py-1 text-xs border border-[var(--border)] rounded bg-[var(--bg-input)] focus:outline-none focus:border-[var(--accent)] resize-none"
+                  />
+                </div>
               </div>
             )}
 
@@ -598,7 +870,11 @@ export function GridEditor() {
               <div data-section={sectionIdx} className="flex flex-col items-center gap-0.5" onClick={(e) => e.stopPropagation()}>
                 {sLines.map((row, li) => (
                   <div key={li} className="flex justify-center">
-                    {row.map((gi, ci) => (
+                    {row.map((gi, ci) => {
+                      return (
+                      <div key={gi}
+                        onMouseLeave={() => { clearTimeout(auxTimerRef.current); startBlurTimer(); }}
+                      >
                       <GridCell
                         key={gi}
                         char={section.poemChars[gi] ?? PLACEHOLDER}
@@ -611,7 +887,10 @@ export function GridEditor() {
                         ruleItem={getRuleItemAt(gi, sV)}
                         hasSepAfter={genre === 'Shi' && sSL > 0 && (ci + 1) === sSL}
                         sepWidth={sepW}
-                        punctuation={getPunctuationAt(gi, genre, sSL, sRhymeSet, sV)}
+                        punctuation={getPunctuationAt(gi, genre, sSL, sRhymeSet, sV, section.punctOverrides)}
+                        hasPunctSlot={!!getPunctuationAt(gi, genre, sSL, sRhymeSet, sV)}
+                        auxBefore={(() => { const m = section.auxMarks?.[gi]; if (!m) return undefined; const b = m.filter(c => OPENING_AUX.has(c)); return b.length ? b : undefined; })()}
+                        auxAfter={(() => { const m = section.auxMarks?.[gi]; if (!m) return undefined; const a = m.filter(c => CLOSING_AUX.has(c)); return a.length ? a : undefined; })()}
                         cellW={cellW}
                         charBoxSize={charBoxSize}
                         fontSize={fontSize}
@@ -619,7 +898,31 @@ export function GridEditor() {
                         candidateSize={candidateSize}
                         candidates={section.candidatesMap[gi]}
                         immersive={section.immersive}
+                        onCharHover={() => {
+                          cancelBlurTimer();
+                          if (section.immersive || punctPickerAt != null) return;
+                          clearTimeout(auxTimerRef.current);
+                          auxTimerRef.current = setTimeout(() => setAuxPickerAt(gi), 1000);
+                        }}
+                        onCharHoverEnd={() => clearTimeout(auxTimerRef.current)}
+                        onCharTouchStart={() => {
+                          if (section.immersive || punctPickerAt != null) return;
+                          clearTimeout(auxTimerRef.current);
+                          auxTimerRef.current = setTimeout(() => setAuxPickerAt(gi), 800);
+                        }}
+                        onCharTouchEnd={() => clearTimeout(auxTimerRef.current)}
+                        onPunctClick={(idx) => {
+                          setPunctPickerAt(punctPickerAt === idx ? null : idx);
+                          setAuxPickerAt(null);
+                          setConfirmClearPunct(null);
+                        }}
                         onClickCell={(e) => {
+                          clearTimeout(auxTimerRef.current);
+                          if (auxPickerAt != null && auxPickerAt !== gi) {
+                            setAuxPickerAt(gi); setPunctPickerAt(null); setConfirmClearPunct(null);
+                          } else if (punctPickerAt != null) {
+                            setPunctPickerAt(null); setConfirmClearPunct(null);
+                          }
                           if (e.shiftKey && genre === 'Shi' && sSL > 0 && isActive) {
                             setSelectionEnd(gi);
                           } else {
@@ -657,9 +960,97 @@ export function GridEditor() {
                           focusInput();
                         }}
                       />
-                    ))}
+                      </div>
+                      );
+                    })}
                   </div>
                 ))}
+              </div>
+            )}
+
+            {/* 常规标点选择器 (popup) */}
+            {punctPickerAt != null && isActive && (() => {
+              const pos = getPunctPickerPos(punctPickerAt);
+              return (
+              <div ref={pickerRef} className="absolute z-30 flex flex-col items-center gap-1 p-2 border border-[var(--border)] rounded-lg bg-[var(--bg-card)] shadow-lg -translate-x-1/2"
+                style={{ top: pos.top, left: pos.left }}
+                onClick={e => e.stopPropagation()}>
+                <div className="absolute -top-[12px] border-[6px] border-transparent border-b-[var(--border)]" style={{ left: `calc(50% + ${pos.arrowOffset}px)`, transform: 'translateX(-50%)' }} />
+                <div className="absolute -top-[10px] border-[6px] border-transparent border-b-[var(--bg-card)] z-10" style={{ left: `calc(50% + ${pos.arrowOffset}px)`, transform: 'translateX(-50%)' }} />
+                {confirmClearPunct != null ? (
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-[var(--text-secondary)]">确认清除？</span>
+                    <button className="px-2 py-0.5 text-xs rounded border border-[var(--grid-empty-border)] text-[var(--text-secondary)] hover:bg-[var(--accent-light)]"
+                      onClick={() => setConfirmClearPunct(null)}>取消</button>
+                    <button className="px-2 py-0.5 text-xs rounded bg-red-500 text-white hover:bg-red-600"
+                      onClick={() => { dispatch({ type: 'SET_PUNCT_OVERRIDE', index: confirmClearPunct, punct: '' }); setConfirmClearPunct(null); setPunctPickerAt(null); }}>确认</button>
+                  </div>
+                ) : (
+                  <>
+                    <div className="flex gap-1">
+                      {STANDARD_PUNCTS.map(p => (
+                        <button key={p} className="w-7 h-7 rounded flex items-center justify-center text-sm hover:bg-[var(--accent-light)] hover:text-[var(--accent)] transition-colors"
+                          onClick={() => { dispatch({ type: 'SET_PUNCT_OVERRIDE', index: punctPickerAt, punct: p }); setPunctPickerAt(null); }}>{p}</button>
+                      ))}
+                    </div>
+                    <div className="flex gap-1">
+                      <button className="px-2 py-0.5 text-xs rounded text-[var(--text-muted)] hover:text-[var(--accent)] hover:bg-[var(--accent-light)] transition-colors"
+                        onClick={() => { dispatch({ type: 'SET_PUNCT_OVERRIDE', index: punctPickerAt, punct: null }); setPunctPickerAt(null); }}>恢复默认</button>
+                      <button className="px-2 py-0.5 text-xs rounded text-[var(--text-muted)] hover:text-red-500 hover:bg-red-50 transition-colors"
+                        onClick={() => setConfirmClearPunct(punctPickerAt)}>清除</button>
+                    </div>
+                  </>
+                )}
+              </div>
+              );
+            })()}
+
+            {/* 辅助标点选择器 (popup) */}
+            {auxPickerAt != null && isActive && (() => {
+              const pos = getPickerPos(auxPickerAt);
+              return (
+              <div ref={pickerRef} className="absolute z-30 flex flex-col items-center gap-1 p-2 border border-[var(--border)] rounded-lg bg-[var(--bg-card)] shadow-lg -translate-x-1/2"
+                style={{ top: pos.top, left: pos.left }}
+                onClick={e => e.stopPropagation()}
+                onMouseEnter={cancelBlurTimer} onMouseLeave={startBlurTimer}>
+                <div className="absolute -top-[12px] border-[6px] border-transparent border-b-[var(--border)]" style={{ left: `calc(50% + ${pos.arrowOffset}px)`, transform: 'translateX(-50%)' }} />
+                <div className="absolute -top-[10px] border-[6px] border-transparent border-b-[var(--bg-card)] z-10" style={{ left: `calc(50% + ${pos.arrowOffset}px)`, transform: 'translateX(-50%)' }} />
+                <div className="flex gap-1">
+                  {AUX_MARKS.map(m => {
+                    const active = section.auxMarks?.[auxPickerAt]?.includes(m);
+                    return (
+                      <button key={m}
+                        className={`w-7 h-7 rounded flex items-center justify-center text-sm transition-colors ${active ? 'bg-[var(--accent)] text-white' : 'hover:bg-[var(--accent-light)] hover:text-[var(--accent)]'}`}
+                        onClick={() => dispatch({ type: 'TOGGLE_AUX_MARK', index: auxPickerAt, mark: m })}>{m}</button>
+                    );
+                  })}
+                </div>
+              </div>
+              );
+            })()}
+
+
+            {/* Per-section 脚注 + 日期（正文下方） */}
+            {multiSection && sectionMetaOpen === sectionIdx && !section.immersive && (
+              <div className="mt-2 mx-auto space-y-2 max-h-40 overflow-y-auto" style={gridWidth ? { width: gridWidth } : undefined} onClick={e => e.stopPropagation()}>
+                <div>
+                  <label className="text-[10px] text-[var(--text-secondary)] mb-0.5 block">脚注</label>
+                  <textarea
+                    defaultValue={section.sectionFootnote || ''}
+                    key={`${section.id}-sfootnote`}
+                    onBlur={e => dispatch({ type: 'UPDATE_SECTION_META', sectionIndex: sectionIdx, field: 'sectionFootnote', value: e.target.value.trim() })}
+                    placeholder="本首脚注"
+                    rows={2}
+                    className="w-full px-2 py-1 text-xs border border-[var(--border)] rounded bg-[var(--bg-input)] focus:outline-none focus:border-[var(--accent)] resize-none"
+                  />
+                </div>
+                <SectionDateInput
+                  section={section}
+                  sectionIdx={sectionIdx}
+                  board={board}
+                  dateFormat={board.metadata?.dateFormat || 'Gregorian'}
+                  dispatch={dispatch}
+                />
               </div>
             )}
 
@@ -689,7 +1080,7 @@ export function GridEditor() {
       <div className="flex justify-center mt-6">
         <button
           className="text-xs text-[var(--text-muted)] hover:text-[var(--accent)] border border-dashed border-[var(--border)] hover:border-[var(--accent)] rounded-lg px-4 py-1.5 transition-colors"
-          onClick={(e) => { e.stopPropagation(); dispatch({ type: 'ADD_SECTION' }); }}
+          onClick={(e) => { e.stopPropagation(); dispatch({ type: 'ADD_SECTION' }); track('add_section'); }}
         >
           ＋ 添加一首
         </button>

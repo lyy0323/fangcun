@@ -1,18 +1,22 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useBoardContext, useActiveBoard } from '../context/BoardContext';
-import { PLACEHOLDER, resolveAuthor } from '../lib/types';
-import { ensureGregorianDate } from '../lib/dateConvert';
+import { PLACEHOLDER } from '../lib/types';
 import { Layers, Plus, ClipboardType, Check, Upload, Sun, Moon, Settings, ChevronRight, ChevronDown, X, BookOpen, Lightbulb, SendHorizontal, ExternalLink, Download, FolderUp, ImageDown, ScrollText, FolderPlus, Pencil, FolderInput, ChevronUp, ArrowUpDown, ArrowDown, ArrowUp, ArrowDownAZ } from 'lucide-react';
 import type { Board, SortMode } from '../lib/types';
 import { track } from '../lib/api';
 import { ExportPreview } from './ExportPreview';
 import { MetadataPopover } from './MetadataPopover';
+import { UploadModal } from './UploadModal';
 
 function SettingsModal({ onClose }: { onClose: () => void }) {
   const { state, dispatch } = useBoardContext();
   const [openSection, setOpenSection] = useState<string | null>(null);
   const [importMsg, setImportMsg] = useState<string | null>(null);
   const [defaultAuthor, setDefaultAuthor] = useState(() => localStorage.getItem('default_author') ?? '');
+  const [legacyIdEnabled, setLegacyIdEnabled] = useState(() => localStorage.getItem('fangcun_legacy_id') === '1');
+  const [seqStyle, setSeqStyle] = useState<'space' | 'paren'>(() => (localStorage.getItem('fangcun_seq_style') as 'space' | 'paren') || 'space');
+  const [titleSpacing, setTitleSpacing] = useState(() => localStorage.getItem('fangcun_title_spacing') === '1');
+  const [apiKey, setApiKey] = useState(() => localStorage.getItem('fangcun_sk') ?? '');
   const toggle = (id: string) => setOpenSection(prev => prev === id ? null : id);
 
   function handleExport() {
@@ -77,23 +81,41 @@ function SettingsModal({ onClose }: { onClose: () => void }) {
           <div>
             <p className="font-medium text-[var(--text)] flex items-center gap-1.5">顶部按钮</p>
             <ul className="mt-1 space-y-1.5 pl-1">
-              <li className="flex items-start gap-2"><span className="shrink-0 w-5 h-5 rounded border border-[var(--border)] flex items-center justify-center mt-0.5"><Layers size={11} /></span><span><b>画板切换</b> — 管理多个创作画板，可新建、切换、删除</span></li>
-              <li className="flex items-start gap-2"><span className="shrink-0 w-5 h-5 rounded border border-[var(--border)] flex items-center justify-center mt-0.5"><ScrollText size={11} /></span><span><b>元数据</b> — 填写序言、脚注、日期（支持农历/公历切换），导出图片和上传时自动携带</span></li>
+              <li className="flex items-start gap-2"><span className="shrink-0 w-5 h-5 rounded border border-[var(--border)] flex items-center justify-center mt-0.5"><Layers size={11} /></span><span><b>画板切换</b> — 管理多个创作画板，支持文件夹分组和排序</span></li>
+              <li className="flex items-start gap-2"><span className="shrink-0 w-5 h-5 rounded border border-[var(--border)] flex items-center justify-center mt-0.5"><ScrollText size={11} /></span><span><b>元数据</b> — 署名、日期（支持农历/公历）、序言、脚注；组诗可为每首单独配置</span></li>
               <li className="flex items-start gap-2"><span className="shrink-0 w-5 h-5 rounded border border-[var(--border)] flex items-center justify-center mt-0.5"><Moon size={11} /></span><span><b>深浅模式</b> — 切换浅色/深色主题</span></li>
-              <li className="flex items-start gap-2"><span className="shrink-0 w-5 h-5 rounded border border-[var(--border)] flex items-center justify-center mt-0.5"><Settings size={11} /></span><span><b>设置</b> — 教程、导入导出、关于</span></li>
-              <li className="flex items-start gap-2"><span className="shrink-0 w-5 h-5 rounded border border-[var(--border)] flex items-center justify-center mt-0.5"><Upload size={11} /></span><span><b>上传</b> — 全文填写完成后，提交至南洋吟游</span></li>
-              <li className="flex items-start gap-2"><span className="shrink-0 w-5 h-5 rounded border border-[var(--border)] flex items-center justify-center mt-0.5"><ImageDown size={11} /></span><span><b>导出图片</b> — 全文填写完成后，导出为图片</span></li>
-              <li className="flex items-start gap-2"><span className="shrink-0 w-5 h-5 rounded border border-[var(--border)] flex items-center justify-center mt-0.5"><ClipboardType size={11} /></span><span><b>复制文本</b> — 将当前作品含标点复制到剪贴板</span></li>
-              <li className="flex items-start gap-2"><span className="shrink-0 w-5 h-5 rounded border border-[var(--border)] flex items-center justify-center mt-0.5"><Plus size={11} /></span><span><b>新建</b> — 选择诗/词体裁创建新画板</span></li>
+              <li className="flex items-start gap-2"><span className="shrink-0 w-5 h-5 rounded border border-[var(--border)] flex items-center justify-center mt-0.5"><Settings size={11} /></span><span><b>设置</b> — 教程、署名、导入导出、API Key、实验性选项</span></li>
+              <li className="flex items-start gap-2"><span className="shrink-0 w-5 h-5 rounded border border-[var(--border)] flex items-center justify-center mt-0.5"><Download size={11} /></span><span><b>导出菜单</b> — 复制文字、导出图片、上传至南洋吟游</span></li>
+              <li className="flex items-start gap-2"><span className="shrink-0 w-5 h-5 rounded border border-[var(--border)] flex items-center justify-center mt-0.5"><Plus size={11} /></span><span><b>新建</b> — 选择诗/词/自由诗体裁创建新画板</span></li>
             </ul>
           </div>
           <div>
-            <p className="font-medium text-[var(--text)] flex items-center gap-1.5">创作网格</p>
+            <p className="font-medium text-[var(--text)] flex items-center gap-1.5">创作网格（诗/词）</p>
             <ul className="list-disc pl-4 mt-1 space-y-1">
               <li>点击格子输入汉字，光标自动前进</li>
               <li>系统实时校验平仄与韵律，错误处标红提示</li>
               <li>点击已填字可在下方字典查询该字韵部</li>
               <li>Shift+点击可多选文字，查询对语</li>
+              <li>点击标点可替换为其他常规标点</li>
+              <li>悬停字格 1 秒可添加辅助标点（引号/书名号）</li>
+              <li>组诗模式：添加多首，每首可独立配置序言/脚注/日期</li>
+            </ul>
+          </div>
+          <div>
+            <p className="font-medium text-[var(--text)] flex items-center gap-1.5">自由诗编辑器</p>
+            <ul className="list-disc pl-4 mt-1 space-y-1">
+              <li>逐行输入，支持全角标点</li>
+              <li>自动检测韵脚并着色标记</li>
+              <li>沉浸模式隐藏辅助元素，专注创作</li>
+            </ul>
+          </div>
+          <div>
+            <p className="font-medium text-[var(--text)] flex items-center gap-1.5">导出图片</p>
+            <ul className="list-disc pl-4 mt-1 space-y-1">
+              <li>23 款配色主题，多款字体可选</li>
+              <li>自由诗支持左/居中/两端对齐</li>
+              <li>竖排标题自动转换竖排标点</li>
+              <li>长按图片可保存（移动端）</li>
             </ul>
           </div>
           <div>
@@ -109,15 +131,16 @@ function SettingsModal({ onClose }: { onClose: () => void }) {
           <div>
             <p className="font-medium text-[var(--text)] flex items-center gap-1.5"><span className="shrink-0 w-5 h-5 rounded border border-[var(--border)] flex items-center justify-center"><BookOpen size={11} /></span>右侧韵部面板</p>
             <ul className="list-disc pl-4 mt-1 space-y-1">
-              <li>浏览完整韵书（平水韵/词林正韵），按韵部分类查看韵字</li>
+              <li>浏览完整韵书（平水韵/词林正韵/中华通韵），按韵部分类查看韵字</li>
               <li>在字典中点击韵部标签可联动切换到对应韵部</li>
+              <li>点击韵脚字可跳转到对应韵部</li>
               <li>移动端点击右上角书本图标呼出</li>
             </ul>
           </div>
           <div>
             <p className="font-medium text-[var(--text)] flex items-center gap-1.5"><span className="shrink-0 w-5 h-5 rounded border border-[var(--border)] flex items-center justify-center"><Lightbulb size={11} /></span>左侧灵感板</p>
             <ul className="list-disc pl-4 mt-1 space-y-1">
-              <li>记录创作灵感和参考素材，支持添加、编辑、删除</li>
+              <li>记录创作灵感和参考素材，支持文字和图片</li>
               <li>移动端点击左上角灯泡图标呼出</li>
             </ul>
           </div>
@@ -165,6 +188,29 @@ function SettingsModal({ onClose }: { onClose: () => void }) {
           </div>
           <p className="text-xs text-[var(--text-muted)]">导出为 JSON 文件，可在其他设备导入恢复。导入时自动跳过已存在的画板。</p>
           {importMsg && <p className="text-xs font-medium text-[var(--accent)]">{importMsg}</p>}
+          <div className="border-t border-[var(--border)] pt-3">
+            <label className="text-[10px] text-[var(--text-secondary)] mb-1 block">API Key（上传南洋吟游）</label>
+            <div className="flex gap-1.5">
+              <input
+                type="password"
+                value={apiKey}
+                onChange={e => {
+                  const v = e.target.value;
+                  setApiKey(v);
+                  if (v) localStorage.setItem('fangcun_sk', v);
+                  else localStorage.removeItem('fangcun_sk');
+                }}
+                placeholder="sk-nyyy-..."
+                className="flex-1 px-3 py-1.5 rounded-lg bg-[var(--bg)] border border-[var(--border)] text-sm text-[var(--text)] placeholder:text-[var(--text-muted)] outline-none focus:border-[var(--accent)] transition-colors font-mono"
+              />
+              {apiKey && (
+                <button
+                  className="shrink-0 text-[10px] text-[var(--text-muted)] hover:text-red-500 transition-colors px-1.5"
+                  onClick={() => { setApiKey(''); localStorage.removeItem('fangcun_sk'); }}
+                >清除</button>
+              )}
+            </div>
+          </div>
         </div>
       ),
     },
@@ -188,6 +234,7 @@ function SettingsModal({ onClose }: { onClose: () => void }) {
           </a>
           <p className="font-medium text-[var(--text)] pt-1">更新日志</p>
           <ul className="list-disc pl-4 space-y-1">
+            <li>v2.3 (06-16) — 标点编辑（常规替换+辅助标点挂载），导出对齐方式（左/居中/两端），组诗 per-section 元数据，上传重构（Modal 内确认+SK 鉴权），自由诗编辑器优化，Android 安全区适配</li>
             <li>v2.1 (04-21) — 导出主题扩展至 23 款（纸感/棉花糖/鱼肚白/极光/春水/暮山/星河/薄荷/大理石/晨暮/丹霞/碧落/苍翠/鎏金/西湖），支持渐变、等高线、有机曲线、纹理背景</li>
             <li>v2.0 (04-20) — 组诗创作，自由诗与古体诗，沉浸模式，画板文件夹管理，署名逻辑统一</li>
             <li>v1.6.7 (04-14) — 韵书数据清洗：移除无法渲染的生僻字及污染字</li>
@@ -205,6 +252,64 @@ function SettingsModal({ onClose }: { onClose: () => void }) {
             <li>v1.1 (2026-03-18) — 词库扩容至45万首，字典实时搜索，重字提醒，设置面板，字典区收起/展开动画，灵感板换行修复</li>
             <li>v1.0 (2026-02-13) — 首版上线，诗词格律校验，韵部查询，词首/词末/对语字典，灵感板</li>
           </ul>
+        </div>
+      ),
+    },
+    {
+      id: 'experimental',
+      title: '实验性选项',
+      content: (
+        <div className="text-sm text-[var(--text-secondary)] space-y-3 py-2">
+          <label className="flex items-center justify-between cursor-pointer">
+            <div>
+              <div className="font-medium text-[var(--text)]">维护作品编号</div>
+              <div className="text-xs text-[var(--text-muted)] mt-0.5">启用后可为每首作品维护编号（legacy_id），上传时自动携带</div>
+            </div>
+            <div
+              className={`w-9 h-5 rounded-full transition-colors relative ${legacyIdEnabled ? 'bg-[var(--accent)]' : 'bg-[var(--border)]'}`}
+              onClick={() => {
+                const next = !legacyIdEnabled;
+                localStorage.setItem('fangcun_legacy_id', next ? '1' : '0');
+                setLegacyIdEnabled(next);
+              }}
+            >
+              <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${legacyIdEnabled ? 'translate-x-[18px]' : 'translate-x-0.5'}`} />
+            </div>
+          </label>
+          <div>
+            <div className="font-medium text-[var(--text)]">组诗连缀方式</div>
+            <div className="text-xs text-[var(--text-muted)] mt-0.5 mb-2">上传/复制时组诗标题的编号连接方式</div>
+            <div className="flex gap-0.5 border border-[var(--border)] rounded-lg p-0.5 w-fit">
+              {([['space', '空格'], ['paren', '括号']] as const).map(([val, label]) => (
+                <button
+                  key={val}
+                  onClick={() => { setSeqStyle(val); localStorage.setItem('fangcun_seq_style', val); }}
+                  className={`px-3 py-1 rounded-[0.35rem] text-xs transition-colors ${seqStyle === val ? 'bg-[var(--accent)] text-white' : 'text-[var(--text-muted)] hover:bg-[var(--accent-light)]'}`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+            <div className="text-[10px] text-[var(--text-muted)] mt-1.5 font-mono">
+              {seqStyle === 'space' ? '春日 其一' : '春日（其一）'}
+            </div>
+          </div>
+          <label className="flex items-center justify-between cursor-pointer">
+            <div>
+              <div className="font-medium text-[var(--text)]">2字标题加空格</div>
+              <div className="text-xs text-[var(--text-muted)] mt-0.5">仅导出图片时生效，如「无题」→「无 题」</div>
+            </div>
+            <div
+              className={`w-9 h-5 rounded-full transition-colors relative ${titleSpacing ? 'bg-[var(--accent)]' : 'bg-[var(--border)]'}`}
+              onClick={() => {
+                const next = !titleSpacing;
+                localStorage.setItem('fangcun_title_spacing', next ? '1' : '0');
+                setTitleSpacing(next);
+              }}
+            >
+              <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${titleSpacing ? 'translate-x-[18px]' : 'translate-x-0.5'}`} />
+            </div>
+          </label>
         </div>
       ),
     },
@@ -291,7 +396,7 @@ export function TopBar() {
       <div key={b.id} className="relative group">
         <div
           className={`flex items-center justify-between px-3 py-1.5 text-sm cursor-pointer hover:bg-[var(--accent-light)] transition-colors ${b.id === state.activeBoardId ? 'bg-[var(--accent-light)] text-[var(--accent)]' : ''}`}
-          onClick={() => { dispatch({ type: 'SWITCH_BOARD', id: b.id }); setDropOpen(false); setConfirmDeleteId(null); }}
+          onClick={() => { dispatch({ type: 'SWITCH_BOARD', id: b.id }); track('switch_board'); setDropOpen(false); setConfirmDeleteId(null); }}
         >
           <div className="truncate flex-1 mr-2">
             <div className="truncate text-[13px]">{b.title}</div>
@@ -438,7 +543,7 @@ export function TopBar() {
                     onClick={e => e.stopPropagation()}
                     onBlur={e => {
                       const name = e.target.value.trim();
-                      if (name) dispatch({ type: 'RENAME_FOLDER', id: f.id, name });
+                      if (name) { dispatch({ type: 'RENAME_FOLDER', id: f.id, name }); track('rename_folder'); }
                       setRenamingFolderId(null);
                     }}
                     onKeyDown={e => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
@@ -490,10 +595,13 @@ export function TopBar() {
       const sentenceLen = board.genre === 'Shi' ? (sec.charCount % 7 === 0 ? 7 : 5) : 0;
 
       if (board.sections.length > 1) {
-        parts.push(sec.title || `其${['一','二','三','四','五','六','七','八','九','十'][idx] ?? idx + 1}`);
+        if (sec.sectionPreface) parts.push(sec.sectionPreface);
+        if (sec.title) parts.push(sec.title);
+        else if (idx > 0) parts.push('');
       }
 
       const getPunct = (gi: number): string => {
+        if (sec.punctOverrides && gi in sec.punctOverrides) return sec.punctOverrides[gi];
         if (board.genre === 'Shi') {
           const posInCouplet = gi % (sentenceLen * 2);
           const isSentenceEnd = posInCouplet === sentenceLen - 1 || posInCouplet === sentenceLen * 2 - 1;
@@ -516,9 +624,13 @@ export function TopBar() {
         }
       };
 
+      const OPENING = new Set(['「', '《', '“', '‘']);
       let text = '';
       for (let i = 0; i < chars.length; i++) {
+        const am = sec.auxMarks?.[i];
+        if (am) { for (const m of am) { if (OPENING.has(m)) text += m; } }
         text += chars[i] === PLACEHOLDER ? '□' : chars[i];
+        if (am) { for (const m of am) { if (!OPENING.has(m)) text += m; } }
         const punct = getPunct(i);
         if (punct) text += punct;
         if (board.genre === 'Shi' && sentenceLen > 0) {
@@ -526,8 +638,12 @@ export function TopBar() {
           if (posInCouplet === sentenceLen * 2 - 1 && i < chars.length - 1) text += '\n';
         }
       }
-      if (text.length > 0 && !text.endsWith('。') && !text.endsWith('，')) text += '。';
+      if (text.length > 0 && !/[，。、；：？！]$/.test(text)) text += '。';
       parts.push(text);
+      if (board.sections.length > 1) {
+        if (sec.sectionFootnote) parts.push(sec.sectionFootnote);
+        if (sec.sectionDate && !sec.sectionDateHidden) parts.push(sec.sectionDate);
+      }
     });
 
     return parts.join('\n');
@@ -543,29 +659,15 @@ export function TopBar() {
     });
   };
 
-  const handleUpload = () => {
-    if (!board) return;
-    const text = buildText();
-    const metadata = board.metadata || {};
-    const date = ensureGregorianDate(
-      metadata.date || new Date(Date.now() + 8 * 3600_000).toISOString().slice(0, 10),
-      metadata.dateFormat,
-    );
-    const params = new URLSearchParams({
-      '类型': board.genre === 'Shi' ? '诗' : board.genre === 'Ci' ? '词' : '自由诗',
-      '正文': text,
-      '日期': date,
-      '标题': board.title,
-    });
-    if (metadata.preface) params.set('序', metadata.preface);
-    if (metadata.footnote) params.set('脚注', metadata.footnote);
-    const author = resolveAuthor(metadata);
-    if (author) params.set('署名', author);
-    window.open(`https://sjtuguoxue.space/submit/?${params.toString()}`, '_blank');
-  };
+  const [showUpload, setShowUpload] = useState(false);
+
+  const statusBarH = (window as any).__STATUS_BAR_HEIGHT__ ?? 0;
 
   return (
-    <header className="h-12 border-b border-[var(--border)] bg-[var(--bg-card)] flex items-center px-3 gap-2 shrink-0 relative z-40">
+    <header
+      className="border-b border-[var(--border)] bg-[var(--bg-card)] flex items-center px-3 gap-2 shrink-0 relative z-40"
+      style={{ height: 48 + statusBarH, paddingTop: statusBarH }}
+    >
       {/* 画板切换 */}
       <div className="relative">
         <button
@@ -593,7 +695,7 @@ export function TopBar() {
                     <button
                       key={m}
                       className={`flex items-center justify-between px-2.5 py-1 text-[11px] whitespace-nowrap hover:bg-[var(--accent-light)] w-full ${m === mode ? 'text-[var(--accent)]' : ''}`}
-                      onClick={e => { e.stopPropagation(); dispatch({ type: 'SET_SORT_MODE', folderId, mode: m }); setSortMenuFor(null); setSortMenuPos(null); }}
+                      onClick={e => { e.stopPropagation(); dispatch({ type: 'SET_SORT_MODE', folderId, mode: m }); track('sort_folder', { mode: m }); setSortMenuFor(null); setSortMenuPos(null); }}
                     >
                       <span>{SORT_LABELS[m]}</span>
                       <span className="w-5 flex items-center justify-center shrink-0">{SORT_ICONS[m]}</span>
@@ -709,15 +811,13 @@ export function TopBar() {
                       <ImageDown size={14} />
                       <span>导出图片</span>
                     </button>
-                    {!navigator.userAgent.includes('FangcunAndroid') && (
-                      <button
+                    <button
                         className="w-full text-left px-3 py-2 text-sm flex items-center gap-2 hover:bg-[var(--accent-light)] transition-colors"
-                        onClick={() => { handleUpload(); setExportMenuOpen(false); }}
+                        onClick={() => { setShowUpload(true); setExportMenuOpen(false); }}
                       >
                         <Upload size={14} />
                         <span>上传南洋吟游</span>
                       </button>
-                    )}
                   </>
                 )}
               </div>
@@ -736,6 +836,7 @@ export function TopBar() {
       </button>
       {settingsOpen && <SettingsModal onClose={() => setSettingsOpen(false)} />}
       {showExport && <ExportPreview onClose={() => setShowExport(false)} />}
+      {showUpload && <UploadModal onClose={() => setShowUpload(false)} />}
     </header>
   );
 }

@@ -77,6 +77,9 @@ export type Action =
   | { type: 'SET_FREE_LINES'; lines: string[] }
   | { type: 'SET_FREE_RHYME'; result: FreeRhymeResult | null }
   | { type: 'TOGGLE_IMMERSIVE'; sectionIndex: number }
+  | { type: 'UPDATE_SECTION_META'; sectionIndex: number; field: 'sectionDate' | 'sectionPreface' | 'sectionFootnote' | 'sectionDateHidden' | 'sectionLegacyId'; value: string | boolean }
+  | { type: 'SET_PUNCT_OVERRIDE'; index: number; punct: string | null }
+  | { type: 'TOGGLE_AUX_MARK'; index: number; mark: string }
   | { type: 'ADD_FOLDER'; name: string; parentId: string | null }
   | { type: 'RENAME_FOLDER'; id: string; name: string }
   | { type: 'DELETE_FOLDER'; id: string }
@@ -332,6 +335,44 @@ function reducer(state: AppState, action: Action): AppState {
       const boards = state.boards.map(b => {
         if (b.id !== state.activeBoardId) return b;
         return updateSection(b, action.sectionIndex, { immersive: !b.sections[action.sectionIndex]?.immersive });
+      });
+      return { ...state, boards };
+    }
+    case 'UPDATE_SECTION_META': {
+      const boards = state.boards.map(b => {
+        if (b.id !== state.activeBoardId) return b;
+        const val = action.value === true ? true : action.value === false ? undefined : (action.value || undefined);
+        return updateSection(b, action.sectionIndex, { [action.field]: val });
+      });
+      return { ...state, boards };
+    }
+    case 'SET_PUNCT_OVERRIDE': {
+      const si = state.activeSectionIndex;
+      const boards = state.boards.map(b => {
+        if (b.id !== state.activeBoardId) return b;
+        const sec = b.sections[si];
+        if (!sec) return b;
+        const overrides = { ...(sec.punctOverrides ?? {}) };
+        if (action.punct === null) { delete overrides[action.index]; }
+        else { overrides[action.index] = action.punct; }
+        return updateSection(b, si, { punctOverrides: overrides });
+      });
+      return { ...state, boards };
+    }
+    case 'TOGGLE_AUX_MARK': {
+      const si = state.activeSectionIndex;
+      const boards = state.boards.map(b => {
+        if (b.id !== state.activeBoardId) return b;
+        const sec = b.sections[si];
+        if (!sec) return b;
+        const all = { ...(sec.auxMarks ?? {}) };
+        const marks = [...(all[action.index] ?? [])];
+        const idx = marks.indexOf(action.mark);
+        if (idx >= 0) { marks.splice(idx, 1); }
+        else { marks.push(action.mark); }
+        if (marks.length === 0) { delete all[action.index]; }
+        else { all[action.index] = marks; }
+        return updateSection(b, si, { auxMarks: all });
       });
       return { ...state, boards };
     }

@@ -1,9 +1,11 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { useBoardContext, useActiveBoard } from '../context/BoardContext';
 import { useFreeRhyme } from '../hooks/useFreeRhyme';
-import { Plus, X, Eye } from 'lucide-react';
+import { track } from '../lib/api';
+import { Plus, Eye } from 'lucide-react';
 
 const MAX_LINE_CHARS = 26;
+const CJK_PUNCT = '，。？！、～：＃；％——……·（）『』〔〕【】〖〗《》「」〈〉｜“”‘’';
 const RHYME_COLORS = ['#559977', '#557799', '#997755', '#775599', '#779955', '#995577', '#996666', '#669966', '#666699', '#888855', '#885588', '#558888'];
 
 function splitByLineBreaks(text: string): string[] {
@@ -37,6 +39,7 @@ export function FreeEditor() {
   const inputRef = useRef<HTMLInputElement>(null);
   const composingRef = useRef(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const lineRefs = useRef<(HTMLDivElement | null)[]>([]);
   const [activeLine, setActiveLine] = useState(0);
   const [cursorPos, setCursorPos] = useState(0);
   const [inputFocused, setInputFocused] = useState(true);
@@ -50,6 +53,13 @@ export function FreeEditor() {
   useFreeRhyme();
 
   const lines = board?.sections[0]?.lines ?? [''];
+
+  // Keep active line visible after edits
+  const linesKey = lines.join('\n');
+  useEffect(() => {
+    const el = lineRefs.current[activeLine];
+    if (el) el.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  }, [activeLine, linesKey]);
 
   const rhymeColorMap = new Map<string, string>();
   if (state.freeRhymeResult) {
@@ -111,7 +121,7 @@ export function FreeEditor() {
   useEffect(() => {
     if (!board || board.genre !== 'Free') return;
     const fn = (text: string) => {
-      const filtered = [...text].filter(c => /[\u4e00-\u9fff\u3400-\u4dbf，。！？、；：]/.test(c)).join('');
+      const re = new RegExp(`[\\u4e00-\\u9fff\\u3400-\\u4dbf${CJK_PUNCT}]`); const filtered = [...text].filter(c => re.test(c)).join('');
       if (!filtered) return;
       insertText(filtered, activeLineRef.current, cursorPosRef.current, lines);
     };
@@ -133,7 +143,7 @@ export function FreeEditor() {
 
     let filtered = '';
     for (const ch of val) {
-      if (/[\u4e00-\u9fff\u3400-\u4dbf，。！？、；： ]/.test(ch)) {
+      if (new RegExp(`[\\u4e00-\\u9fff\\u3400-\\u4dbf${CJK_PUNCT} ]`).test(ch)) {
         filtered += ch;
       }
     }
@@ -160,7 +170,7 @@ export function FreeEditor() {
     } else {
       return;
     }
-    const filtered = text.replace(/[^\u4e00-\u9fff\u3400-\u4dbf，。！？、；：""''…—· \n\r]/g, '');
+    const filtered = text.replace(new RegExp(`[^\\u4e00-\\u9fff\\u3400-\\u4dbf${CJK_PUNCT} \\n\\r]`, 'g'), '');
     if (!filtered) return;
     insertText(filtered, activeLine, cursorPos, lines);
   };
@@ -266,11 +276,6 @@ export function FreeEditor() {
     }
   };
 
-  const handleLineClick = (lineIdx: number) => {
-    setActiveLine(lineIdx);
-    setCursorPos(lines[lineIdx]?.length ?? 0);
-    focusInput();
-  };
 
   const addLine = () => {
     const newLines = [...lines, ''];
@@ -280,20 +285,9 @@ export function FreeEditor() {
     focusInput();
   };
 
-  const deleteLine = (idx: number) => {
-    if (lines.length <= 1) return;
-    const newLines = lines.filter((_, i) => i !== idx);
-    updateLines(newLines);
-    if (activeLine >= newLines.length) {
-      setActiveLine(newLines.length - 1);
-      setCursorPos(newLines[newLines.length - 1]?.length ?? 0);
-    } else if (activeLine === idx) {
-      setCursorPos(0);
-    }
-  };
-
   const enterImmersive = () => {
     dispatch({ type: 'TOGGLE_IMMERSIVE', sectionIndex: 0 });
+    track('toggle_immersive');
     setImmersiveHint(true);
     clearTimeout(hintTimerRef.current);
     hintTimerRef.current = setTimeout(() => setImmersiveHint(false), 3000);
@@ -375,11 +369,21 @@ export function FreeEditor() {
           return (
             <div
               key={li}
+              ref={el => { lineRefs.current[li] = el; }}
               className="group relative"
-              onClick={(e) => { e.stopPropagation(); handleLineClick(li); }}
+              onClick={(e) => {
+                e.stopPropagation();
+                const inner = e.currentTarget.querySelector('.line-inner') as HTMLElement | null;
+                const mid = inner
+                  ? inner.getBoundingClientRect().left + inner.getBoundingClientRect().width / 2
+                  : e.currentTarget.getBoundingClientRect().left + e.currentTarget.getBoundingClientRect().width / 2;
+                setActiveLine(li);
+                setCursorPos(e.clientX < mid ? 0 : chars.length);
+                focusInput();
+              }}
             >
               <div
-                className={`min-h-[2.5rem] flex items-center justify-center border-b transition-colors px-1 w-fit min-w-[15em] max-w-full mx-auto ${
+                className={`line-inner min-h-[2.5rem] flex items-end justify-center border-b transition-colors px-1 w-fit min-w-[15em] max-w-full mx-auto ${
                   immersive
                     ? 'border-transparent'
                     : active
@@ -387,12 +391,21 @@ export function FreeEditor() {
                       : 'border-[var(--grid-empty-border)]'
                 }`}
                 style={mobileFontSize ? { fontSize: `${mobileFontSize}px` } : undefined}
+                onClick={(e) => {
+                  if (e.target !== e.currentTarget) return;
+                  e.stopPropagation();
+                  const rect = e.currentTarget.getBoundingClientRect();
+                  const mid = rect.left + rect.width / 2;
+                  setActiveLine(li);
+                  setCursorPos(e.clientX < mid ? 0 : chars.length);
+                  focusInput();
+                }}
               >
                 {chars.length === 0 && !active && !immersive && (
                   <span className="text-[var(--text-muted)] text-sm select-none opacity-40">点击输入...</span>
                 )}
                 {chars.length === 0 && active && (
-                  <span className={`inline-block w-0.5 h-5 animate-pulse ${immersive ? 'bg-[var(--text-muted)] opacity-40' : 'bg-[var(--accent)]'}`} />
+                <span className={`inline-block w-px h-[1.5em] animate-pulse ${immersive ? 'bg-[var(--text-muted)] opacity-40' : 'bg-[var(--accent)]'}`} />
                 )}
                 {chars.map((ch, ci) => {
                   const color = immersive ? undefined : rhymeColorMap.get(`${li}:${ci}`);
@@ -403,7 +416,7 @@ export function FreeEditor() {
                       className="inline-flex items-center cursor-text select-none"
                       onClick={(e) => { e.stopPropagation(); handleCharClick(li, ci); }}
                     >
-                      <span className={`inline-block w-0.5 h-5 ${isCursorHere ? (immersive ? 'bg-[var(--text-muted)] opacity-40 animate-pulse' : 'bg-[var(--accent)] animate-pulse') : ''}`} />
+                      <span className={`inline-block w-px h-[1.5em] ${isCursorHere ? (immersive ? 'bg-[var(--text-muted)] opacity-40 animate-pulse' : 'bg-[var(--accent)] animate-pulse') : ''}`} />
                       <span
                         className="inline-block text-center leading-relaxed transition-colors"
                         style={{
@@ -419,20 +432,10 @@ export function FreeEditor() {
                 })}
                 {/* Trailing gap — always present, colored when cursor is at end */}
                 {chars.length > 0 && (
-                  <span className={`inline-block w-0.5 h-5 ${active && cursorPos >= chars.length ? (immersive ? 'bg-[var(--text-muted)] opacity-40 animate-pulse' : 'bg-[var(--accent)] animate-pulse') : ''}`} />
+                  <span className={`inline-block w-px h-[1.5em] ${active && cursorPos >= chars.length ? (immersive ? 'bg-[var(--text-muted)] opacity-40 animate-pulse' : 'bg-[var(--accent)] animate-pulse') : ''}`} />
                 )}
               </div>
 
-              {/* Delete button */}
-              {!immersive && lines.length > 1 && (
-                <button
-                  className="absolute right-0 top-1/2 -translate-y-1/2 -mr-6 w-4 h-4 rounded flex items-center justify-center text-[var(--text-muted)] opacity-0 group-hover:opacity-100 touch-show hover:text-rose-500 transition-opacity"
-                  onClick={(e) => { e.stopPropagation(); deleteLine(li); }}
-                  title="删除行"
-                >
-                  <X size={10} />
-                </button>
-              )}
             </div>
           );
         })}
@@ -451,7 +454,7 @@ export function FreeEditor() {
       {/* Hidden input for IME */}
       <input
         ref={inputRef}
-        className="absolute opacity-0 w-0 h-0 pointer-events-none"
+        className="fixed opacity-0 w-0 h-0 pointer-events-none"
         onCompositionStart={handleCompositionStart}
         onCompositionEnd={handleCompositionEnd}
         onInput={handleInput}

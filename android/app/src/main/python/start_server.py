@@ -23,9 +23,19 @@ def start(base_dir):
     # 1. 环境变量 —— 必须在 import app 之前设置
     os.environ["FANGCUN_CONFIG_DIR"] = config_dir
 
-    # 2. 注入 api_keys 桩模块（Android 无需统计，避免 SQLite 依赖）
+    # 2. 注入 api_keys 桩模块（Android 端 record_call 转发到线上统计）
     stub = types.ModuleType("api_keys")
-    stub.record_call = lambda source, route: None
+    _remote_url = "https://write.sjtuguoxue.space"
+    def _record_call(source, route):
+        try:
+            import json
+            data = json.dumps({"source": source, "route": route}).encode()
+            req = urllib.request.Request(f"{_remote_url}/api/_ping", data=data,
+                                        headers={"Content-Type": "application/json"})
+            urllib.request.urlopen(req, timeout=3)
+        except Exception:
+            pass
+    stub.record_call = _record_call
     stub.get_route_stats = lambda date=None: []
     sys.modules["api_keys"] = stub
 
