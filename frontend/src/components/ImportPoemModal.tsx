@@ -101,7 +101,18 @@ export function ImportPoemModal({ onClose }: { onClose: () => void }) {
   };
 
   const doImport = (poem: PoemFull) => {
-    const chars = [...poem.content].filter(c => c >= '\u4e00' && c <= '\u9fff');
+    // Extract CJK chars and map punctuation to overrides
+    const chars: string[] = [];
+    const punctOverrides: Record<number, string> = {};
+    let lastIdx = -1;
+    for (const ch of poem.content) {
+      if (/[一-鿿㐀-䶿]/.test(ch)) {
+        chars.push(ch);
+        lastIdx = chars.length - 1;
+      } else if (/[，。、；：？！]/.test(ch) && lastIdx >= 0) {
+        punctOverrides[lastIdx] = ch;
+      }
+    }
     const charCount = chars.length;
 
     if (!poem.closest_rule) {
@@ -129,6 +140,9 @@ export function ImportPoemModal({ onClose }: { onClose: () => void }) {
     const board = createBoard(genre, ruleName, charCount);
     board.title = poem.title;
     board.sections[0].poemChars = chars;
+    if (Object.keys(punctOverrides).length > 0) {
+      board.sections[0].punctOverrides = punctOverrides;
+    }
     board.metadata = { ...board.metadata, author: poem.author };
     dispatch({ type: 'ADD_BOARD', board });
     track('import_poem', { matched: 1 });

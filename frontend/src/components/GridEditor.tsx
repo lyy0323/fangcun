@@ -568,11 +568,15 @@ export function GridEditor() {
     inp.value = '';
     if (!val) return;
     let cur = cursor;
+    let lastCharIdx = -1;
     setSelectionEnd(null);
     for (const ch of val) {
-      if (/[\u4e00-\u9fff]/.test(ch) && cur < charCount) {
+      if (/[\u4e00-\u9fff\u3400-\u4dbf]/.test(ch) && cur < charCount) {
         dispatch({ type: 'UPDATE_CHAR', index: cur, char: ch });
+        lastCharIdx = cur;
         cur = Math.min(cur + 1, charCount - 1);
+      } else if (/[，。、；：？！]/.test(ch) && lastCharIdx >= 0) {
+        dispatch({ type: 'SET_PUNCT_OVERRIDE', index: lastCharIdx, punct: ch });
       }
     }
     setCursor(cur);
