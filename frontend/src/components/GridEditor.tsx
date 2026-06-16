@@ -1,6 +1,7 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { useBoardContext, useActiveBoard } from '../context/BoardContext';
 import { track } from '../lib/api';
+import { isMarkdownPaste, parseMarkdownPaste } from '../lib/markdownParse';
 import { useValidation } from '../hooks/useValidation';
 import { GridCell } from './GridCell';
 import { PLACEHOLDER } from '../lib/types';
@@ -584,6 +585,23 @@ export function GridEditor() {
 
   const handleInput = () => { if (!composingRef.current) flushInput(); };
 
+  const handlePaste = (e: React.ClipboardEvent) => {
+    const text = e.clipboardData.getData('text/plain');
+    if (text && isMarkdownPaste(text)) {
+      e.preventDefault();
+      try {
+        const parsed = parseMarkdownPaste(text);
+        if (parsed.sections.length > 0 || parsed.title) {
+          dispatch({ type: 'IMPORT_MARKDOWN', payload: parsed });
+          if (parsed.title) {
+            const ti = containerRef.current?.querySelector('input[placeholder]') as HTMLInputElement | null;
+            if (ti) ti.value = parsed.title;
+          }
+        }
+      } catch { /* fall through to default paste */ }
+    }
+  };
+
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (composingRef.current) return;
 
@@ -670,6 +688,44 @@ export function GridEditor() {
     if (val && val !== board.title) dispatch({ type: 'UPDATE_TITLE', title: val });
   };
 
+  const handleTitlePaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
+    const text = e.clipboardData.getData('text/plain');
+    if (!text) return;
+
+    if (isMarkdownPaste(text)) {
+      e.preventDefault();
+      try {
+        const parsed = parseMarkdownPaste(text);
+        if (parsed.sections.length > 0 || parsed.title) {
+          dispatch({ type: 'IMPORT_MARKDOWN', payload: parsed });
+          if (parsed.title) (e.target as HTMLInputElement).value = parsed.title;
+        }
+      } catch { /* fall through */ }
+      return;
+    }
+
+    if (text.includes('\n')) {
+      e.preventDefault();
+      const [first, ...rest] = text.split(/\r?\n/);
+      const title = first.trim();
+      if (title) {
+        dispatch({ type: 'UPDATE_TITLE', title });
+        (e.target as HTMLInputElement).value = title;
+      }
+      const body = rest.map(l => l.trim()).filter(Boolean);
+      if (body.length > 0) {
+        const chars = body.join('').replace(/[，。、；：？！「」《》""'']/g, '');
+        let cur = cursor;
+        for (const ch of chars) {
+          if (!/[一-鿿㐀-䶿]/.test(ch) || cur >= charCount) continue;
+          dispatch({ type: 'UPDATE_CHAR', index: cur, char: ch });
+          cur++;
+        }
+        setCursor(Math.min(cur, charCount - 1));
+      }
+    }
+  };
+
   return (
     <div className="w-full relative" onClick={() => inputRef.current?.blur()} ref={containerRef}>
       {/* Board title */}
@@ -680,6 +736,7 @@ export function GridEditor() {
           key={board.id + '-title'}
           placeholder="点击输入标题..."
           onBlur={handleTitleBlur}
+          onPaste={handleTitlePaste}
           onKeyDown={e => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
           onMouseDown={(e) => {
             const anyImmersive = board.sections.findIndex(s => s.immersive);
@@ -1108,6 +1165,7 @@ export function GridEditor() {
         })()}
         onInput={handleInput}
         onKeyDown={handleKeyDown}
+        onPaste={handlePaste}
         onCompositionStart={handleCompositionStart}
         onCompositionEnd={handleCompositionEnd}
         onFocus={() => setInputFocused(true)}

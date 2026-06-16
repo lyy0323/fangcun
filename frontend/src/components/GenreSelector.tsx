@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useBoardContext, createBoard } from '../context/BoardContext';
 import { rulesList, track } from '../lib/api';
-import { SHI_CHAR_COUNTS, type RuleListItem } from '../lib/types';
+import { SHI_CHAR_COUNTS, type RuleListItem, type Board } from '../lib/types';
 import { X, ArrowLeft } from 'lucide-react';
 import { ImportPoemModal } from './ImportPoemModal';
 
@@ -12,6 +12,8 @@ export function GenreSelector() {
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(false);
   const [showImport, setShowImport] = useState(false);
+  const [importMsg, setImportMsg] = useState<string | null>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (step === 'ci' && ciRules.length === 0) {
@@ -47,9 +49,37 @@ export function GenreSelector() {
     const longpu = ciRules.filter(r => r.name.includes('龙谱'));
     if (longpu.length === 0) return;
     const pick = longpu[Math.floor(Math.random() * longpu.length)];
-    // 提取词牌名前缀（去掉 _龙谱_格X）填入搜索框，让用户自行选择
     const cipai = pick.name.split('_')[0];
     handleSearchChange(cipai);
+  };
+
+  const handleImportBoards = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const data = JSON.parse(reader.result as string);
+        if (!data.boards || !Array.isArray(data.boards)) {
+          setImportMsg('文件格式无效');
+          return;
+        }
+        const incoming = data.boards as Board[];
+        const incomingFolders = Array.isArray(data.folders) ? data.folders : [];
+        const existingIds = new Set(state.boards.map(b => b.id));
+        const newCount = incoming.filter(b => !existingIds.has(b.id)).length;
+        const skipCount = incoming.length - newCount;
+        dispatch({ type: 'IMPORT_BOARDS', boards: incoming, folders: incomingFolders });
+        track('import_boards', { count: newCount });
+        const parts = [`导入 ${newCount} 个画板`];
+        if (skipCount > 0) parts.push(`跳过 ${skipCount} 个重复`);
+        setImportMsg(parts.join('，'));
+      } catch {
+        setImportMsg('文件解析失败');
+      }
+    };
+    reader.readAsText(file);
+    e.target.value = '';
   };
 
   return (
@@ -86,23 +116,23 @@ export function GenreSelector() {
           {/* 第一步: 诗/词 */}
           {step === 'genre' && (
             <div className="flex flex-col items-center py-8">
-              <div className="flex gap-3 justify-center flex-wrap">
+              <div className="flex gap-3 justify-center">
                 <button
-                  className="w-24 h-24 sm:w-28 sm:h-28 rounded-2xl border-2 border-[var(--border)] hover:border-[var(--accent)] hover:bg-[var(--accent-light)] flex flex-col items-center justify-center gap-2 transition-all"
+                  className="w-[5.5rem] h-[5.5rem] sm:w-28 sm:h-28 rounded-2xl border-2 border-[var(--border)] hover:border-[var(--accent)] hover:bg-[var(--accent-light)] flex flex-col items-center justify-center gap-2 transition-all"
                   onClick={() => setStep('shi')}
                 >
                   <span className="text-3xl">诗</span>
                   <span className="text-xs text-[var(--text-secondary)]">近体·古体</span>
                 </button>
                 <button
-                  className="w-24 h-24 sm:w-28 sm:h-28 rounded-2xl border-2 border-[var(--border)] hover:border-[var(--accent)] hover:bg-[var(--accent-light)] flex flex-col items-center justify-center gap-2 transition-all"
+                  className="w-[5.5rem] h-[5.5rem] sm:w-28 sm:h-28 rounded-2xl border-2 border-[var(--border)] hover:border-[var(--accent)] hover:bg-[var(--accent-light)] flex flex-col items-center justify-center gap-2 transition-all"
                   onClick={() => setStep('ci')}
                 >
                   <span className="text-3xl">词</span>
                   <span className="text-xs text-[var(--text-secondary)]">词牌</span>
                 </button>
                 <button
-                  className="w-24 h-24 sm:w-28 sm:h-28 rounded-2xl border-2 border-[var(--border)] hover:border-[var(--accent)] hover:bg-[var(--accent-light)] flex flex-col items-center justify-center gap-2 transition-all"
+                  className="w-[5.5rem] h-[5.5rem] sm:w-28 sm:h-28 rounded-2xl border-2 border-[var(--border)] hover:border-[var(--accent)] hover:bg-[var(--accent-light)] flex flex-col items-center justify-center gap-2 transition-all"
                   onClick={() => {
                     const board = createBoard('Free', '自由', 0);
                     dispatch({ type: 'ADD_BOARD', board });
@@ -119,6 +149,14 @@ export function GenreSelector() {
               >
                 导入前人作品
               </button>
+              <button
+                className="mt-2 text-xs text-[var(--text-muted)] hover:text-[var(--accent)] transition-colors"
+                onClick={() => fileRef.current?.click()}
+              >
+                导入「方寸」画板集
+              </button>
+              <input ref={fileRef} type="file" accept=".json" className="hidden" onChange={handleImportBoards} />
+              {importMsg && <div className="mt-2 text-xs text-[var(--accent)]">{importMsg}</div>}
             </div>
           )}
 

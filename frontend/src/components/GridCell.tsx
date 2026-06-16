@@ -1,4 +1,5 @@
 import { PLACEHOLDER, type RuleItem } from '../lib/types';
+import { Plus } from 'lucide-react';
 
 interface Props {
   char: string;
@@ -144,7 +145,7 @@ export function GridCell({
                 onClick={e => { e.stopPropagation(); onAddCandidate?.(); }}
                 title="添加候选字"
               >
-                +
+                <Plus size={Math.max(10, fontSize - 2)} />
               </div>
             )}
           </>)}

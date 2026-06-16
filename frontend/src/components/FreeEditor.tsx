@@ -2,6 +2,7 @@ import { useState, useRef, useCallback, useEffect } from 'react';
 import { useBoardContext, useActiveBoard } from '../context/BoardContext';
 import { useFreeRhyme } from '../hooks/useFreeRhyme';
 import { track } from '../lib/api';
+import { isMarkdownPaste, parseMarkdownPaste } from '../lib/markdownParse';
 import { Plus, Eye } from 'lucide-react';
 
 const MAX_LINE_CHARS = 26;
@@ -158,6 +159,21 @@ export function FreeEditor() {
   const handlePaste = (e: React.ClipboardEvent) => {
     e.preventDefault();
     const plain = e.clipboardData.getData('text/plain');
+
+    if (plain && isMarkdownPaste(plain)) {
+      try {
+        const parsed = parseMarkdownPaste(plain);
+        if (parsed.sections.length > 0 || parsed.title) {
+          dispatch({ type: 'IMPORT_MARKDOWN', payload: parsed });
+          if (parsed.title) {
+            const ti = containerRef.current?.querySelector('input[placeholder]') as HTMLInputElement | null;
+            if (ti) ti.value = parsed.title;
+          }
+          return;
+        }
+      } catch { /* fall through to default paste */ }
+    }
+
     const html = e.clipboardData.getData('text/html');
     let text: string;
     if (plain) {
@@ -333,6 +349,38 @@ export function FreeEditor() {
           key={board.id + '-title'}
           placeholder="标题"
           onBlur={(e) => dispatch({ type: 'UPDATE_TITLE', title: e.target.value.trim() || '新建·自由诗' })}
+          onPaste={(e) => {
+            const text = e.clipboardData.getData('text/plain');
+            if (!text) return;
+
+            if (isMarkdownPaste(text)) {
+              e.preventDefault();
+              try {
+                const parsed = parseMarkdownPaste(text);
+                if (parsed.sections.length > 0 || parsed.title) {
+                  dispatch({ type: 'IMPORT_MARKDOWN', payload: parsed });
+                  if (parsed.title) (e.target as HTMLInputElement).value = parsed.title;
+                }
+              } catch { /* fall through */ }
+              return;
+            }
+
+            if (text.includes('\n')) {
+              e.preventDefault();
+              const [first, ...rest] = text.split(/\r?\n/);
+              const title = first.trim();
+              if (title) {
+                dispatch({ type: 'UPDATE_TITLE', title });
+                (e.target as HTMLInputElement).value = title;
+              }
+              const body = rest.filter(l => l.trim() || l === '');
+              if (body.length > 0) {
+                const newLines = [...lines];
+                for (const l of body) newLines.push(l);
+                dispatch({ type: 'SET_FREE_LINES', lines: newLines });
+              }
+            }
+          }}
           onMouseDown={(e) => {
             if (immersive) { e.preventDefault(); exitImmersiveMode(); }
           }}
@@ -359,7 +407,7 @@ export function FreeEditor() {
       </div>
 
       {/* Lines */}
-      <div className="space-y-0" onClick={(e) => e.stopPropagation()}>
+      <div className="space-y-0 free-lines" onClick={(e) => e.stopPropagation()}>
         {lines.map((line, li) => {
           const active = isActive(li);
           const chars = [...line];

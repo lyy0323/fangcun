@@ -1,14 +1,14 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useBoardContext, useActiveBoard } from '../context/BoardContext';
-import { PLACEHOLDER } from '../lib/types';
-import { Layers, Plus, ClipboardType, Check, Upload, Sun, Moon, Settings, ChevronRight, ChevronDown, X, BookOpen, Lightbulb, SendHorizontal, ExternalLink, Download, FolderUp, ImageDown, ScrollText, FolderPlus, Pencil, FolderInput, ChevronUp, ArrowUpDown, ArrowDown, ArrowUp, ArrowDownAZ } from 'lucide-react';
+import { PLACEHOLDER, resolveAuthor } from '../lib/types';
+import { Layers, Plus, ClipboardType, Check, Upload, Sun, Moon, Settings, ChevronRight, ChevronDown, X, BookOpen, Lightbulb, SendHorizontal, ExternalLink, Download, FolderUp, ImageDown, ScrollText, FolderPlus, Pencil, FolderInput, ChevronUp, ArrowUpDown, ArrowDown, ArrowUp, ArrowDownAZ, Undo2, Redo2, FileText } from 'lucide-react';
 import type { Board, SortMode } from '../lib/types';
 import { track } from '../lib/api';
 import { ExportPreview } from './ExportPreview';
 import { MetadataPopover } from './MetadataPopover';
 import { UploadModal } from './UploadModal';
 
-function SettingsModal({ onClose }: { onClose: () => void }) {
+function SettingsModal({ onClose, onExportMarkdown }: { onClose: () => void; onExportMarkdown: () => void }) {
   const { state, dispatch } = useBoardContext();
   const [openSection, setOpenSection] = useState<string | null>(null);
   const [importMsg, setImportMsg] = useState<string | null>(null);
@@ -17,18 +17,34 @@ function SettingsModal({ onClose }: { onClose: () => void }) {
   const [seqStyle, setSeqStyle] = useState<'space' | 'paren'>(() => (localStorage.getItem('fangcun_seq_style') as 'space' | 'paren') || 'space');
   const [titleSpacing, setTitleSpacing] = useState(() => localStorage.getItem('fangcun_title_spacing') === '1');
   const [apiKey, setApiKey] = useState(() => localStorage.getItem('fangcun_sk') ?? '');
+  const [exportFormat, setExportFormat] = useState<'plain' | 'markdown'>(() => (localStorage.getItem('fangcun_export_format') as 'plain' | 'markdown') || 'plain');
+  const [exportAuthor, setExportAuthor] = useState<'off' | 'override' | 'all'>(() => (localStorage.getItem('fangcun_export_author') as 'off' | 'override' | 'all') || 'all');
+  const [exportDate, setExportDate] = useState(() => localStorage.getItem('fangcun_export_date') !== '0');
   const toggle = (id: string) => setOpenSection(prev => prev === id ? null : id);
 
   function handleExport() {
-    const data = {
+    const data: Record<string, unknown> = {
       version: 1,
       app: 'fangcun',
       exportedAt: new Date().toISOString(),
       boards: state.boards,
     };
+    if (state.folders.length > 0) {
+      data.folders = state.folders;
+    }
+    const prefs: Record<string, string> = {};
+    if (defaultAuthor) prefs.default_author = defaultAuthor;
+    if (legacyIdEnabled) prefs.fangcun_legacy_id = '1';
+    if (seqStyle !== 'space') prefs.fangcun_seq_style = seqStyle;
+    if (titleSpacing) prefs.fangcun_title_spacing = '1';
+    if (exportFormat !== 'plain') prefs.fangcun_export_format = exportFormat;
+    if (exportAuthor !== 'all') prefs.fangcun_export_author = exportAuthor;
+    if (!exportDate) prefs.fangcun_export_date = '0';
+    if (Object.keys(prefs).length > 0) data.preferences = prefs;
     const json = JSON.stringify(data, null, 2);
-    const date = new Date().toISOString().slice(0, 10);
-    const fileName = `fangcun-boards-${date}.json`;
+    const ts = new Date().toISOString().slice(0, 19).replace(/[T:]/g, '-');
+    const author = localStorage.getItem('default_author') || '';
+    const fileName = author ? `fangcun-${author}-${ts}.json` : `fangcun-boards-${ts}.json`;
 
     if (window.AndroidBridge?.saveFile) {
       window.AndroidBridge.saveFile(json, fileName, 'application/json');
@@ -56,12 +72,26 @@ function SettingsModal({ onClose }: { onClose: () => void }) {
           return;
         }
         const incoming = data.boards as Board[];
+        const incomingFolders = Array.isArray(data.folders) ? data.folders : [];
         const existingIds = new Set(state.boards.map(b => b.id));
         const newCount = incoming.filter(b => !existingIds.has(b.id)).length;
         const skipCount = incoming.length - newCount;
-        dispatch({ type: 'IMPORT_BOARDS', boards: incoming });
+        const existingFolderIds = new Set(state.folders.map(f => f.id));
+        const newFolderCount = incomingFolders.filter((f: { id: string }) => !existingFolderIds.has(f.id)).length;
+        dispatch({ type: 'IMPORT_BOARDS', boards: incoming, folders: incomingFolders });
+        if (data.preferences && typeof data.preferences === 'object') {
+          const p = data.preferences as Record<string, string>;
+          if (p.default_author) { localStorage.setItem('default_author', p.default_author); setDefaultAuthor(p.default_author); }
+          if (p.fangcun_legacy_id) { localStorage.setItem('fangcun_legacy_id', p.fangcun_legacy_id); setLegacyIdEnabled(p.fangcun_legacy_id === '1'); }
+          if (p.fangcun_seq_style) { localStorage.setItem('fangcun_seq_style', p.fangcun_seq_style); setSeqStyle(p.fangcun_seq_style as 'space' | 'paren'); }
+          if (p.fangcun_title_spacing) { localStorage.setItem('fangcun_title_spacing', p.fangcun_title_spacing); setTitleSpacing(p.fangcun_title_spacing === '1'); }
+          if (p.fangcun_export_format) { localStorage.setItem('fangcun_export_format', p.fangcun_export_format); setExportFormat(p.fangcun_export_format as 'plain' | 'markdown'); }
+          if (p.fangcun_export_author) { localStorage.setItem('fangcun_export_author', p.fangcun_export_author); setExportAuthor(p.fangcun_export_author as 'off' | 'override' | 'all'); }
+          if (p.fangcun_export_date) { localStorage.setItem('fangcun_export_date', p.fangcun_export_date); setExportDate(p.fangcun_export_date !== '0'); }
+        }
         track('import_boards', { count: newCount });
         const parts = [`导入 ${newCount} 个画板`];
+        if (newFolderCount > 0) parts.push(`${newFolderCount} 个文件夹`);
         if (skipCount > 0) parts.push(`跳过 ${skipCount} 个重复`);
         setImportMsg(parts.join('，'));
       } catch {
@@ -188,6 +218,13 @@ function SettingsModal({ onClose }: { onClose: () => void }) {
           </div>
           <p className="text-xs text-[var(--text-muted)]">导出为 JSON 文件，可在其他设备导入恢复。导入时自动跳过已存在的画板。</p>
           {importMsg && <p className="text-xs font-medium text-[var(--accent)]">{importMsg}</p>}
+          <button
+            onClick={onExportMarkdown}
+            disabled={state.boards.length === 0}
+            className="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg border border-[var(--border)] text-[var(--text-secondary)] text-sm hover:bg-[var(--accent-light)] hover:text-[var(--accent)] transition-colors disabled:opacity-40"
+          >
+            <FileText size={14} /> 导出全部画板为 Markdown
+          </button>
           <div className="border-t border-[var(--border)] pt-3">
             <label className="text-[10px] text-[var(--text-secondary)] mb-1 block">API Key（上传南洋吟游）</label>
             <div className="flex gap-1.5">
@@ -261,13 +298,13 @@ function SettingsModal({ onClose }: { onClose: () => void }) {
       title: '实验性选项',
       content: (
         <div className="text-sm text-[var(--text-secondary)] space-y-3 py-2">
-          <label className="flex items-center justify-between cursor-pointer">
-            <div>
+          <label className="flex items-center justify-between gap-3 cursor-pointer">
+            <div className="min-w-0">
               <div className="font-medium text-[var(--text)]">维护作品编号</div>
               <div className="text-xs text-[var(--text-muted)] mt-0.5">启用后可为每首作品维护编号（legacy_id），上传时自动携带</div>
             </div>
             <div
-              className={`w-9 h-5 rounded-full transition-colors relative ${legacyIdEnabled ? 'bg-[var(--accent)]' : 'bg-[var(--border)]'}`}
+              className={`shrink-0 w-9 h-5 rounded-full transition-colors relative ${legacyIdEnabled ? 'bg-[var(--accent)]' : 'bg-[var(--border)]'}`}
               onClick={() => {
                 const next = !legacyIdEnabled;
                 localStorage.setItem('fangcun_legacy_id', next ? '1' : '0');
@@ -295,13 +332,13 @@ function SettingsModal({ onClose }: { onClose: () => void }) {
               {seqStyle === 'space' ? '春日 其一' : '春日（其一）'}
             </div>
           </div>
-          <label className="flex items-center justify-between cursor-pointer">
-            <div>
+          <label className="flex items-center justify-between gap-3 cursor-pointer">
+            <div className="min-w-0">
               <div className="font-medium text-[var(--text)]">2字标题加空格</div>
               <div className="text-xs text-[var(--text-muted)] mt-0.5">仅导出图片时生效，如「无题」→「无 题」</div>
             </div>
             <div
-              className={`w-9 h-5 rounded-full transition-colors relative ${titleSpacing ? 'bg-[var(--accent)]' : 'bg-[var(--border)]'}`}
+              className={`shrink-0 w-9 h-5 rounded-full transition-colors relative ${titleSpacing ? 'bg-[var(--accent)]' : 'bg-[var(--border)]'}`}
               onClick={() => {
                 const next = !titleSpacing;
                 localStorage.setItem('fangcun_title_spacing', next ? '1' : '0');
@@ -309,6 +346,55 @@ function SettingsModal({ onClose }: { onClose: () => void }) {
               }}
             >
               <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${titleSpacing ? 'translate-x-[18px]' : 'translate-x-0.5'}`} />
+            </div>
+          </label>
+          <div>
+            <div className="font-medium text-[var(--text)]">导出文本格式</div>
+            <div className="text-xs text-[var(--text-muted)] mt-0.5 mb-2">复制文字时的输出格式</div>
+            <div className="flex gap-0.5 border border-[var(--border)] rounded-lg p-0.5 w-fit">
+              {([['plain', '纯文本'], ['markdown', 'Markdown']] as const).map(([val, label]) => (
+                <button
+                  key={val}
+                  onClick={() => { setExportFormat(val); localStorage.setItem('fangcun_export_format', val); }}
+                  className={`px-3 py-1 rounded-[0.35rem] text-xs transition-colors ${exportFormat === val ? 'bg-[var(--accent)] text-white' : 'text-[var(--text-muted)] hover:bg-[var(--accent-light)]'}`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div>
+            <div className="font-medium text-[var(--text)]">导出文本包含作者</div>
+            <div className="text-xs text-[var(--text-muted)] mt-0.5 mb-2">复制文字和导出 Markdown 时包含署名</div>
+            <div className="flex gap-0.5 border border-[var(--border)] rounded-lg p-0.5 w-fit">
+              {([['off', '关闭'], ['override', '覆盖'], ['all', '全部']] as const).map(([val, label]) => (
+                <button
+                  key={val}
+                  onClick={() => { setExportAuthor(val); localStorage.setItem('fangcun_export_author', val); }}
+                  className={`px-3 py-1 rounded-[0.35rem] text-xs transition-colors ${exportAuthor === val ? 'bg-[var(--accent)] text-white' : 'text-[var(--text-muted)] hover:bg-[var(--accent-light)]'}`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+            <div className="text-[10px] text-[var(--text-muted)] mt-1.5">
+              {{ off: '不显示作者', override: '仅当作品指定署名时显示', all: '总是显示，包括全局默认署名' }[exportAuthor]}
+            </div>
+          </div>
+          <label className="flex items-center justify-between gap-3 cursor-pointer">
+            <div className="min-w-0">
+              <div className="font-medium text-[var(--text)]">导出文本包含日期</div>
+              <div className="text-xs text-[var(--text-muted)] mt-0.5">复制文字和导出 Markdown 时包含日期</div>
+            </div>
+            <div
+              className={`shrink-0 w-9 h-5 rounded-full transition-colors relative ${exportDate ? 'bg-[var(--accent)]' : 'bg-[var(--border)]'}`}
+              onClick={() => {
+                const next = !exportDate;
+                localStorage.setItem('fangcun_export_date', next ? '1' : '0');
+                setExportDate(next);
+              }}
+            >
+              <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${exportDate ? 'translate-x-[18px]' : 'translate-x-0.5'}`} />
             </div>
           </label>
         </div>
@@ -360,7 +446,7 @@ function SettingsModal({ onClose }: { onClose: () => void }) {
 }
 
 export function TopBar() {
-  const { state, dispatch } = useBoardContext();
+  const { state, dispatch, canUndo, canRedo } = useBoardContext();
   const board = useActiveBoard();
   const [dropOpen, setDropOpen] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -650,14 +736,157 @@ export function TopBar() {
     return parts.join('\n');
   };
 
+  const buildBoardMarkdown = (b: Board, opts: { author: 'off' | 'override' | 'all'; date: boolean }) => {
+    const meta = b.metadata || {};
+    const author = opts.author === 'off' ? ''
+      : opts.author === 'override' ? (meta.author ?? '')
+      : resolveAuthor(meta);
+    const heading = author ? `### ${b.title} / ${author}` : `### ${b.title}`;
+    const bq = (text: string) => text.split('\n').map(l => `> ${l}`);
+    const lines: string[] = [heading, ''];
+
+    // Board preface
+    if (meta.preface) { lines.push(...bq(meta.preface), ''); }
+
+    const multiSection = b.sections.length > 1;
+
+    b.sections.forEach((sec, idx) => {
+      // Section heading (组诗)
+      if (multiSection) {
+        if (sec.title) lines.push(`#### ${sec.title}`, '');
+        else if (idx > 0) lines.push(`#### `, '');
+      }
+
+      // Section preface
+      if (sec.sectionPreface) lines.push(...bq(sec.sectionPreface), '');
+
+      // Body text
+      if (b.genre === 'Free') {
+        const sLines = (sec.lines ?? []).filter(l => l.trim());
+        lines.push(...sLines, '');
+      } else {
+        const validation = state.validations[idx] ?? null;
+        const chars = sec.poemChars;
+        const rhymeSet = new Set(validation?.rhyme_positions ?? []);
+        const sentenceLen = b.genre === 'Shi' ? (sec.charCount % 7 === 0 ? 7 : 5) : 0;
+
+        const getPunct = (gi: number): string => {
+          if (sec.punctOverrides && gi in sec.punctOverrides) return sec.punctOverrides[gi];
+          if (b.genre === 'Shi') {
+            const posInCouplet = gi % (sentenceLen * 2);
+            const isSentenceEnd = posInCouplet === sentenceLen - 1 || posInCouplet === sentenceLen * 2 - 1;
+            if (!isSentenceEnd) return '';
+            return rhymeSet.has(gi) ? '。' : '，';
+          }
+          if (!validation?.display_segments) return '';
+          for (const seg of validation.display_segments) {
+            const offset = gi - seg.start_index;
+            if (offset >= 0 && offset < seg.rule_items.length) {
+              const comment = seg.rule_items[offset].comment;
+              if (rhymeSet.has(gi)) return '。';
+              if (comment === '叶' || comment === '换叶') return '。';
+              if (comment === '句') return '，';
+              if (comment === '读') return '、';
+              return '';
+            }
+          }
+          return '';
+        };
+
+        const OPENING = new Set(['「', '《', '“', '‘']);
+        let text = '';
+        for (let i = 0; i < chars.length; i++) {
+          const am = sec.auxMarks?.[i];
+          if (am) { for (const m of am) { if (OPENING.has(m)) text += m; } }
+          text += chars[i] === PLACEHOLDER ? '□' : chars[i];
+          if (am) { for (const m of am) { if (!OPENING.has(m)) text += m; } }
+          const punct = getPunct(i);
+          if (punct) text += punct;
+          if (b.genre === 'Shi' && sentenceLen > 0) {
+            const posInCouplet = i % (sentenceLen * 2);
+            if (posInCouplet === sentenceLen * 2 - 1 && i < chars.length - 1) text += '\n';
+          }
+        }
+        if (text.length > 0 && !/[，。、；：？！]$/.test(text)) text += '。';
+        lines.push(text, '');
+      }
+
+      // Section footnote/date
+      if (sec.sectionFootnote) lines.push(...bq(sec.sectionFootnote));
+      if (opts.date && sec.sectionDate && !sec.sectionDateHidden) lines.push(`> ${sec.sectionDate}`);
+      if (sec.sectionFootnote || (opts.date && sec.sectionDate && !sec.sectionDateHidden)) lines.push('');
+    });
+
+    // Board footnote/date
+    if (meta.footnote) lines.push(...bq(meta.footnote));
+    if (opts.date && meta.date && !meta.dateHidden) lines.push(`> ${meta.date}`);
+
+    return lines.join('\n').replace(/\n{3,}/g, '\n\n').trimEnd();
+  };
+
+  const buildAllMarkdown = (opts: { author: 'off' | 'override' | 'all'; date: boolean }) => {
+    const parts: string[] = [];
+
+    const renderLevel = (parentId: string | null) => {
+      const sortMode = parentId === null
+        ? state.rootSortMode
+        : (state.folders.find(f => f.id === parentId)?.sortMode ?? 'updated-desc');
+      const folders = state.folders
+        .filter(f => f.parentId === parentId)
+        .sort((a, b) => a.order - b.order);
+      const boards = sortBoards(
+        state.boards.filter(b => (b.folderId ?? null) === parentId),
+        sortMode,
+      );
+
+      for (const f of folders) {
+        parts.push(`## ${f.name}`, '');
+        renderLevel(f.id);
+      }
+      for (const b of boards) {
+        parts.push(buildBoardMarkdown(b, opts), '', '---', '');
+      }
+    };
+
+    renderLevel(null);
+    return parts.join('\n').replace(/\n{3,}/g, '\n\n').trimEnd();
+  };
+
   const handleCopy = () => {
     if (!board) return;
-    const full = `${board.title}\n${buildText()}`;
-    navigator.clipboard.writeText(full).then(() => {
+    const format = localStorage.getItem('fangcun_export_format') || 'plain';
+    const text = format === 'markdown'
+      ? buildBoardMarkdown(board, {
+          author: (localStorage.getItem('fangcun_export_author') || 'all') as 'off' | 'override' | 'all',          date: localStorage.getItem('fangcun_export_date') !== '0',
+        })
+      : `${board.title}\n${buildText()}`;
+    navigator.clipboard.writeText(text).then(() => {
       setCopied(true);
       track('copy_text');
       setTimeout(() => { setCopied(false); setExportMenuOpen(false); }, 1000);
     });
+  };
+
+  const handleExportMarkdown = () => {
+    const md = buildAllMarkdown({
+      author: (localStorage.getItem('fangcun_export_author') || 'all') as 'off' | 'override' | 'all',
+      date: localStorage.getItem('fangcun_export_date') !== '0',
+    });
+    const ts = new Date().toISOString().slice(0, 19).replace(/[T:]/g, '-');
+    const author = localStorage.getItem('default_author') || '';
+    const fileName = author ? `fangcun-${author}-${ts}.md` : `fangcun-all-${ts}.md`;
+    if (window.AndroidBridge?.saveFile) {
+      window.AndroidBridge.saveFile(md, fileName, 'text/markdown');
+    } else {
+      const blob = new Blob([md], { type: 'text/markdown' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = fileName;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+    setExportMenuOpen(false);
   };
 
   const [showUpload, setShowUpload] = useState(false);
@@ -685,7 +914,7 @@ export function TopBar() {
       <div className="relative">
         <button
           onClick={() => setDropOpen(!dropOpen)}
-          className="w-8 h-8 rounded-lg border border-[var(--grid-empty-border)] flex items-center justify-center text-[var(--text-secondary)] hover:bg-[var(--bg-card)] hover:text-[var(--text)]"
+          className="w-8 h-8 rounded-lg border border-[var(--border)] flex items-center justify-center text-[var(--text-muted)] hover:bg-[var(--accent-light)] hover:text-[var(--accent)] transition-colors"
           title="切换画板"
         >
           <Layers size={16} />
@@ -771,6 +1000,26 @@ export function TopBar() {
         </div>
       )}
 
+      {/* 撤销/重做 */}
+      {board && (
+        <>
+          <button
+            className={`w-8 h-8 rounded-lg border border-[var(--border)] flex items-center justify-center transition-colors ${canUndo ? 'text-[var(--text-muted)] hover:bg-[var(--accent-light)] hover:text-[var(--accent)]' : 'text-[var(--text-muted)] opacity-30 pointer-events-none'}`}
+            onClick={() => dispatch({ type: 'UNDO' })}
+            title="撤销"
+          >
+            <Undo2 size={15} />
+          </button>
+          <button
+            className={`w-8 h-8 rounded-lg border border-[var(--border)] flex items-center justify-center transition-colors ${canRedo ? 'text-[var(--text-muted)] hover:bg-[var(--accent-light)] hover:text-[var(--accent)]' : 'text-[var(--text-muted)] opacity-30 pointer-events-none'}`}
+            onClick={() => dispatch({ type: 'REDO' })}
+            title="重做"
+          >
+            <Redo2 size={15} />
+          </button>
+        </>
+      )}
+
       {/* 深色模式切换 */}
       <button
         className="w-8 h-8 rounded-lg border border-[var(--border)] flex items-center justify-center text-[var(--text-muted)] hover:bg-[var(--accent-light)] hover:text-[var(--accent)] transition-colors"
@@ -795,7 +1044,7 @@ export function TopBar() {
       {board && (
         <div className="relative">
           <button
-            className="w-8 h-8 rounded-lg border border-[var(--grid-empty-border)] flex items-center justify-center text-[var(--text-secondary)] hover:bg-[var(--bg-card)] hover:text-[var(--text)] transition-colors"
+            className="w-8 h-8 rounded-lg border border-[var(--border)] flex items-center justify-center text-[var(--text-muted)] hover:bg-[var(--accent-light)] hover:text-[var(--accent)] transition-colors"
             onClick={() => setExportMenuOpen(v => !v)}
             title="导出"
           >
@@ -841,13 +1090,13 @@ export function TopBar() {
 
       {/* 新建按钮 */}
       <button
-        className="w-8 h-8 rounded-lg border border-[var(--grid-empty-border)] flex items-center justify-center text-[var(--text-secondary)] hover:bg-[var(--accent-light)] hover:text-[var(--accent)] hover:border-[var(--accent)]"
+        className="w-8 h-8 rounded-lg border border-[var(--border)] flex items-center justify-center text-[var(--text-muted)] hover:bg-[var(--accent-light)] hover:text-[var(--accent)] transition-colors"
         onClick={() => dispatch({ type: 'SHOW_GENRE_SELECTOR', show: true })}
         title="新建画板"
       >
         <Plus size={18} />
       </button>
-      {settingsOpen && <SettingsModal onClose={() => setSettingsOpen(false)} />}
+      {settingsOpen && <SettingsModal onClose={() => setSettingsOpen(false)} onExportMarkdown={handleExportMarkdown} />}
       {showExport && <ExportPreview onClose={() => setShowExport(false)} />}
       {showUpload && <UploadModal onClose={() => setShowUpload(false)} />}
     </header>

@@ -134,6 +134,9 @@ class MainActivity : Activity() {
                 useWideViewPort = true
                 loadWithOverviewMode = true
                 setSupportZoom(false)
+                builtInZoomControls = false
+                displayZoomControls = false
+                textZoom = 100
                 // 在 UserAgent 中标记 Android 端，前端可同步检测
                 userAgentString = "$userAgentString FangcunAndroid"
             }

@@ -46,7 +46,7 @@ function MobileDrawer({ side, open, onClose, title, children }: {
       >
         {/* 头部 */}
         <div className={`flex items-center gap-2 px-3 py-2 border-b border-[var(--border)] shrink-0 ${isLeft ? '' : 'flex-row-reverse'}`}>
-          <button className="w-5 h-5 rounded flex items-center justify-center text-[var(--text-muted)] hover:text-[var(--text)] shrink-0" onClick={onClose}>
+          <button className="w-5 h-5 rounded flex items-center justify-center text-[var(--text-muted)] hover:text-[var(--accent)] transition-colors shrink-0" onClick={onClose}>
             {isLeft ? <PanelLeftClose size={14} /> : <PanelRightClose size={14} />}
           </button>
           <span className="text-xs font-medium text-[var(--text)]">{title}</span>
@@ -69,6 +69,18 @@ function Layout() {
   // Android safe area offset for fixed buttons
   const safeTop = isAndroid ? Math.min((window as any).__STATUS_BAR_HEIGHT__ ?? 0, 24) : 0;
   const btnTop = 56 + safeTop; // 56px = top-14 default
+
+  // Undo/Redo keyboard shortcuts
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      const mod = e.metaKey || e.ctrlKey;
+      if (!mod || e.key !== 'z') return;
+      e.preventDefault();
+      dispatch({ type: e.shiftKey ? 'REDO' : 'UNDO' });
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [dispatch]);
 
   const togglePanel = (p: 'left' | 'right') => setMobilePanel(prev => prev === p ? null : p);
 
@@ -138,7 +150,7 @@ function Layout() {
             <div className={`flex-1 flex flex-col items-center overflow-y-auto ${lgPad} relative`}>
               {/* 移动端侧边触发按钮 */}
               <button
-                className={`${lgHide} fixed left-3 z-20 w-8 h-8 rounded-lg bg-[var(--bg-card)] border border-[var(--border)]  flex items-center justify-center text-[var(--text-secondary)] hover:bg-[var(--accent-light)] hover:text-[var(--accent)]`}
+                className={`${lgHide} fixed left-3 z-20 w-8 h-8 rounded-lg bg-[var(--bg-card)] border border-[var(--border)] flex items-center justify-center text-[var(--text-muted)] hover:bg-[var(--accent-light)] hover:text-[var(--accent)] transition-colors`}
                 style={{ top: btnTop }}
                 onClick={() => togglePanel('left')}
                 title="灵感板"
@@ -146,7 +158,7 @@ function Layout() {
                 <Lightbulb size={16} />
               </button>
               <button
-                className={`${lgHide} fixed right-3 z-20 w-8 h-8 rounded-lg bg-[var(--bg-card)] border border-[var(--border)]  flex items-center justify-center text-[var(--text-secondary)] hover:bg-[var(--accent-light)] hover:text-[var(--accent)]`}
+                className={`${lgHide} fixed right-3 z-20 w-8 h-8 rounded-lg bg-[var(--bg-card)] border border-[var(--border)] flex items-center justify-center text-[var(--text-muted)] hover:bg-[var(--accent-light)] hover:text-[var(--accent)] transition-colors`}
                 style={{ top: btnTop }}
                 onClick={() => togglePanel('right')}
                 title="韵部"

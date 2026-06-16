@@ -1,7 +1,24 @@
 import React, { createContext, useContext, useReducer, useEffect, type Dispatch } from 'react';
 import type { Board, Folder, SortMode, ValidationResult, BoardMetadata, PoemSection, FreeRhymeResult } from '../lib/types';
 import { PLACEHOLDER } from '../lib/types';
-import { loadBoards, saveBoards, loadActiveBoardId, saveActiveBoardId, loadFolders, saveFolders } from '../lib/storage';
+
+export interface MarkdownPasteSection {
+  title?: string;
+  preface?: string;
+  footnote?: string;
+  date?: string;
+  lines: string[];
+}
+
+export interface MarkdownPasteResult {
+  title?: string;
+  author?: string;
+  boardPreface?: string;
+  boardFootnote?: string;
+  boardDate?: string;
+  sections: MarkdownPasteSection[];
+}
+import { loadBoards, saveBoards, loadActiveBoardId, saveActiveBoardId, loadFolders, saveFolders, loadUndoStacks, saveUndoStacks } from '../lib/storage';
 
 // ============================================================================
 // State
@@ -21,6 +38,9 @@ export interface AppState {
   pairQuery: { text: string; insertAt: number } | null;
   freeRhymeResult: FreeRhymeResult | null;
   rootSortMode: SortMode;
+  undoStacks: Record<string, Board[]>;
+  redoStacks: Record<string, Board[]>;
+  _undoMeta: { boardId: string; actionType: string; timestamp: number };
 }
 
 const initialState: AppState = {
@@ -37,6 +57,9 @@ const initialState: AppState = {
   pairQuery: null,
   freeRhymeResult: null,
   rootSortMode: 'updated-desc' as SortMode,
+  undoStacks: loadUndoStacks(),
+  redoStacks: {},
+  _undoMeta: { boardId: '', actionType: '', timestamp: 0 },
 };
 
 // 首次打开没有画板时，自动弹出体裁选择
@@ -68,7 +91,7 @@ export type Action =
   | { type: 'DELETE_INSPIRATION'; cardId: string }
   | { type: 'UPDATE_INSPIRATION'; cardId: string; content: string }
   | { type: 'UPDATE_METADATA'; metadata: Partial<BoardMetadata> }
-  | { type: 'IMPORT_BOARDS'; boards: Board[] }
+  | { type: 'IMPORT_BOARDS'; boards: Board[]; folders?: Folder[] }
   | { type: 'ADD_SECTION' }
   | { type: 'DELETE_SECTION'; sectionIndex: number }
   | { type: 'MOVE_SECTION'; sectionIndex: number; direction: 'up' | 'down' }
@@ -87,7 +110,29 @@ export type Action =
   | { type: 'MOVE_FOLDER'; id: string; direction: 'up' | 'down' }
   | { type: 'MOVE_BOARD'; boardId: string; folderId: string | null }
   | { type: 'SET_SORT_MODE'; folderId: string | null; mode: SortMode }
-  | { type: 'REORDER_BOARD'; boardId: string; direction: 'up' | 'down' };
+  | { type: 'REORDER_BOARD'; boardId: string; direction: 'up' | 'down' }
+  | { type: 'UNDO' }
+  | { type: 'REDO' }
+  | { type: 'IMPORT_MARKDOWN'; payload: MarkdownPasteResult };
+
+// ============================================================================
+// Undo/Redo
+// ============================================================================
+
+const MAX_UNDO = 20;
+const DEBOUNCE_MS = 500;
+
+const UNDOABLE_ACTIONS = new Set([
+  'UPDATE_CHAR', 'SET_POEM_CHARS', 'SET_FREE_LINES',
+  'UPDATE_TITLE', 'UPDATE_SECTION_TITLE',
+  'ADD_CANDIDATE', 'REMOVE_CANDIDATE', 'REPLACE_WITH_CANDIDATE',
+  'ADD_SECTION', 'DELETE_SECTION', 'MOVE_SECTION',
+  'SET_PUNCT_OVERRIDE', 'TOGGLE_AUX_MARK',
+  'UPDATE_METADATA', 'UPDATE_SECTION_META',
+  'ADD_INSPIRATION', 'DELETE_INSPIRATION', 'UPDATE_INSPIRATION',
+  'TOGGLE_IMMERSIVE',
+  'IMPORT_MARKDOWN',
+]);
 
 // ============================================================================
 // Reducer
@@ -100,7 +145,58 @@ function updateSection(b: Board, si: number, patch: Partial<PoemSection>): Board
 }
 
 function reducer(state: AppState, action: Action): AppState {
+  // Undo snapshot: push current board before undoable mutations
+  if (UNDOABLE_ACTIONS.has(action.type) && state.activeBoardId) {
+    const bid = state.activeBoardId;
+    const board = state.boards.find(b => b.id === bid);
+    if (board) {
+      const now = Date.now();
+      const prev = state._undoMeta;
+      const same = bid === prev.boardId && action.type === prev.actionType && now - prev.timestamp < DEBOUNCE_MS;
+      const past = state.undoStacks[bid] || [];
+      const newPast = same ? past : [...past, board].slice(-MAX_UNDO);
+      state = {
+        ...state,
+        undoStacks: { ...state.undoStacks, [bid]: newPast },
+        redoStacks: { ...state.redoStacks, [bid]: [] },
+        _undoMeta: { boardId: bid, actionType: action.type, timestamp: now },
+      };
+    }
+  }
+
   switch (action.type) {
+    case 'UNDO': {
+      const bid = state.activeBoardId;
+      if (!bid) return state;
+      const past = state.undoStacks[bid] || [];
+      if (past.length === 0) return state;
+      const current = state.boards.find(b => b.id === bid);
+      if (!current) return state;
+      const prev = past[past.length - 1];
+      const future = [...(state.redoStacks[bid] || []), current];
+      return {
+        ...state,
+        boards: state.boards.map(b => b.id === bid ? prev : b),
+        undoStacks: { ...state.undoStacks, [bid]: past.slice(0, -1) },
+        redoStacks: { ...state.redoStacks, [bid]: future },
+      };
+    }
+    case 'REDO': {
+      const bid = state.activeBoardId;
+      if (!bid) return state;
+      const future = state.redoStacks[bid] || [];
+      if (future.length === 0) return state;
+      const current = state.boards.find(b => b.id === bid);
+      if (!current) return state;
+      const next = future[future.length - 1];
+      const past = [...(state.undoStacks[bid] || []), current];
+      return {
+        ...state,
+        boards: state.boards.map(b => b.id === bid ? next : b),
+        undoStacks: { ...state.undoStacks, [bid]: past },
+        redoStacks: { ...state.redoStacks, [bid]: future.slice(0, -1) },
+      };
+    }
     case 'ADD_BOARD': {
       const boards = [...state.boards, action.board];
       return { ...state, boards, activeBoardId: action.board.id, activeSectionIndex: 0, showGenreSelector: false, validations: [] };
@@ -111,6 +207,8 @@ function reducer(state: AppState, action: Action): AppState {
       if (activeBoardId === action.id) {
         activeBoardId = boards.length > 0 ? boards[0].id : null;
       }
+      const { [action.id]: _u, ...undoRest } = state.undoStacks;
+      const { [action.id]: _r, ...redoRest } = state.redoStacks;
       return {
         ...state,
         boards,
@@ -118,6 +216,8 @@ function reducer(state: AppState, action: Action): AppState {
         activeSectionIndex: activeBoardId !== state.activeBoardId ? 0 : state.activeSectionIndex,
         validations: activeBoardId !== state.activeBoardId ? [] : state.validations,
         showGenreSelector: boards.length === 0,
+        undoStacks: undoRest,
+        redoStacks: redoRest,
       };
     }
     case 'SWITCH_BOARD':
@@ -260,11 +360,25 @@ function reducer(state: AppState, action: Action): AppState {
       return { ...state, boards };
     }
     case 'IMPORT_BOARDS': {
-      const existingIds = new Set(state.boards.map(b => b.id));
-      const newBoards = action.boards.filter(b => !existingIds.has(b.id));
-      if (newBoards.length === 0) return state;
-      const boards = [...state.boards, ...newBoards];
-      return { ...state, boards };
+      const existingBoardIds = new Set(state.boards.map(b => b.id));
+      const newBoards = action.boards.filter(b => !existingBoardIds.has(b.id));
+
+      let folders = state.folders;
+      if (action.folders && action.folders.length > 0) {
+        const existingFolderIds = new Set(state.folders.map(f => f.id));
+        const newFolders = action.folders.filter(f => !existingFolderIds.has(f.id));
+        if (newFolders.length > 0) {
+          folders = [...state.folders, ...newFolders];
+        }
+      }
+
+      const allFolderIds = new Set(folders.map(f => f.id));
+      const boards = [...state.boards, ...newBoards.map(b =>
+        b.folderId && !allFolderIds.has(b.folderId) ? { ...b, folderId: undefined } : b,
+      )];
+
+      if (newBoards.length === 0 && folders === state.folders) return state;
+      return { ...state, boards, folders };
     }
     case 'ADD_SECTION': {
       const boards = state.boards.map(b => {
@@ -461,6 +575,76 @@ function reducer(state: AppState, action: Action): AppState {
       });
       return { ...state, boards };
     }
+    case 'IMPORT_MARKDOWN': {
+      const { payload } = action;
+      const boards = state.boards.map(b => {
+        if (b.id !== state.activeBoardId) return b;
+        let updated = { ...b, updatedAt: Date.now() };
+
+        if (payload.title) updated.title = payload.title;
+
+        const meta: Partial<BoardMetadata> = {};
+        if (payload.author) meta.author = payload.author;
+        if (payload.boardPreface) meta.preface = payload.boardPreface;
+        if (payload.boardFootnote) meta.footnote = payload.boardFootnote;
+        if (payload.boardDate) meta.date = payload.boardDate;
+
+        const pSections = payload.sections;
+        if (pSections.length === 0) return updated;
+
+        // Expand sections to match parsed count
+        let sections = [...updated.sections];
+        while (sections.length < pSections.length) {
+          const ref = sections[0];
+          sections.push({
+            id: crypto.randomUUID(),
+            title: '',
+            ruleName: ref.ruleName,
+            charCount: ref.charCount,
+            poemChars: Array(ref.charCount).fill(PLACEHOLDER),
+            candidatesMap: {},
+          });
+        }
+
+        // Fill each section
+        const singleSection = pSections.length === 1;
+        for (let i = 0; i < pSections.length; i++) {
+          const ps = pSections[i];
+          const sec = { ...sections[i] };
+          if (ps.title) sec.title = ps.title;
+
+          if (singleSection) {
+            // Single section: promote metadata to board level
+            if (ps.preface && !meta.preface) meta.preface = ps.preface;
+            if (ps.footnote && !meta.footnote) meta.footnote = ps.footnote;
+            if (ps.date && !meta.date) meta.date = ps.date;
+          } else {
+            if (ps.preface) sec.sectionPreface = ps.preface;
+            if (ps.footnote) sec.sectionFootnote = ps.footnote;
+            if (ps.date) sec.sectionDate = ps.date;
+          }
+
+          if (b.genre === 'Free') {
+            sec.lines = ps.lines;
+          } else {
+            // Fill poemChars from text lines (strip punctuation)
+            const allText = ps.lines.join('');
+            const chars = [...allText].filter(c => /[一-鿿㐀-䶿]/.test(c));
+            const poemChars = [...sec.poemChars];
+            for (let j = 0; j < Math.min(chars.length, poemChars.length); j++) {
+              poemChars[j] = chars[j];
+            }
+            sec.poemChars = poemChars;
+          }
+          sections[i] = sec;
+        }
+
+        updated.sections = sections;
+        if (Object.keys(meta).length > 0) updated.metadata = { ...updated.metadata, ...meta };
+        return updated;
+      });
+      return { ...state, boards };
+    }
     default:
       return state;
   }
@@ -470,7 +654,7 @@ function reducer(state: AppState, action: Action): AppState {
 // Context
 // ============================================================================
 
-const Ctx = createContext<{ state: AppState; dispatch: Dispatch<Action> } | null>(null);
+const Ctx = createContext<{ state: AppState; dispatch: Dispatch<Action>; canUndo: boolean; canRedo: boolean } | null>(null);
 
 export function BoardProvider({ children }: { children: React.ReactNode }) {
   const [state, dispatch] = useReducer(reducer, initialState);
@@ -488,7 +672,15 @@ export function BoardProvider({ children }: { children: React.ReactNode }) {
     if (state.activeBoardId) saveActiveBoardId(state.activeBoardId);
   }, [state.activeBoardId]);
 
-  return <Ctx.Provider value={{ state, dispatch }}>{children}</Ctx.Provider>;
+  useEffect(() => {
+    saveUndoStacks(state.undoStacks);
+  }, [state.undoStacks]);
+
+  const bid = state.activeBoardId;
+  const canUndo = !!bid && (state.undoStacks[bid]?.length ?? 0) > 0;
+  const canRedo = !!bid && (state.redoStacks[bid]?.length ?? 0) > 0;
+
+  return <Ctx.Provider value={{ state, dispatch, canUndo, canRedo }}>{children}</Ctx.Provider>;
 }
 
 export function useBoardContext() {

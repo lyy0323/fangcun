@@ -55,3 +55,23 @@ export function loadFolders(): Folder[] {
 export function saveFolders(folders: Folder[]) {
   localStorage.setItem(FOLDERS_KEY, JSON.stringify(folders));
 }
+
+const UNDO_KEY = 'undo_stacks';
+const UNDO_PERSIST_LIMIT = 3;
+
+export function loadUndoStacks(): Record<string, Board[]> {
+  try {
+    const raw = localStorage.getItem(UNDO_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch {
+    return {};
+  }
+}
+
+export function saveUndoStacks(stacks: Record<string, Board[]>) {
+  const trimmed: Record<string, Board[]> = {};
+  for (const [k, v] of Object.entries(stacks)) {
+    if (v.length > 0) trimmed[k] = v.slice(-UNDO_PERSIST_LIMIT);
+  }
+  localStorage.setItem(UNDO_KEY, JSON.stringify(trimmed));
+}

@@ -2,7 +2,9 @@
 // 诗词图片导出 — Canvas 绘制引擎
 // ============================================================================
 
-export type ThemeKey = '素白' | '朱砂' | '墨韵' | '竹青' | '藏蓝' | '烟紫' | '秋棠' | '霜灰' | '纸感' | '棉花糖' | '鱼肚白' | '极光' | '春水' | '暮山' | '星河' | '薄荷' | '大理石' | '晨暮' | '丹霞' | '碧落' | '苍翠' | '鎏金' | '西湖' | '金乌' | '烟雨' | '枯藤' | '青瓷' | '残雪' | '芭蕉' | '蝶梦' | '桃源' | '鹊桥' | '琉璃';
+export type ThemeKey = '素白' | '朱砂' | '墨韵' | '竹青' | '藏蓝' | '烟紫' | '秋棠' | '霜灰' | '纸感' | '棉花糖' | '鱼肚白' | '极光' | '春水' | '暮山' | '星河' | '薄荷' | '大理石' | '晨暮' | '丹霞' | '碧落' | '苍翠' | '鎏金' | '西湖' | '金乌' | '烟雨' | '枯藤' | '青瓷' | '残雪' | '芭蕉' | '蝶梦' | '桃源' | '鹊桥' | '琉璃' | '草纸' | '白叶' | '卡纸' | '藕纸' | '青纹' | '樱花' | '墨荷' | '红梅' | '巴山' | '天净沙' | '烟柳';
+
+export type AspectRatio = '3:4' | '9:16' | '9:18' | 'long';
 
 interface ColorTheme {
   bg: string;
@@ -15,6 +17,8 @@ interface ColorTheme {
   text: string;
   accent: string;
   muted: string;
+  allowedRatios?: AspectRatio[];
+  bgImage?: string;
 }
 
 export const THEMES: Record<ThemeKey, ColorTheme> = {
@@ -105,6 +109,17 @@ export const THEMES: Record<ThemeKey, ColorTheme> = {
     { x: 1.05, y: 1.1, size: 0.35, color: '#401838', layers: 3, seed: 9.3 },
   ], titleText: '#E8C0D8', text: '#D8C0E0', accent: '#2A1840', muted: '#7858A0' },
   '琉璃': { bg: '#F2F0F8', gradient: { colors: ['#E8D8F0', '#D8E0F8', '#D0F0F0', '#E0F0D8', '#F0E8D0', '#F0D8E0', '#E8D8F0'], angle: 150 }, text: '#3A3050', accent: '#D0C8E0', muted: '#8878A0' },
+  '草纸': { bg: '#F0EDE6', bgImage: '/bg/草纸.webp', allowedRatios: ['3:4', '9:16'], text: '#2C2C2C', accent: '#D8D0C4', muted: '#706860' },
+  '白叶': { bg: '#F8F8F6', bgImage: '/bg/白叶.webp', allowedRatios: ['3:4', '9:16'], text: '#2C2C2C', accent: '#E0DDD6', muted: '#A0A098' },
+  '卡纸': { bg: '#F5F0EA', bgImage: '/bg/卡纸.webp', allowedRatios: ['3:4', '9:16', '9:18'], text: '#3A3530', accent: '#DDD5CA', muted: '#A09888' },
+  '藕纸': { bg: '#D8C8C0', bgImage: '/bg/藕纸.webp', allowedRatios: ['3:4', '9:16', '9:18'], text: '#4A3038', accent: '#C0A8A0', muted: '#907078' },
+  '青纹': { bg: '#8FAEA8', bgImage: '/bg/青纹.webp', allowedRatios: ['3:4', '9:16', '9:18'], text: '#0A2020', accent: '#5A8880', muted: '#2A4A48' },
+  '樱花': { bg: '#FDE8EE', bgImage: '/bg/樱花.webp', allowedRatios: ['3:4', '9:16'], text: '#5A2838', accent: '#E8B0C0', muted: '#8A5068' },
+  '墨荷': { bg: '#F2EDE6', bgImage: '/bg/墨荷.webp', allowedRatios: ['3:4', '9:16'], text: '#2A2A28', accent: '#D0C8B8', muted: '#706858' },
+  '红梅': { bg: '#F5F0EA', bgImage: '/bg/红梅.webp', allowedRatios: ['3:4', '9:16'], text: '#3A1818', accent: '#D8C0B0', muted: '#8A6050' },
+  '巴山': { bg: '#D0D4D8', bgImage: '/bg/巴山.webp', allowedRatios: ['3:4', '9:16'], text: '#1E2A2A', accent: '#90A0A0', muted: '#3A4848' },
+  '天净沙': { bg: '#EDE8E0', bgImage: '/bg/天净沙.webp', allowedRatios: ['3:4', '9:16'], text: '#2A2520', accent: '#C8BEB0', muted: '#6A5E50' },
+  '烟柳': { bg: '#F0F0E8', bgImage: '/bg/烟柳.webp', allowedRatios: ['3:4', '9:16'], text: '#2A3028', accent: '#C8D0B8', muted: '#5A6850' },
 };
 
 export const THEME_KEYS: ThemeKey[] = [
@@ -116,6 +131,8 @@ export const THEME_KEYS: ThemeKey[] = [
   '丹霞', '碧落', '苍翠', '鎏金', '青瓷',
   // ---- 浅色 blob ----
   '棉花糖', '蝶梦', '桃源', '鱼肚白', '春水', '西湖', '暮山', '烟雨', '残雪', '枯藤',
+  // ---- 图片背景 ----
+  '草纸', '白叶', '卡纸', '藕纸', '青纹', '樱花', '墨荷', '红梅', '巴山', '天净沙', '烟柳',
   // ---- 深色 ----
   '墨韵', '极光', '金乌', '星河', '鹊桥', '芭蕉',
 ];
@@ -307,6 +324,53 @@ function pickCanvasHeight(minH: number): number {
   return Math.ceil(minH / 60) * 60;
 }
 
+/** 根据画布高度确定纵横比标签 */
+export function resolveAspectRatio(minH: number): AspectRatio {
+  const h = pickCanvasHeight(minH);
+  if (h <= ASPECT_HEIGHTS[0]) return '3:4';
+  if (h <= ASPECT_HEIGHTS[1]) return '9:16';
+  if (h <= ASPECT_HEIGHTS[2]) return '9:18';
+  return 'long';
+}
+
+/** 预计算内容所需最小高度（不含 canvas 对齐） */
+export function computeMinHeight(data: ExportData): number {
+  const { lines, charCount, genre, date, preface, footnote, author } = data;
+  const maxLineLen = genre !== 'Shi' ? Math.max(...lines.map(l => [...l].length), 1) : 0;
+  const { fontSize, lineHeight } =
+    genre !== 'Shi' ? getCiFontConfig(lines.length, maxLineLen) : getShiFontConfig(charCount);
+
+  let metaMaxW = META_MAX_W;
+  if (genre === 'Shi') {
+    const sentenceLen = charCount % 7 === 0 ? 7 : 5;
+    const charsPerLine = sentenceLen * 2 + 2;
+    const letterSpacing = fontSize * 0.12;
+    metaMaxW = charsPerLine * fontSize + (charsPerLine - 1) * letterSpacing;
+  }
+
+  const measureCanvas = document.createElement('canvas');
+  const measureCtx = measureCanvas.getContext('2d')!;
+  const { prefaceH, footerH } = measureMetaHeight(measureCtx, { date, preface, footnote }, metaMaxW);
+
+  const titleBlockH = measureTitleBlockHeight(data.title);
+  const titleRegionH = TITLE_PAD_TOP + titleBlockH;
+  const paraBreaks = data.align === 'justify' ? lines.filter(l => l === '').length : 0;
+  const poemTotalH = lines.length * lineHeight - paraBreaks * lineHeight * 0.2;
+  const authorH = author ? 40 : 0;
+  const belowPoemPad = lineHeight + footerH + authorH + 70;
+  const contentH = prefaceH + poemTotalH + belowPoemPad;
+  const minGap = MIN_GAP + ((data.sectionCount ?? 1) > 1 || genre === 'Free' ? lineHeight * 2 : 0);
+  return titleRegionH + minGap + contentH;
+}
+
+/** 筛选支持指定纵横比的主题 */
+export function filterThemesByRatio(ratio: AspectRatio): ThemeKey[] {
+  return THEME_KEYS.filter(k => {
+    const t = THEMES[k];
+    return !t.allowedRatios || t.allowedRatios.includes(ratio);
+  });
+}
+
 /** 测量标题竖排区域高度（不含顶部 padding） */
 function measureTitleBlockHeight(title: string): number {
   const dotIdx = title.search(/[·•·]/);
@@ -462,6 +526,26 @@ function fontFileUrl(dir: string, file: string): string {
     return signCdnUrl(url, FONT_CDN_KEY, 3600);
   }
   return `/fonts/${dir}/${file}`;
+}
+
+/** 构造 CDN 资源 URL（背景图等） */
+function cdnAssetUrl(path: string): string | null {
+  if (!FONT_CDN_BASE || !FONT_CDN_KEY) return null;
+  const url = `${FONT_CDN_BASE}${path}`;
+  return signCdnUrl(url, FONT_CDN_KEY, 3600);
+}
+
+/** 加载背景图片 */
+export function loadBgImage(path: string): Promise<HTMLImageElement | null> {
+  const url = cdnAssetUrl(path);
+  if (!url) return Promise.resolve(null);
+  return new Promise(resolve => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => resolve(img);
+    img.onerror = () => resolve(null);
+    img.src = url;
+  });
 }
 
 /** 构造字体 CSS URL */
@@ -679,11 +763,12 @@ function drawPreface(
   const lines = wrapText(ctx, text, maxW, spacing);
   // 诗：始终居中（与正文对齐）；词/自由诗：跟随对齐方式
   const centered = genre === 'Shi' || (genre === 'Free' && (!align || align === 'center'));
+  const metaShift = genre === 'Shi' ? META_FOOTER_FONT * 0.333 : 0;
 
   lines.forEach((line, i) => {
     const y = startY + i * META_PREFACE_LH + META_PREFACE_LH / 2;
     if (centered) {
-      drawTextCentered(ctx, line, centerX, y, spacing);
+      drawTextCentered(ctx, line, centerX - metaShift, y, spacing);
     } else {
       drawTextLeft(ctx, line, PAD_X, y, spacing);
     }
@@ -712,10 +797,11 @@ function drawFooter(
     const lines = wrapText(ctx, footnote, maxW, spacing);
     // 诗：始终居中（与正文对齐）；词/自由诗：跟随对齐方式
     const centered = genre === 'Shi' || (genre === 'Free' && (!align || align === 'center'));
+    const metaShift = genre === 'Shi' ? META_FOOTER_FONT * 0.333 : 0;
     lines.forEach((line, i) => {
       const lineY = y + i * META_FOOTER_LH + META_FOOTER_LH / 2;
       if (centered) {
-        drawTextCentered(ctx, line, centerX, lineY, spacing);
+        drawTextCentered(ctx, line, centerX - metaShift, lineY, spacing);
       } else {
         drawTextLeft(ctx, line, PAD_X, lineY, spacing);
       }
@@ -727,8 +813,9 @@ function drawFooter(
   if (date) {
     const lineY = y + META_FOOTER_LH / 2;
     const dateCentered = genre === 'Shi' || (genre === 'Free' && (!align || align === 'center'));
+    const metaShift = genre === 'Shi' ? META_FOOTER_FONT * 0.333 : 0;
     if (dateCentered) {
-      drawTextCentered(ctx, date, centerX, lineY, spacing);
+      drawTextCentered(ctx, date, centerX - metaShift, lineY, spacing);
     } else {
       drawTextLeft(ctx, date, PAD_X, lineY, spacing);
     }
@@ -749,6 +836,7 @@ export interface ExportData {
   theme: ThemeKey;
   fontKey?: FontKey;
   logo?: HTMLImageElement | null;
+  bgImg?: HTMLImageElement | null;
   date?: string;
   preface?: string;
   footnote?: string;
@@ -824,6 +912,22 @@ export function renderToCanvas(data: ExportData): HTMLCanvasElement {
     ctx.fillStyle = colors.bg;
   }
   ctx.fillRect(0, 0, W, height);
+
+  // ---- 背景图（CDN，cover 模式） ----
+  if (data.bgImg) {
+    const img = data.bgImg;
+    const imgRatio = img.naturalWidth / img.naturalHeight;
+    const canvasRatio = W / height;
+    let sx = 0, sy = 0, sw = img.naturalWidth, sh = img.naturalHeight;
+    if (imgRatio > canvasRatio) {
+      sw = img.naturalHeight * canvasRatio;
+      sx = (img.naturalWidth - sw) / 2;
+    } else {
+      sh = img.naturalWidth / canvasRatio;
+      sy = (img.naturalHeight - sh) / 2;
+    }
+    ctx.drawImage(img, sx, sy, sw, sh, 0, 0, W, height);
+  }
 
   if (colors.texture && colors.texture !== 'topography') {
     drawTexture(ctx, W * scale, height * scale, colors.texture);

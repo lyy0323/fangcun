@@ -55,3 +55,12 @@ body {
     opacity: 1 !important;
   }
 }
+
+/* 编辑区域：禁用原生长按菜单和选择高亮 */
+[data-section],
+.free-lines {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+}

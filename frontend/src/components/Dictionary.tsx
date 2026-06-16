@@ -195,7 +195,7 @@ export function Dictionary() {
     <div className={`border-t border-[var(--border)] bg-[var(--bg-card)] flex flex-col overflow-hidden transition-[height] duration-200 ease-in-out ${expanded ? 'h-[255px]' : 'h-[65px]'}`}>
       {/* 抽拉控件 */}
       <button
-        className="w-full h-5 flex items-center justify-center text-[var(--text-muted)] hover:text-[var(--text-secondary)] cursor-row-resize transition-colors"
+        className="w-full h-5 flex items-center justify-center text-[var(--text-muted)] hover:text-[var(--accent)] transition-colors"
         onClick={() => setExpanded(v => !v)}
         title={expanded ? '收起字典' : '展开字典'}
       >

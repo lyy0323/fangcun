@@ -9,16 +9,20 @@ import {
   loadFontPreviews,
   previewFontFamily,
   loadLogo,
+  loadBgImage,
   downloadCanvas,
   THEME_KEYS,
   THEMES,
   FONT_OPTIONS,
   DEFAULT_FONT,
+  computeMinHeight,
+  resolveAspectRatio,
+  filterThemesByRatio,
 } from '../lib/exportImage';
 import { track } from '../lib/api';
-import type { ThemeKey, FontKey } from '../lib/exportImage';
+import type { ThemeKey, FontKey, AspectRatio } from '../lib/exportImage';
 import type { Board } from '../lib/types';
-import { X, Download, Loader, Check } from 'lucide-react';
+import { X, Download, Loader, Check, ImageIcon } from 'lucide-react';
 
 
 // ============================================================================
@@ -234,6 +238,32 @@ export function ExportPreview({ onClose }: { onClose: () => void }) {
   const isFree = board?.genre === 'Free';
   const { lines, titleLines, metaLines } = board ? buildAllPoemLines(board, state.validations, isFree ? align : undefined) : { lines: [] as string[], titleLines: new Set<number>(), metaLines: new Set<number>() };
 
+  // 预计算纵横比，过滤可用模板
+  const aspectRatio: AspectRatio = (() => {
+    if (!board || lines.length === 0) return '3:4';
+    const scc = board.genre === 'Free'
+      ? Math.max(...lines.map(l => [...l].length), 1)
+      : board.sections[0].charCount;
+    const metadata = board.metadata || {};
+    const minH = computeMinHeight({
+      title: board.title, lines, charCount: scc, genre: board.genre, theme,
+      date: (!metadata.dateHidden && metadata.date) || '',
+      preface: metadata.preface || '', footnote: metadata.footnote || '',
+      author: resolveAuthor(metadata),
+      sectionCount: board.sections.length,
+      align: isFree ? align : undefined,
+    });
+    return resolveAspectRatio(minH);
+  })();
+  const availableThemes = filterThemesByRatio(aspectRatio);
+
+  // 如果当前选中模板不可用，自动切换
+  useEffect(() => {
+    if (availableThemes.length > 0 && !availableThemes.includes(theme)) {
+      setTheme(availableThemes[0]);
+    }
+  }, [availableThemes, theme]);
+
   // 预加载各字体的"文"字用于选择器预览
   useEffect(() => { loadFontPreviews(); }, []);
 
@@ -260,7 +290,12 @@ export function ExportPreview({ onClose }: { onClose: () => void }) {
       return t;
     })();
     const allText = exportTitle + lines.join('') + date + preface + footnote + author;
-    const [, logo] = await Promise.all([loadExportFonts(allText, fontKey), loadLogo()]);
+    const colors = THEMES[theme];
+    const [, logo, bgImg] = await Promise.all([
+      loadExportFonts(allText, fontKey),
+      loadLogo(),
+      colors.bgImage ? loadBgImage(colors.bgImage) : Promise.resolve(null),
+    ]);
     const canvas = renderToCanvas({
       title: exportTitle,
       lines,
@@ -269,6 +304,7 @@ export function ExportPreview({ onClose }: { onClose: () => void }) {
       theme,
       fontKey,
       logo,
+      bgImg,
       date,
       preface,
       footnote,
@@ -357,7 +393,7 @@ export function ExportPreview({ onClose }: { onClose: () => void }) {
               <button
                 key={mode}
                 onClick={() => setAlign(mode)}
-                className={`w-8 h-7 rounded flex items-center justify-center transition-colors ${
+                className={`w-8 h-7 rounded-[0.35rem] flex items-center justify-center transition-colors ${
                   align === mode
                     ? 'bg-[var(--accent)] text-white'
                     : 'text-[var(--text-muted)] hover:bg-[var(--accent-light)]'
@@ -395,6 +431,7 @@ export function ExportPreview({ onClose }: { onClose: () => void }) {
           <div className="flex gap-1.5 overflow-x-auto flex-1 min-w-0 py-1 px-1">
             {THEME_KEYS.map((k) => {
               const t = THEMES[k];
+              const available = availableThemes.includes(k);
               const bgStyle = t.topoColor
                 ? { background: `radial-gradient(circle at 75% 25%, ${t.topoColor}, ${t.bg} 70%)` }
                 : t.blobs
@@ -407,8 +444,8 @@ export function ExportPreview({ onClose }: { onClose: () => void }) {
               return (
               <button
                 key={k}
-                onClick={() => { setTheme(k); track('switch_theme', { theme: k }); }}
-                className="w-6 h-6 rounded-full transition-all shrink-0"
+                onClick={() => { if (available) { setTheme(k); track('switch_theme', { theme: k }); } }}
+                className={`relative w-6 h-6 rounded-full transition-all shrink-0 ${available ? '' : 'opacity-20 pointer-events-none'}`}
                 style={{
                   ...bgStyle,
                   boxShadow:
@@ -417,7 +454,13 @@ export function ExportPreview({ onClose }: { onClose: () => void }) {
                       : `inset 0 0 0 1px rgba(0,0,0,0.12)`,
                 }}
                 title={k}
-              />
+              >
+                {t.bgImage && (
+                  <span className={`absolute -bottom-1 -right-1 w-3.5 h-3.5 rounded-full flex items-center justify-center ${theme === k ? 'bg-[var(--accent-light)] border border-[var(--accent)]' : 'bg-white border border-[var(--border)]'}`}>
+                    <ImageIcon size={8} className={theme === k ? 'text-[var(--accent)]' : 'text-[var(--text-muted)]'} />
+                  </span>
+                )}
+              </button>
               );
             })}
           </div>
