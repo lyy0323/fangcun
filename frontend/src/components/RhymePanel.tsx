@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useBoardContext, useActiveBoard } from '../context/BoardContext';
 import { rhymeLookup, rhymeList, charLookup, track } from '../lib/api';
 import type { RhymeLookupResult } from '../lib/types';
@@ -78,18 +78,29 @@ export function RhymePanel() {
     setRhymeTotal(0);
   }, [boardId]);
 
-  // 韵书切换时清除已加载的韵部列表和手动覆盖
+  // 韵书切换时清除已加载的韵部列表
   useEffect(() => {
     setAllCategories([]);
-    setManualOverride(null);
     setManualOpen(false);
   }, [bookName]);
 
   // 自由诗：渲染阶段推断韵部名（primitive string，避免对象引用变化触发无意义重载）
   const inferredFreeCategory = isFree ? inferFreeCategory() : null;
 
+  // 跟踪上一次韵书名，用于检测韵书切换
+  const prevBookRef = useRef(bookName);
+
   // 韵部推断变化时自动加载（除非用户手动覆盖了）
   useEffect(() => {
+    // 韵书刚切换：清除旧韵部状态，跳过本轮加载（下一轮以干净状态重新触发）
+    if (prevBookRef.current !== bookName) {
+      prevBookRef.current = bookName;
+      setManualOverride(null);
+      setRhymeCatName(null);
+      setRhymeChars([]);
+      setRhymeTotal(0);
+      return;
+    }
     if (manualOverride) {
       loadCategory(manualOverride);
       return;
@@ -169,7 +180,7 @@ export function RhymePanel() {
     ? [{ value: 'Pingshuiyun', label: '平水韵' }, { value: 'Zhonghua_Tongyun', label: '中华通韵' }]
     : board?.genre === 'Ci'
     ? [{ value: 'Cilinzhengyun', label: '词林正韵' }, { value: 'Zhonghua_Tongyun', label: '中华通韵' }]
-    : [{ value: 'Zhonghua_Tongyun', label: '中华通韵' }, { value: 'Pingshuiyun', label: '平水韵' }];
+    : [{ value: 'Zhonghua_Tongyun', label: '中华通韵' }, { value: 'Pingshuiyun', label: '平水韵' }, { value: 'Cilinzhengyun', label: '词林正韵' }];
   const bookLabel = bookOptions.find(o => o.value === bookName)?.label ?? bookName;
 
   return (
