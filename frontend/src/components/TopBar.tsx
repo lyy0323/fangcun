@@ -271,6 +271,7 @@ function SettingsModal({ onClose, onExportMarkdown }: { onClose: () => void; onE
           </a>
           <p className="font-medium text-[var(--text)] pt-1">更新日志</p>
           <ul className="list-disc pl-4 space-y-1">
+            <li>v2.4 (06-16) — 撤销/重做，Markdown 导出与粘贴导入，画板集含文件夹导入导出，11 款图片背景主题（墨荷/红梅/巴山/天净沙/烟柳等），导出作者三档控制</li>
             <li>v2.3 (06-16) — 标点编辑（常规替换+辅助标点挂载），导出对齐方式（左/居中/两端），组诗 per-section 元数据，上传重构（Modal 内确认+SK 鉴权），自由诗编辑器优化，Android 安全区适配</li>
             <li>v2.2 (04-30) — 同位语</li>
             <li>v2.1 (04-21) — 导出主题扩展至 23 款（纸感/棉花糖/鱼肚白/极光/春水/暮山/星河/薄荷/大理石/晨暮/丹霞/碧落/苍翠/鎏金/西湖），支持渐变、等高线、有机曲线、纹理背景</li>
