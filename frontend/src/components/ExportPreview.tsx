@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useBoardContext, useActiveBoard } from '../context/BoardContext';
 import { PLACEHOLDER, resolveAuthor } from '../lib/types';
 import type { PoemSection, ValidationResult } from '../lib/types';
@@ -224,22 +224,38 @@ function convertGregorianToChinese(dateStr: string): string {
 // 组件
 // ============================================================================
 
+type ExportLoadPhase = 'idle' | 'fonts' | 'background' | 'render' | 'error';
+
+interface ExportLoadState {
+  phase: ExportLoadPhase;
+  loaded?: number;
+  total?: number;
+  message?: string;
+  warning?: string;
+}
+
 export function ExportPreview({ onClose }: { onClose: () => void }) {
   const { state } = useBoardContext();
   const board = useActiveBoard();
   const [theme, setTheme] = useState<ThemeKey>('素白');
   const [fontKey, setFontKey] = useState<FontKey>(DEFAULT_FONT);
-  const [loading, setLoading] = useState(true);
+  const [loadState, setLoadState] = useState<ExportLoadState>({ phase: 'idle' });
   const [canvasEl, setCanvasEl] = useState<HTMLCanvasElement | null>(null);
   const [downloadState, setDownloadState] = useState<'idle' | 'saving' | 'done'>('idle');
   const [align, setAlign] = useState<TextAlign>('center');
   const previewRef = useRef<HTMLDivElement>(null);
+  const renderAbortRef = useRef<AbortController | null>(null);
+  const renderRequestRef = useRef(0);
 
   const isFree = board?.genre === 'Free';
-  const { lines, titleLines, metaLines } = board ? buildAllPoemLines(board, state.validations, isFree ? align : undefined) : { lines: [] as string[], titleLines: new Set<number>(), metaLines: new Set<number>() };
+  const { lines, titleLines, metaLines } = useMemo(() => (
+    board
+      ? buildAllPoemLines(board, state.validations, isFree ? align : undefined)
+      : { lines: [] as string[], titleLines: new Set<number>(), metaLines: new Set<number>() }
+  ), [board, state.validations, isFree, align]);
 
   // 预计算纵横比，过滤可用模板
-  const aspectRatio: AspectRatio = (() => {
+  const aspectRatio: AspectRatio = useMemo(() => {
     if (!board || lines.length === 0) return '3:4';
     const scc = board.genre === 'Free'
       ? Math.max(...lines.map(l => [...l].length), 1)
@@ -254,12 +270,13 @@ export function ExportPreview({ onClose }: { onClose: () => void }) {
       align: isFree ? align : undefined,
     });
     return resolveAspectRatio(minH);
-  })();
-  const availableThemes = filterThemesByRatio(aspectRatio);
+  }, [board, lines, theme, align, isFree]);
+  const availableThemes = useMemo(() => filterThemesByRatio(aspectRatio), [aspectRatio]);
 
   // 如果当前选中模板不可用，自动切换
   useEffect(() => {
     if (availableThemes.length > 0 && !availableThemes.includes(theme)) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setTheme(availableThemes[0]);
     }
   }, [availableThemes, theme]);
@@ -269,10 +286,21 @@ export function ExportPreview({ onClose }: { onClose: () => void }) {
 
   const render = useCallback(async () => {
     if (!board || lines.length === 0) return;
+
+    renderAbortRef.current?.abort();
+    const controller = new AbortController();
+    renderAbortRef.current = controller;
+    const requestId = ++renderRequestRef.current;
+    const isCurrent = () => renderRequestRef.current === requestId && !controller.signal.aborted;
+    const updateState = (next: ExportLoadState) => {
+      if (isCurrent()) setLoadState(next);
+    };
+
     const sectionCharCount = board.genre === 'Free'
       ? Math.max(...lines.map(l => [...l].length), 1)
       : board.sections[0].charCount;
-    setLoading(true);
+    setCanvasEl(null);
+    updateState({ phase: 'fonts', loaded: 0, total: 0, message: '加载字体' });
     const metadata = board.metadata || {};
     const rawDate = (!metadata.dateHidden && metadata.date) || '';
     const preface = metadata.preface || '';
@@ -291,47 +319,97 @@ export function ExportPreview({ onClose }: { onClose: () => void }) {
     })();
     const allText = exportTitle + lines.join('') + date + preface + footnote + author;
     const colors = THEMES[theme];
-    const [, logo, bgImg] = await Promise.all([
-      loadExportFonts(allText, fontKey),
-      loadLogo(),
-      colors.bgImage ? loadBgImage(colors.bgImage) : Promise.resolve(null),
-    ]);
-    const canvas = renderToCanvas({
-      title: exportTitle,
-      lines,
-      charCount: sectionCharCount,
-      genre: board.genre,
-      theme,
-      fontKey,
-      logo,
-      bgImg,
-      date,
-      preface,
-      footnote,
-      author,
-      sectionCount: board.sections.length,
-      titleLines,
-      metaLines,
-      align: isFree ? align : undefined,
-    });
-    setCanvasEl(canvas);
-    setLoading(false);
-  }, [board, theme, fontKey, align]); // eslint-disable-line react-hooks/exhaustive-deps
+
+    try {
+      const [fontResult, logo] = await Promise.all([
+        loadExportFonts(allText, fontKey, {
+          signal: controller.signal,
+          onProgress: (loaded, total) => updateState({ phase: 'fonts', loaded, total, message: '加载字体' }),
+        }),
+        loadLogo(),
+      ]);
+      if (!isCurrent() || fontResult.aborted) return;
+
+      const warnings: string[] = [];
+      if (fontResult.failedChunks > 0) warnings.push('部分字体资源加载失败，已使用可用字体');
+      let warning = warnings.join('；') || undefined;
+      let bgImg: HTMLImageElement | null = null;
+      if (colors.bgImage) {
+        updateState({ phase: 'background', message: '加载背景', warning });
+        bgImg = await loadBgImage(colors.bgImage, controller.signal);
+        if (!isCurrent()) return;
+        if (!bgImg) {
+          warnings.push('背景图加载失败，已使用纯色背景');
+          warning = warnings.join('；');
+        }
+      }
+
+      updateState({ phase: 'render', message: '渲染', warning });
+      const canvas = renderToCanvas({
+        title: exportTitle,
+        lines,
+        charCount: sectionCharCount,
+        genre: board.genre,
+        theme,
+        fontKey,
+        logo,
+        bgImg,
+        date,
+        preface,
+        footnote,
+        author,
+        sectionCount: board.sections.length,
+        titleLines,
+        metaLines,
+        align: isFree ? align : undefined,
+      });
+      if (!isCurrent()) return;
+      setCanvasEl(canvas);
+      setLoadState({ phase: 'idle', warning });
+    } catch (error) {
+      if (!isCurrent()) return;
+      const errorName = error instanceof Error ? error.name : '';
+      if (errorName === 'AbortError' || controller.signal.aborted) return;
+      setCanvasEl(null);
+      setLoadState({ phase: 'error', message: '渲染失败，请重试' });
+      console.error('Export render failed:', error);
+    }
+  }, [board, lines, titleLines, metaLines, theme, fontKey, align, isFree]);
 
   useEffect(() => {
-    render();
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    void render();
   }, [render]);
+
+  useEffect(() => () => {
+    renderAbortRef.current?.abort();
+  }, []);
 
   // 将 canvas 渲染为 img 以便预览（自动缩放）
   useEffect(() => {
-    if (!canvasEl || !previewRef.current) return;
-    const img = document.createElement('img');
-    img.src = canvasEl.toDataURL();
-    img.style.width = '100%';
-    img.style.borderRadius = '8px';
+    if (!previewRef.current) return;
     previewRef.current.innerHTML = '';
-    previewRef.current.appendChild(img);
+    if (!canvasEl) return;
+    try {
+      const img = document.createElement('img');
+      img.src = canvasEl.toDataURL();
+      img.style.width = '100%';
+      img.style.borderRadius = '8px';
+      previewRef.current.appendChild(img);
+    } catch (error) {
+      // 例如跨域背景导致 canvas 被 taint 时，统一落入可重试错误态，
+      // 不让异常 effect 留下一个看似可下载但实际不可用的旧预览。
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setLoadState({ phase: 'error', message: '渲染失败，请重试' });
+      console.error('Export preview failed:', error);
+    }
   }, [canvasEl]);
+
+  const isLoading = loadState.phase !== 'idle' && loadState.phase !== 'error';
+  const hasFontProgress = loadState.phase === 'fonts' && !!loadState.total;
+  const progress = hasFontProgress
+    ? Math.min(100, Math.round(((loadState.loaded ?? 0) / (loadState.total ?? 1)) * 100))
+    : 40;
 
   const handleDownload = async () => {
     if (!canvasEl || !board || downloadState !== 'idle') return;
@@ -369,12 +447,43 @@ export function ExportPreview({ onClose }: { onClose: () => void }) {
 
         {/* 预览区 */}
         <div className="flex-1 overflow-y-auto px-4 py-4 relative">
-          <div ref={previewRef} className="rounded-lg overflow-hidden shadow-sm"
+          <div
+            ref={previewRef}
+            className={`rounded-lg overflow-hidden shadow-sm ${canvasEl ? '' : 'aspect-[3/4]'}`}
             onContextMenu={() => { if (board) track('long_press_image', { theme, genre: board.genre }); }}
           />
-          {loading && (
-            <div className="absolute inset-0 flex items-center justify-center bg-[var(--bg-card)]/80">
-              <Loader size={20} className="animate-spin text-[var(--text-muted)]" />
+          {isLoading && (
+            <div className="absolute inset-0 flex items-center justify-center bg-[var(--bg-card)]/85">
+              <div className="w-44 flex flex-col items-center gap-3">
+                <Loader size={20} className="animate-spin text-[var(--text-muted)]" />
+                <div className="w-full h-1 rounded-full bg-[var(--border)] overflow-hidden">
+                  <div
+                    className={`h-full rounded-full bg-[var(--accent)] transition-all duration-200 ${hasFontProgress ? '' : 'w-2/5 animate-pulse'}`}
+                    style={hasFontProgress ? { width: `${progress}%` } : undefined}
+                  />
+                </div>
+                <span className="text-xs text-[var(--text-muted)]">
+                  {hasFontProgress
+                    ? `加载字体 ${loadState.loaded ?? 0} / ${loadState.total}`
+                    : loadState.message ?? '处理中'}
+                </span>
+              </div>
+            </div>
+          )}
+          {loadState.phase === 'error' && (
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-[var(--bg-card)]/90">
+              <span className="text-xs text-[var(--text-muted)]">{loadState.message}</span>
+              <button
+                onClick={() => { void render(); }}
+                className="px-3 py-1.5 rounded-lg text-xs text-white bg-[var(--accent)] hover:opacity-85 transition-opacity"
+              >
+                重试
+              </button>
+            </div>
+          )}
+          {loadState.phase === 'idle' && loadState.warning && (
+            <div className="mt-2 text-center text-[11px] text-[var(--text-muted)]">
+              {loadState.warning}
             </div>
           )}
         </div>
@@ -466,7 +575,7 @@ export function ExportPreview({ onClose }: { onClose: () => void }) {
           </div>
           <button
             onClick={handleDownload}
-            disabled={!canvasEl || loading || downloadState === 'saving'}
+            disabled={!canvasEl || isLoading || loadState.phase === 'error' || downloadState === 'saving'}
             className={[
               'shrink-0 w-8 h-8 rounded-lg flex items-center justify-center transition-all disabled:opacity-40',
               downloadState === 'done'

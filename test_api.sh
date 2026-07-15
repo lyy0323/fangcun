@@ -1,11 +1,10 @@
 #!/usr/bin/env bash
 # 方寸 API 生产环境测试脚本
-# 用法: FANGCUN_API_KEY=fc_xxx bash test_api.sh
+# 用法: bash test_api.sh
 
 set -euo pipefail
 
 BASE="https://write.sjtuguoxue.space"
-KEY="${FANGCUN_API_KEY:?请设置环境变量 FANGCUN_API_KEY}"
 PASS=0
 FAIL=0
 
@@ -16,45 +15,35 @@ test_endpoint() {
 
   if [[ "$method" == "POST" ]]; then
     code=$(curl -s -o /tmp/fangcun_resp.json -w "%{http_code}" \
-      -X POST "$url" -H "X-API-Key: $KEY" -H "Content-Type: application/json" "$@")
+      -X POST "$url" -H "Content-Type: application/json" "$@")
   else
     code=$(curl -s -o /tmp/fangcun_resp.json -w "%{http_code}" \
-      "$url" -H "X-API-Key: $KEY" "$@")
+      "$url" "$@")
   fi
 
   if [[ "$code" == "$expect_code" ]]; then
     printf "  ✅ %-30s  HTTP %s\n" "$label" "$code"
-    ((PASS++))
+    ((PASS += 1))
   else
     printf "  ❌ %-30s  期望 %s 实际 %s\n" "$label" "$expect_code" "$code"
     cat /tmp/fangcun_resp.json 2>/dev/null; echo
-    ((FAIL++))
+    ((FAIL += 1))
   fi
 }
 
 echo "🔍 测试生产环境: $BASE"
-echo "   API Key: ${KEY:0:10}..."
 echo
 
-# --- 1. 文档页面（无需 Key）---
+# --- 1. 文档页面 ---
 echo "📄 文档"
 code=$(curl -s -o /dev/null -w "%{http_code}" "$BASE/docs")
 if [[ "$code" == "200" ]]; then
-  printf "  ✅ %-30s  HTTP %s\n" "/docs" "$code"; ((PASS++))
+  printf "  ✅ %-30s  HTTP %s\n" "/docs" "$code"; ((PASS += 1))
 else
-  printf "  ❌ %-30s  期望 200 实际 %s\n" "/docs" "$code"; ((FAIL++))
+  printf "  ❌ %-30s  期望 200 实际 %s\n" "/docs" "$code"; ((FAIL += 1))
 fi
 
-# --- 2. 无 Key 应返回 401 ---
-echo "🔒 认证"
-code=$(curl -s -o /dev/null -w "%{http_code}" "$BASE/api/rules/list?genre=Shi")
-if [[ "$code" == "401" ]]; then
-  printf "  ✅ %-30s  HTTP %s\n" "无 Key → 401" "$code"; ((PASS++))
-else
-  printf "  ❌ %-30s  期望 401 实际 %s\n" "无 Key → 401" "$code"; ((FAIL++))
-fi
-
-# --- 3. 各 API 端点 ---
+# --- 2. 各 API 端点（无需认证）---
 echo "📡 API 端点"
 
 test_endpoint "validate_meter" 200 POST "/api/validate_meter" \
@@ -70,7 +59,7 @@ test_endpoint "rules/list" 200 GET "/api/rules/list?genre=Shi"
 
 test_endpoint "dictionary/search" 200 GET "/api/dictionary/search?term=明&mode=head&length=2"
 
-# --- 4. 输入校验 ---
+# --- 3. 输入校验 ---
 echo "🛡️  输入校验"
 test_endpoint "无效 genre → 400" 400 GET "/api/rules/list?genre=Invalid"
 test_endpoint "无效 book → 400" 400 GET "/api/char/lookup?char=花&book=FakeBook"
@@ -81,5 +70,5 @@ echo "━━━━━━━━━━━━━━━━━━━━━━━━�
 echo "  通过: $PASS  失败: $FAIL"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
-rm -f /tmp/fangcun_resp.json /tmp/vercel_env.txt
+rm -f /tmp/fangcun_resp.json
 exit $FAIL

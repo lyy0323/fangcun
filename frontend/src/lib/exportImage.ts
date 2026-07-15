@@ -413,6 +413,11 @@ const FONT_CDN_KEY = (import.meta.env.VITE_FONT_CDN_KEY as string | undefined)?.
 
 // 使用隔离的字体名称，避免污染主界面
 const EXPORT_FONT_FAMILY = '__FangcunExport__';
+const EXPORT_WATERMARK_TEXT = '方寸 · 诗词画布';
+const FONT_CACHE_NAME = 'fangcun-fonts-v1';
+const FONT_CACHE_PREFIX = '/__fangcun_font_cache__/';
+
+let fontCache: Cache | null | undefined;
 
 // 字体注册表
 export type FontKey = 'NotoSerifSC' | 'NotoSansSC' | 'HuiwenMincho' | 'SongKeBenXiuKai' | 'LXGWWenKai' | 'ML';
@@ -435,6 +440,18 @@ export const FONT_OPTIONS: FontOption[] = [
 
 export const DEFAULT_FONT: FontKey = 'NotoSerifSC';
 
+export interface FontLoadOptions {
+  onProgress?: (loaded: number, total: number) => void;
+  signal?: AbortSignal;
+}
+
+export type FontProgressCallback = (loaded: number, total: number) => void;
+
+export interface FontLoadResult {
+  failedChunks: number;
+  aborted: boolean;
+}
+
 // 缓存 logo 图片
 let _logoImg: HTMLImageElement | null = null;
 
@@ -452,15 +469,21 @@ export async function loadFontPreviews(): Promise<void> {
 
     try {
       const cssUrl = fontCssUrl(f.cssDir);
-      const resp = await fetch(cssUrl);
+      const resp = await cachedFetch(`${f.cssDir}/result.css`, cssUrl);
       const css = await resp.text();
       const blocks = css.match(/@font-face\{[^}]+\}/g) || [];
       const matched = blocks.filter(b => matchesUnicodeRange(b, charCps));
       await Promise.all(matched.map(async (block) => {
         const urlMatch = block.match(/url\("\.\/([^"]+)"\)/);
         if (!urlMatch) return;
-        const url = fontFileUrl(f.cssDir, urlMatch[1]);
-        const font = new FontFace(family, `url("${url}")`, { weight: '400', style: 'normal' });
+        const file = urlMatch[1];
+        const resp = await cachedFetch(`${f.cssDir}/${file}`, fontFileUrl(f.cssDir, file));
+        const unicodeRange = getUnicodeRange(block);
+        const font = new FontFace(family, await resp.arrayBuffer(), {
+          weight: '400',
+          style: 'normal',
+          ...(unicodeRange ? { unicodeRange } : {}),
+        });
         document.fonts.add(await font.load());
       }));
     } catch { /* ignore preview load failures */ }
@@ -505,24 +528,103 @@ function parseUnicodeRange(rangeStr: string): Set<number> {
   return codepoints;
 }
 
+/** 提取 @font-face 的 unicode-range，注册 FontFace 时必须原样保留。 */
+function getUnicodeRange(block: string): string | undefined {
+  return block.match(/unicode-range:\s*([^;}]+)/)?.[1].trim();
+}
+
 /** 判断 @font-face 块的 unicode-range 是否命中任何文本字符 */
 function matchesUnicodeRange(block: string, charCodepoints: Set<number>): boolean {
-  const rangeMatch = block.match(/unicode-range:\s*([^;}]+)/);
-  if (!rangeMatch) return true;
-  const rangeCps = parseUnicodeRange(rangeMatch[1]);
+  const unicodeRange = getUnicodeRange(block);
+  if (!unicodeRange) return true;
+  const rangeCps = parseUnicodeRange(unicodeRange);
   for (const cp of charCodepoints) {
     if (rangeCps.has(cp)) return true;
   }
   return false;
 }
 
+async function getFontCache(): Promise<Cache | null> {
+  if (fontCache !== undefined) return fontCache;
+  if (typeof caches === 'undefined') {
+    fontCache = null;
+    return fontCache;
+  }
+  try {
+    fontCache = await caches.open(FONT_CACHE_NAME);
+  } catch {
+    fontCache = null;
+  }
+  return fontCache;
+}
+
+async function cachedFetch(canonicalKey: string, signedUrl: string, signal?: AbortSignal): Promise<Response> {
+  const cache = await getFontCache();
+  const cacheKey = `${FONT_CACHE_PREFIX}${encodeURIComponent(canonicalKey)}`;
+
+  if (cache) {
+    try {
+      const hit = await cache.match(cacheKey);
+      if (hit) return hit;
+    } catch {
+      // 某些隐私模式下 caches.open 可成功，但 match 仍会被禁用；
+      // 忽略缓存错误，继续走普通 fetch。
+    }
+  }
+
+  const response = await fetch(signedUrl, signal ? { signal } : undefined);
+  if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+  if (cache) {
+    try {
+      const cacheResponse = new Response(await response.clone().arrayBuffer(), {
+        headers: { 'Content-Type': response.headers.get('Content-Type') || 'application/octet-stream' },
+      });
+      await cache.put(cacheKey, cacheResponse);
+    } catch {
+      // 缓存失败不应阻断本次资源加载。
+    }
+  }
+  return response;
+}
+
+async function mapWithConcurrency<T>(
+  items: T[],
+  worker: (item: T) => Promise<void>,
+  concurrency: number,
+  signal?: AbortSignal,
+): Promise<PromiseSettledResult<void>[]> {
+  const results: PromiseSettledResult<void>[] = [];
+  let nextIndex = 0;
+
+  async function runWorker() {
+    while (!signal?.aborted) {
+      const index = nextIndex++;
+      if (index >= items.length) return;
+      try {
+        await worker(items[index]);
+        results[index] = { status: 'fulfilled', value: undefined };
+      } catch (reason) {
+        results[index] = { status: 'rejected', reason };
+      }
+    }
+  }
+
+  const workerCount = Math.min(Math.max(concurrency, 1), items.length);
+  await Promise.all(Array.from({ length: workerCount }, () => runWorker()));
+  return results;
+}
+
 let _fontsLoaded = false;
 let _loadedFontKey: FontKey | null = null;
+let _loadedFontTextKey = '';
 
 /** 构造字体文件 URL（CDN 签名 或 本地路径） */
 function fontFileUrl(dir: string, file: string): string {
   if (FONT_CDN_BASE && FONT_CDN_KEY) {
     const url = `${FONT_CDN_BASE}/${encodeURIComponent(dir)}/${file}`;
+    // 签名 URL 有效期有限；Cache API 使用 canonicalKey 做缓存索引，
+    // 每次缓存未命中时重新签名，避免长驻页面复用过期签名。
     return signCdnUrl(url, FONT_CDN_KEY, 3600);
   }
   return `/fonts/${dir}/${file}`;
@@ -536,14 +638,29 @@ function cdnAssetUrl(path: string): string | null {
 }
 
 /** 加载背景图片 */
-export function loadBgImage(path: string): Promise<HTMLImageElement | null> {
+export function loadBgImage(path: string, signal?: AbortSignal): Promise<HTMLImageElement | null> {
   const url = cdnAssetUrl(path);
   if (!url) return Promise.resolve(null);
   return new Promise(resolve => {
+    if (signal?.aborted) { resolve(null); return; }
     const img = new Image();
+    let settled = false;
+    const finish = (value: HTMLImageElement | null) => {
+      if (settled) return;
+      settled = true;
+      signal?.removeEventListener('abort', onAbort);
+      resolve(value);
+    };
+    const onAbort = () => {
+      img.onload = null;
+      img.onerror = null;
+      img.src = '';
+      finish(null);
+    };
+    signal?.addEventListener('abort', onAbort, { once: true });
     img.crossOrigin = 'anonymous';
-    img.onload = () => resolve(img);
-    img.onerror = () => resolve(null);
+    img.onload = () => finish(img);
+    img.onerror = () => finish(null);
     img.src = url;
   });
 }
@@ -553,52 +670,120 @@ function fontCssUrl(dir: string): string {
   return fontFileUrl(dir, 'result.css');
 }
 
-export async function loadExportFonts(text: string, fontKey: FontKey = DEFAULT_FONT): Promise<void> {
-  // 已加载相同字体则跳过
-  if (_fontsLoaded && _loadedFontKey === fontKey) return;
+export async function loadExportFonts(
+  text: string,
+  fontKey: FontKey = DEFAULT_FONT,
+  options: FontLoadOptions | FontProgressCallback = {},
+  signalArg?: AbortSignal,
+): Promise<FontLoadResult> {
+  // 同时兼容导出模块早期的 (onProgress, signal) 调用形式，
+  // 新代码可使用更明确的 { onProgress, signal } options 对象。
+  const onProgress = typeof options === 'function' ? options : options.onProgress;
+  const signal = signalArg ?? (typeof options === 'function' ? undefined : options.signal);
+  if (signal?.aborted) return { failedChunks: 0, aborted: true };
+
+  // 标题是竖排绘制的，标点会转换成另一组 Unicode 码点；按实际绘制字符
+  // 计算 fetch 集合，避免标题的竖排标点漏掉对应的字体切片。
+  const renderText = `${text}${EXPORT_WATERMARK_TEXT}`;
+  const fontText = `${renderText}${[...renderText].map(toVerticalChar).join('')}`;
+  const fontTextKey = [...new Set([...fontText])]
+    .map(ch => ch.codePointAt(0)!)
+    .sort((a, b) => a - b)
+    .join(',');
+
+  // 同一字体且字符集合未变化时才跳过；切换画板/标题时需要补抓新切片。
+  if (_fontsLoaded && _loadedFontKey === fontKey && _loadedFontTextKey === fontTextKey) {
+    onProgress?.(0, 0);
+    return { failedChunks: 0, aborted: false };
+  }
 
   // 切换字体时清除旧 FontFace
   if (_loadedFontKey !== fontKey) {
-    document.fonts.forEach(f => {
-      if (f.family === EXPORT_FONT_FAMILY) document.fonts.delete(f);
-    });
+    // FontFaceSet 在遍历期间修改可能跳过相邻条目（尤其是 400/700 两个字重），
+    // 先快照再删除，确保标题和正文的旧字体都被清理。
+    Array.from(document.fonts)
+      .filter(f => f.family === EXPORT_FONT_FAMILY)
+      .forEach(f => document.fonts.delete(f));
     _fontsLoaded = false;
+    _loadedFontTextKey = '';
   }
 
-  const charCps = new Set([...new Set(text)].map(ch => ch.codePointAt(0)!));
+  const charCps = new Set([...fontText].map(ch => ch.codePointAt(0)!));
   const option = FONT_OPTIONS.find(o => o.key === fontKey) ?? FONT_OPTIONS[0];
   const dirs = [option.cssDir];
   if (option.boldDir) dirs.push(option.boldDir);
 
+  let failedChunks = 0;
   try {
+    const sources: { dir: string; weight: string; blocks: string[] }[] = [];
     for (const dir of dirs) {
+      if (signal?.aborted) return { failedChunks, aborted: true };
       const cssUrl = fontCssUrl(dir);
-      const resp = await fetch(cssUrl);
-      if (!resp.ok) { console.warn('[Font] CSS fetch failed:', resp.status, dir); continue; }
+      const resp = await cachedFetch(`${dir}/result.css`, cssUrl, signal);
       const css = await resp.text();
       const blocks = css.match(/@font-face\{[^}]+\}/g) || [];
       const weight = dir === option.boldDir ? '700' : '400';
       const matched = blocks.filter(block => matchesUnicodeRange(block, charCps));
+      sources.push({ dir, weight, blocks: matched });
+    }
 
-      const results = await Promise.allSettled(matched.map(async (block) => {
+    const totalChunks = sources.reduce((total, source) => total + source.blocks.length, 0);
+    const completedChunks = new Set<string>();
+    onProgress?.(0, totalChunks);
+
+    for (const source of sources) {
+      if (signal?.aborted) return { failedChunks, aborted: true };
+
+      const loadChunk = async (block: string) => {
         const urlMatch = block.match(/url\("\.\/([^"]+)"\)/);
         if (!urlMatch) return;
-        const url = fontFileUrl(dir, urlMatch[1]);
-        const font = new FontFace(EXPORT_FONT_FAMILY, `url("${url}")`, {
-          weight,
+        const file = urlMatch[1];
+        const canonicalKey = `${source.dir}/${file}`;
+        const response = await cachedFetch(canonicalKey, fontFileUrl(source.dir, file), signal);
+        const fontData = await response.arrayBuffer();
+        if (signal?.aborted) throw new DOMException('Aborted', 'AbortError');
+        const unicodeRange = getUnicodeRange(block);
+        const font = new FontFace(EXPORT_FONT_FAMILY, fontData, {
+          weight: source.weight,
           style: 'normal',
+          ...(unicodeRange ? { unicodeRange } : {}),
         });
         const loaded = await font.load();
+        // FontFace.load() 本身不支持 AbortSignal；在写入全局 FontFaceSet
+        // 前再次检查，防止已取消的旧请求污染最新请求的字体集合。
+        if (signal?.aborted) throw new DOMException('Aborted', 'AbortError');
         document.fonts.add(loaded);
-      }));
-      const failed = results.filter(r => r.status === 'rejected');
-      if (failed.length) console.warn(`[Font] ${failed.length}/${results.length} chunks failed:`, (failed[0] as PromiseRejectedResult).reason);
+        if (!completedChunks.has(canonicalKey)) {
+          completedChunks.add(canonicalKey);
+          onProgress?.(completedChunks.size, totalChunks);
+        }
+      };
+
+      const results = await mapWithConcurrency(source.blocks, loadChunk, 4, signal);
+      if (signal?.aborted) return { failedChunks, aborted: true };
+      const failedBlocks = source.blocks.filter((_, index) => results[index]?.status === 'rejected');
+      if (failedBlocks.length > 0) {
+        console.warn(`[Font] retrying ${failedBlocks.length} failed chunks...`);
+        const retryResults = await mapWithConcurrency(failedBlocks, loadChunk, 2, signal);
+        if (signal?.aborted) return { failedChunks, aborted: true };
+        const stillFailed = retryResults.filter(result => result.status === 'rejected').length;
+        failedChunks += stillFailed;
+        if (stillFailed) console.warn(`[Font] ${stillFailed} chunks still failed after retry`);
+      }
     }
+    if (signal?.aborted) return { failedChunks, aborted: true };
     _fontsLoaded = true;
     _loadedFontKey = fontKey;
+    _loadedFontTextKey = fontTextKey;
+    return { failedChunks, aborted: false };
   } catch (e) {
+    if (e instanceof DOMException && e.name === 'AbortError') {
+      return { failedChunks, aborted: true };
+    }
     console.error('[Font] load error:', e);
     _fontsLoaded = false;
+    _loadedFontTextKey = '';
+    return { failedChunks: Math.max(failedChunks, 1), aborted: false };
   }
 }
 
@@ -606,6 +791,8 @@ function exportFont(weight: number, size: number): string {
   const family = _fontsLoaded
     ? `"${EXPORT_FONT_FAMILY}"`
     : '"Source Han Serif SC", "SimSun", "STSong", serif';
+  // 没有独立 700 face 时保留 700 请求，让浏览器基于已注册的 400 face
+  // 合成粗体；每个切片的 unicode-range 已保留，不再因切片竞争而 fallback。
   return `${weight} ${size}px ${family}`;
 }
 
@@ -998,7 +1185,7 @@ export function renderToCanvas(data: ExportData): HTMLCanvasElement {
   }
 
   // ---- 水印（右下角贴边，logo + 文字） ----
-  const wmText = '方寸 · 诗词画布';
+  const wmText = EXPORT_WATERMARK_TEXT;
   const wmFontSize = 18;
   const logoSize = 22;
   const logoGap = 6;
@@ -1013,7 +1200,7 @@ export function renderToCanvas(data: ExportData): HTMLCanvasElement {
   const isDarkBg = brightness < 128;
 
   ctx.fillStyle = isDarkBg ? 'rgba(255,255,255,0.45)' : colors.muted;
-  ctx.font = `${wmFontSize}px system-ui, -apple-system, "Helvetica Neue", sans-serif`;
+  ctx.font = exportFont(400, wmFontSize);
   ctx.textBaseline = 'bottom';
 
   const textW = ctx.measureText(wmText).width;
