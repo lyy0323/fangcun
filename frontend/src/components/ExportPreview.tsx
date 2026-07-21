@@ -11,6 +11,7 @@ import {
   loadLogo,
   loadBgImage,
   downloadCanvas,
+  copyCanvasToClipboard,
   THEME_KEYS,
   THEMES,
   FONT_OPTIONS,
@@ -22,7 +23,7 @@ import {
 import { track } from '../lib/api';
 import type { ThemeKey, FontKey, AspectRatio } from '../lib/exportImage';
 import type { Board } from '../lib/types';
-import { X, Download, Loader, Check, ImageIcon } from 'lucide-react';
+import { X, Download, Loader, Check, ImageIcon, Copy } from 'lucide-react';
 
 
 // ============================================================================
@@ -242,6 +243,7 @@ export function ExportPreview({ onClose }: { onClose: () => void }) {
   const [loadState, setLoadState] = useState<ExportLoadState>({ phase: 'idle' });
   const [canvasEl, setCanvasEl] = useState<HTMLCanvasElement | null>(null);
   const [downloadState, setDownloadState] = useState<'idle' | 'saving' | 'done'>('idle');
+  const [copyState, setCopyState] = useState<'idle' | 'copying' | 'done' | 'error'>('idle');
   const [align, setAlign] = useState<TextAlign>('center');
   const previewRef = useRef<HTMLDivElement>(null);
   const renderAbortRef = useRef<AbortController | null>(null);
@@ -410,6 +412,23 @@ export function ExportPreview({ onClose }: { onClose: () => void }) {
   const progress = hasFontProgress
     ? Math.min(100, Math.round(((loadState.loaded ?? 0) / (loadState.total ?? 1)) * 100))
     : 40;
+  const canCopyImage = !window.AndroidBridge?.saveImage
+    && typeof ClipboardItem !== 'undefined'
+    && typeof navigator.clipboard?.write === 'function';
+
+  const handleCopyImage = async () => {
+    if (!canvasEl || !board || copyState === 'copying') return;
+    setCopyState('copying');
+    try {
+      await copyCanvasToClipboard(canvasEl);
+      track('copy_image', { theme, genre: board.genre });
+      setCopyState('done');
+    } catch (error) {
+      console.error('Copy image failed:', error);
+      setCopyState('error');
+    }
+    setTimeout(() => setCopyState('idle'), 1500);
+  };
 
   const handleDownload = async () => {
     if (!canvasEl || !board || downloadState !== 'idle') return;
@@ -573,21 +592,44 @@ export function ExportPreview({ onClose }: { onClose: () => void }) {
               );
             })}
           </div>
-          <button
-            onClick={handleDownload}
-            disabled={!canvasEl || isLoading || loadState.phase === 'error' || downloadState === 'saving'}
-            className={[
-              'shrink-0 w-8 h-8 rounded-lg flex items-center justify-center transition-all disabled:opacity-40',
-              downloadState === 'done'
-                ? 'bg-emerald-100 text-emerald-600'
-                : 'bg-[var(--accent-light)] text-[var(--accent)] hover:opacity-80',
-            ].join(' ')}
-            title="下载"
-          >
-            {downloadState === 'saving' ? <Loader size={16} className="animate-spin" /> :
-             downloadState === 'done' ? <Check size={16} /> :
-             <Download size={16} />}
-          </button>
+          <div className="shrink-0 flex items-center gap-1.5">
+            {canCopyImage && (
+              <button
+                onClick={handleCopyImage}
+                disabled={!canvasEl || isLoading || loadState.phase === 'error' || copyState === 'copying'}
+                className={[
+                  'w-8 h-8 rounded-lg flex items-center justify-center transition-all disabled:opacity-40',
+                  copyState === 'done'
+                    ? 'bg-emerald-100 text-emerald-600'
+                    : copyState === 'error'
+                      ? 'bg-red-100 text-red-600'
+                      : 'bg-[var(--accent-light)] text-[var(--accent)] hover:opacity-80',
+                ].join(' ')}
+                title={copyState === 'error' ? '复制失败' : '复制图片'}
+                aria-label="复制图片"
+              >
+                {copyState === 'copying' ? <Loader size={16} className="animate-spin" /> :
+                 copyState === 'done' ? <Check size={16} /> :
+                 <Copy size={16} />}
+              </button>
+            )}
+            <button
+              onClick={handleDownload}
+              disabled={!canvasEl || isLoading || loadState.phase === 'error' || downloadState === 'saving'}
+              className={[
+                'w-8 h-8 rounded-lg flex items-center justify-center transition-all disabled:opacity-40',
+                downloadState === 'done'
+                  ? 'bg-emerald-100 text-emerald-600'
+                  : 'bg-[var(--accent-light)] text-[var(--accent)] hover:opacity-80',
+              ].join(' ')}
+              title="下载"
+              aria-label="下载图片"
+            >
+              {downloadState === 'saving' ? <Loader size={16} className="animate-spin" /> :
+               downloadState === 'done' ? <Check size={16} /> :
+               <Download size={16} />}
+            </button>
+          </div>
           </div>
         </div>
       </div>

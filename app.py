@@ -200,7 +200,7 @@ def docs():
 # ---------- 前端埋点（可选）----------
 
 VALID_EVENTS = {
-    'export_image', 'copy_text',
+    'export_image', 'copy_image', 'copy_text',
     'create_board', 'delete_board', 'switch_board',
     'import_poem', 'import_boards', 'export_boards', 'import_ciyun',
     'create_folder', 'delete_folder', 'rename_folder', 'sort_folder', 'move_board',
@@ -250,7 +250,11 @@ def stats_summary():
 
     total_api_calls = 0
     total_events = 0
-    north_star = 0
+    north_star_events = {
+        "export_image": 0,
+        "copy_image": 0,
+        "copy_text": 0,
+    }
     api_calls = {}
     events = {}
     sources = {}
@@ -263,8 +267,8 @@ def stats_summary():
             total_events += count
             event_name = route.split(":")[1] if ":" in route[7:] else route[7:]
             events[event_name] = events.get(event_name, 0) + count
-            if event_name == "export_image":
-                north_star += count
+            if event_name in north_star_events:
+                north_star_events[event_name] += count
         else:
             total_api_calls += count
             short = route.replace("/api/", "", 1) if route.startswith("/api/") else route
@@ -275,7 +279,8 @@ def stats_summary():
 
     return jsonify({
         "date": date,
-        "export_image": north_star,
+        **north_star_events,
+        "north_star_total": sum(north_star_events.values()),
         "total_api_calls": total_api_calls,
         "total_events": total_events,
         "api_calls": _sorted_desc(api_calls),

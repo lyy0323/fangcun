@@ -655,7 +655,7 @@
 
 <!-- ==================== 调用统计摘要 ==================== -->
 <h2 id="stats-summary">调用统计摘要</h2>
-<p>返回指定日期的关键调用指标摘要。<code>export_image</code>（导出图片）为北极星指标，置于顶层。</p>
+<p>返回指定日期的关键调用指标摘要。北极星指标为作品被用户带走的成功动作：<code>export_image</code>（导出图片）、<code>copy_image</code>（复制图片）、<code>copy_text</code>（复制文字），三者及其总和置于顶层。</p>
 
 <div class="endpoint-line">
   <span class="method method-get">GET</span>
@@ -672,6 +672,9 @@
 <pre><code>{
   <span class="key">"date"</span>: <span class="string">"2026-06-03"</span>,
   <span class="key">"export_image"</span>: <span class="number">12</span>,
+  <span class="key">"copy_image"</span>: <span class="number">5</span>,
+  <span class="key">"copy_text"</span>: <span class="number">8</span>,
+  <span class="key">"north_star_total"</span>: <span class="number">25</span>,
   <span class="key">"total_api_calls"</span>: <span class="number">123</span>,
   <span class="key">"total_events"</span>: <span class="number">45</span>,
   <span class="key">"api_calls"</span>: {
@@ -695,7 +698,10 @@
 <table>
   <tr><th>字段</th><th>说明</th></tr>
   <tr><td>date</td><td>统计日期</td></tr>
-  <tr><td>export_image</td><td>北极星指标 — 导出图片次数</td></tr>
+  <tr><td>export_image</td><td>北极星事件 — 成功导出图片次数</td></tr>
+  <tr><td>copy_image</td><td>北极星事件 — 成功复制图片次数</td></tr>
+  <tr><td>copy_text</td><td>北极星事件 — 成功复制文字次数</td></tr>
+  <tr><td>north_star_total</td><td>北极星指标 — 上述三类成功动作之和</td></tr>
   <tr><td>total_api_calls</td><td>当日 API 调用总量（不含前端事件）</td></tr>
   <tr><td>total_events</td><td>当日前端事件总量</td></tr>
   <tr><td>api_calls</td><td>各 API 路由调用量，按次数降序</td></tr>

@@ -7,6 +7,10 @@ const CHECKER_BASE = IS_ANDROID
   ? 'https://checker.sjtuguoxue.space/api'
   : '/api';
 
+// checker 暂不计入 CJK 扩展 A；用占位符保留词谱位置，画板原文不变。
+const normalizePoemTextForChecker = (poemText: string) =>
+  poemText.replace(/[\u3400-\u4dbf]/g, '□');
+
 async function get<T>(path: string, base = BASE): Promise<T> {
   const res = await fetch(`${base}${path}`);
   if (!res.ok) throw new Error(`API error: ${res.status}`);
@@ -33,7 +37,10 @@ export function validateMeter(params: {
   warnings?: string | string[];
   include_punctuation?: boolean;
 }): Promise<ValidationResult> {
-  return post('/validate_meter', params, CHECKER_BASE);
+  return post('/validate_meter', {
+    ...params,
+    poem_text: normalizePoemTextForChecker(params.poem_text),
+  }, CHECKER_BASE);
 }
 
 // --- 自由韵脚检测（→ checker 服务）---

@@ -1568,3 +1568,26 @@ export function downloadCanvas(canvas: HTMLCanvasElement, title: string, theme?:
     }, 'image/png');
   });
 }
+
+export function copyCanvasToClipboard(canvas: HTMLCanvasElement): Promise<void> {
+  if (typeof ClipboardItem === 'undefined' || typeof navigator.clipboard?.write !== 'function') {
+    return Promise.reject(new Error('image clipboard is not supported'));
+  }
+
+  return new Promise<void>((resolve, reject) => {
+    canvas.toBlob(async (blob) => {
+      if (!blob) {
+        reject(new Error('failed to encode image'));
+        return;
+      }
+      try {
+        await navigator.clipboard.write([
+          new ClipboardItem({ 'image/png': blob }),
+        ]);
+        resolve();
+      } catch (error) {
+        reject(error);
+      }
+    }, 'image/png');
+  });
+}
