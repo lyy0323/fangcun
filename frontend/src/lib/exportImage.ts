@@ -410,6 +410,7 @@ import { signCdnUrl } from './cdnSign';
 // CDN 配置（生产环境通过 Vite env 注入）
 const FONT_CDN_BASE = (import.meta.env.VITE_FONT_CDN_BASE as string | undefined)?.trim();
 const FONT_CDN_KEY = (import.meta.env.VITE_FONT_CDN_KEY as string | undefined)?.trim();
+const IS_ANDROID = navigator.userAgent.includes('FangcunAndroid');
 
 // 使用隔离的字体名称，避免污染主界面
 const EXPORT_FONT_FAMILY = '__FangcunExport__';
@@ -621,7 +622,9 @@ let _loadedFontTextKey = '';
 
 /** 构造字体文件 URL（CDN 签名 或 本地路径） */
 function fontFileUrl(dir: string, file: string): string {
-  if (FONT_CDN_BASE && FONT_CDN_KEY) {
+  // Android APK 已内置完整字体切片，使用本地同源资源，避免 WebView 的
+  // 跨域字体加载/解码兼容问题；Web 端仍通过签名 CDN 加载。
+  if (!IS_ANDROID && FONT_CDN_BASE && FONT_CDN_KEY) {
     const url = `${FONT_CDN_BASE}/${encodeURIComponent(dir)}/${file}`;
     // 签名 URL 有效期有限；Cache API 使用 canonicalKey 做缓存索引，
     // 每次缓存未命中时重新签名，避免长驻页面复用过期签名。
@@ -632,6 +635,9 @@ function fontFileUrl(dir: string, file: string): string {
 
 /** 构造 CDN 资源 URL（背景图等） */
 function cdnAssetUrl(path: string): string | null {
+  // Android APK 内置背景资源，使用同源路径，避免离线不可用以及 WebView
+  // CSP 对跨域图片的拦截；Web 端继续从签名 CDN 加载。
+  if (IS_ANDROID) return path;
   if (!FONT_CDN_BASE || !FONT_CDN_KEY) return null;
   const url = `${FONT_CDN_BASE}${path}`;
   return signCdnUrl(url, FONT_CDN_KEY, 3600);

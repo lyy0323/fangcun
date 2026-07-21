@@ -369,8 +369,12 @@ class MainActivity : Activity() {
     // ---- 版本检查 ----
 
     private fun currentVersion(): String =
-        try { packageManager.getPackageInfo(packageName, 0).versionName ?: "0" }
-        catch (_: Exception) { "0" }
+        try {
+            val info = packageManager.getPackageInfo(packageName, 0)
+            // versionName may stay unchanged for a hotfix release (e.g. 2.4.3);
+            // include versionCode so the bundled frontend is re-extracted on every APK update.
+            "${info.versionName ?: "0"}+${info.versionCode}"
+        } catch (_: Exception) { "0" }
 
     private fun needsExtraction(baseDir: File): Boolean {
         val versionFile = File(baseDir, ".version")

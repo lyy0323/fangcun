@@ -21,7 +21,7 @@ android {
         applicationId "com.fangcun.app"
         minSdk 26
         targetSdk 36
-        versionCode 14
+        versionCode 16
         versionName "2.4.3"
 
         ndk {
