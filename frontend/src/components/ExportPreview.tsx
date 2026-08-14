@@ -23,7 +23,7 @@ import {
 import { track } from '../lib/api';
 import type { ThemeKey, FontKey, AspectRatio } from '../lib/exportImage';
 import type { Board } from '../lib/types';
-import { X, Download, Loader, Check, ImageIcon, Copy } from 'lucide-react';
+import { X, Download, Loader, Check, ImageIcon, Copy, ChevronLeft, ChevronRight } from 'lucide-react';
 
 
 // ============================================================================
@@ -138,12 +138,13 @@ function buildSectionLines(genre: 'Shi' | 'Ci' | 'Free', sec: PoemSection, valid
   return segments;
 }
 
-function buildAllPoemLines(board: Board, validations: (ValidationResult | null)[], align?: TextAlign): { lines: string[]; titleLines: Set<number>; metaLines: Set<number> } {
+function buildAllPoemLines(board: Board, validations: (ValidationResult | null)[], align?: TextAlign, range?: [number, number]): { lines: string[]; titleLines: Set<number>; metaLines: Set<number> } {
   const allLines: string[] = [];
   const titleLines = new Set<number>();
   const metaLines = new Set<number>();
-  board.sections.forEach((sec, idx) => {
-    const v = validations[idx] ?? null;
+  const [start, end] = range ?? [0, board.sections.length];
+  board.sections.slice(start, end).forEach((sec, idx) => {
+    const v = validations[start + idx] ?? null;
     if (idx > 0) allLines.push('');
     if (sec.sectionPreface) {
       metaLines.add(allLines.length);
@@ -164,6 +165,26 @@ function buildAllPoemLines(board: Board, validations: (ValidationResult | null)[
     }
   });
   return { lines: allLines, titleLines, metaLines };
+}
+
+/** 组诗拆分的滑动条选项：每张图包含 n 首（1..min(5, round(N/2))），以及「全部」（默认，单张） */
+function buildSplitOptions(sectionCount: number): (number | 'all')[] {
+  if (sectionCount <= 1) return ['all'];
+  const maxN = Math.min(5, Math.round(sectionCount / 2));
+  const opts: (number | 'all')[] = [];
+  for (let n = 1; n <= maxN; n++) opts.push(n);
+  opts.push('all');
+  return opts;
+}
+
+/** 按每张 n 首把 section 切成若干连续区间 */
+function buildChunks(sectionCount: number, perImage: number | 'all'): [number, number][] {
+  const n = perImage === 'all' ? sectionCount : perImage;
+  const chunks: [number, number][] = [];
+  for (let start = 0; start < sectionCount; start += n) {
+    chunks.push([start, Math.min(start + n, sectionCount)]);
+  }
+  return chunks;
 }
 
 // ============================================================================
@@ -241,38 +262,57 @@ export function ExportPreview({ onClose }: { onClose: () => void }) {
   const [theme, setTheme] = useState<ThemeKey>('素白');
   const [fontKey, setFontKey] = useState<FontKey>(DEFAULT_FONT);
   const [loadState, setLoadState] = useState<ExportLoadState>({ phase: 'idle' });
-  const [canvasEl, setCanvasEl] = useState<HTMLCanvasElement | null>(null);
+  const [canvasEls, setCanvasEls] = useState<HTMLCanvasElement[]>([]);
+  const [page, setPage] = useState(0);
   const [downloadState, setDownloadState] = useState<'idle' | 'saving' | 'done'>('idle');
   const [copyState, setCopyState] = useState<'idle' | 'copying' | 'done' | 'error'>('idle');
   const [align, setAlign] = useState<TextAlign>('center');
+  const [splitValue, setSplitValue] = useState<number | 'all'>('all');
   const previewRef = useRef<HTMLDivElement>(null);
+  const previewScrollRef = useRef<HTMLDivElement>(null);
   const renderAbortRef = useRef<AbortController | null>(null);
   const renderRequestRef = useRef(0);
 
   const isFree = board?.genre === 'Free';
-  const { lines, titleLines, metaLines } = useMemo(() => (
-    board
-      ? buildAllPoemLines(board, state.validations, isFree ? align : undefined)
-      : { lines: [] as string[], titleLines: new Set<number>(), metaLines: new Set<number>() }
-  ), [board, state.validations, isFree, align]);
+  const sectionCount = board?.sections.length ?? 0;
+  const splitOptions = useMemo(() => buildSplitOptions(sectionCount), [sectionCount]);
+  const chunks = useMemo(() => buildChunks(sectionCount, splitValue), [sectionCount, splitValue]);
 
-  // 预计算纵横比，过滤可用模板
+  // 每张拆分图各自的行（含 section 级序/标题/正文/脚注/日期）
+  const chunkLines = useMemo(() => {
+    if (!board) return [];
+    return chunks.map(([start, end]) =>
+      buildAllPoemLines(board, state.validations, isFree ? align : undefined, [start, end])
+    );
+  }, [board, chunks, state.validations, isFree, align]);
+
+  const isMulti = chunkLines.length > 1;
+
+  // 预计算纵横比（取所有拆分图中最高者），过滤可用模板
   const aspectRatio: AspectRatio = useMemo(() => {
-    if (!board || lines.length === 0) return '3:4';
-    const scc = board.genre === 'Free'
-      ? Math.max(...lines.map(l => [...l].length), 1)
-      : board.sections[0].charCount;
+    if (!board || chunkLines.length === 0) return '3:4';
     const metadata = board.metadata || {};
-    const minH = computeMinHeight({
-      title: board.title, lines, charCount: scc, genre: board.genre, theme,
-      date: (!metadata.dateHidden && metadata.date) || '',
-      preface: metadata.preface || '', footnote: metadata.footnote || '',
-      author: resolveAuthor(metadata),
-      sectionCount: board.sections.length,
-      align: isFree ? align : undefined,
+    const rawDate = (!metadata.dateHidden && metadata.date) || '';
+    const date = rawDate ? convertGregorianToChinese(rawDate) : '';
+    let maxMinH = 0;
+    chunkLines.forEach((cl, ci) => {
+      const isLast = ci === chunkLines.length - 1;
+      const scc = board.genre === 'Free'
+        ? Math.max(...cl.lines.map(l => [...l].length), 1)
+        : board.sections[chunks[ci][0]].charCount;
+      const minH = computeMinHeight({
+        title: board.title, lines: cl.lines, charCount: scc, genre: board.genre, theme,
+        date: isLast ? date : '',
+        preface: ci === 0 ? (metadata.preface || '') : '',
+        footnote: isLast ? (metadata.footnote || '') : '',
+        author: resolveAuthor(metadata),
+        sectionCount: chunks[ci][1] - chunks[ci][0],
+        align: isFree ? align : undefined,
+      });
+      maxMinH = Math.max(maxMinH, minH);
     });
-    return resolveAspectRatio(minH);
-  }, [board, lines, theme, align, isFree]);
+    return resolveAspectRatio(maxMinH);
+  }, [board, chunkLines, chunks, theme, align, isFree]);
   const availableThemes = useMemo(() => filterThemesByRatio(aspectRatio), [aspectRatio]);
 
   // 如果当前选中模板不可用，自动切换
@@ -286,8 +326,16 @@ export function ExportPreview({ onClose }: { onClose: () => void }) {
   // 预加载各字体的"文"字用于选择器预览
   useEffect(() => { loadFontPreviews(); }, []);
 
+  // 拆分选项变化后，若当前值已不存在则回退到「全部」
+  useEffect(() => {
+    if (!splitOptions.includes(splitValue)) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setSplitValue('all');
+    }
+  }, [splitOptions, splitValue]);
+
   const render = useCallback(async () => {
-    if (!board || lines.length === 0) return;
+    if (!board || chunkLines.length === 0) return;
 
     renderAbortRef.current?.abort();
     const controller = new AbortController();
@@ -298,10 +346,7 @@ export function ExportPreview({ onClose }: { onClose: () => void }) {
       if (isCurrent()) setLoadState(next);
     };
 
-    const sectionCharCount = board.genre === 'Free'
-      ? Math.max(...lines.map(l => [...l].length), 1)
-      : board.sections[0].charCount;
-    setCanvasEl(null);
+    setCanvasEls([]);
     updateState({ phase: 'fonts', loaded: 0, total: 0, message: '加载字体' });
     const metadata = board.metadata || {};
     const rawDate = (!metadata.dateHidden && metadata.date) || '';
@@ -319,7 +364,10 @@ export function ExportPreview({ onClose }: { onClose: () => void }) {
       }
       return t;
     })();
-    const allText = exportTitle + lines.join('') + date + preface + footnote + author;
+    // 字体加载需覆盖所有拆分图的文本
+    const allText = exportTitle
+      + chunkLines.map(cl => cl.lines.join('')).join('')
+      + date + preface + footnote + author;
     const colors = THEMES[theme];
 
     try {
@@ -347,36 +395,43 @@ export function ExportPreview({ onClose }: { onClose: () => void }) {
       }
 
       updateState({ phase: 'render', message: '渲染', warning });
-      const canvas = renderToCanvas({
-        title: exportTitle,
-        lines,
-        charCount: sectionCharCount,
-        genre: board.genre,
-        theme,
-        fontKey,
-        logo,
-        bgImg,
-        date,
-        preface,
-        footnote,
-        author,
-        sectionCount: board.sections.length,
-        titleLines,
-        metaLines,
-        align: isFree ? align : undefined,
+      const lastIdx = chunkLines.length - 1;
+      const canvases = chunkLines.map((cl, ci) => {
+        const charCount = board.genre === 'Free'
+          ? Math.max(...cl.lines.map(l => [...l].length), 1)
+          : board.sections[chunks[ci][0]].charCount;
+        return renderToCanvas({
+          title: exportTitle,
+          lines: cl.lines,
+          charCount,
+          genre: board.genre,
+          theme,
+          fontKey,
+          logo,
+          bgImg,
+          date: ci === lastIdx ? date : '',
+          preface: ci === 0 ? preface : '',
+          footnote: ci === lastIdx ? footnote : '',
+          author,
+          sectionCount: chunks[ci][1] - chunks[ci][0],
+          titleLines: cl.titleLines,
+          metaLines: cl.metaLines,
+          align: isFree ? align : undefined,
+        });
       });
       if (!isCurrent()) return;
-      setCanvasEl(canvas);
+      setCanvasEls(canvases);
+      setPage(0);
       setLoadState({ phase: 'idle', warning });
     } catch (error) {
       if (!isCurrent()) return;
       const errorName = error instanceof Error ? error.name : '';
       if (errorName === 'AbortError' || controller.signal.aborted) return;
-      setCanvasEl(null);
+      setCanvasEls([]);
       setLoadState({ phase: 'error', message: '渲染失败，请重试' });
       console.error('Export render failed:', error);
     }
-  }, [board, lines, titleLines, metaLines, theme, fontKey, align, isFree]);
+  }, [board, chunkLines, chunks, theme, fontKey, align, isFree]);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -387,17 +442,25 @@ export function ExportPreview({ onClose }: { onClose: () => void }) {
     renderAbortRef.current?.abort();
   }, []);
 
-  // 将 canvas 渲染为 img 以便预览（自动缩放）
+  // 将 canvas 渲染为 img 以便预览（长图按原始比例完整显示，可在预览区内上下滚动）
   useEffect(() => {
-    if (!previewRef.current) return;
-    previewRef.current.innerHTML = '';
-    if (!canvasEl) return;
+    const el = previewRef.current;
+    if (!el) return;
+    // 预览框最小高度满足 3:4 纵横比；长图由 img 自然撑高容器产生滚动
+    if (el.clientWidth > 0) el.style.minHeight = `${el.clientWidth * 4 / 3}px`;
+    el.innerHTML = '';
+    const canvas = canvasEls[page];
+    if (!canvas) return;
     try {
       const img = document.createElement('img');
-      img.src = canvasEl.toDataURL();
+      img.src = canvas.toDataURL();
       img.style.width = '100%';
+      img.style.height = 'auto';
+      img.style.display = 'block';
       img.style.borderRadius = '8px';
-      previewRef.current.appendChild(img);
+      el.appendChild(img);
+      // 切换图片后预览区初始滚动位置定位到图片顶部
+      if (previewScrollRef.current) previewScrollRef.current.scrollTop = 0;
     } catch (error) {
       // 例如跨域背景导致 canvas 被 taint 时，统一落入可重试错误态，
       // 不让异常 effect 留下一个看似可下载但实际不可用的旧预览。
@@ -405,7 +468,7 @@ export function ExportPreview({ onClose }: { onClose: () => void }) {
       setLoadState({ phase: 'error', message: '渲染失败，请重试' });
       console.error('Export preview failed:', error);
     }
-  }, [canvasEl]);
+  }, [canvasEls, page]);
 
   const isLoading = loadState.phase !== 'idle' && loadState.phase !== 'error';
   const hasFontProgress = loadState.phase === 'fonts' && !!loadState.total;
@@ -417,10 +480,11 @@ export function ExportPreview({ onClose }: { onClose: () => void }) {
     && typeof navigator.clipboard?.write === 'function';
 
   const handleCopyImage = async () => {
-    if (!canvasEl || !board || copyState === 'copying') return;
+    const canvas = canvasEls[page];
+    if (!canvas || !board || copyState === 'copying') return;
     setCopyState('copying');
     try {
-      await copyCanvasToClipboard(canvasEl);
+      await copyCanvasToClipboard(canvas);
       track('copy_image', { theme, genre: board.genre });
       setCopyState('done');
     } catch (error) {
@@ -431,12 +495,19 @@ export function ExportPreview({ onClose }: { onClose: () => void }) {
   };
 
   const handleDownload = async () => {
-    if (!canvasEl || !board || downloadState !== 'idle') return;
+    if (canvasEls.length === 0 || !board || downloadState !== 'idle') return;
     setDownloadState('saving');
     const isAndroid = !!window.AndroidBridge?.saveImage;
-    await downloadCanvas(canvasEl, board.title, theme);
-    track('export_image', { theme, genre: board.genre });
-    if (isAndroid) track('save_image', { theme, genre: board.genre });
+    const multi = canvasEls.length > 1;
+    for (let i = 0; i < canvasEls.length; i++) {
+      await downloadCanvas(canvasEls[i], board.title, theme, multi ? i + 1 : undefined);
+      // 浏览器可能拦截连续多文件下载，Web 端间隔稍作等待
+      if (!isAndroid && multi && i < canvasEls.length - 1) {
+        await new Promise(r => setTimeout(r, 300));
+      }
+    }
+    track('export_image', { theme, genre: board.genre, split: multi ? canvasEls.length : 0 });
+    if (isAndroid) track('save_image', { theme, genre: board.genre, split: multi ? canvasEls.length : 0 });
     setDownloadState('done');
     setTimeout(() => setDownloadState('idle'), 1500);
   };
@@ -464,51 +535,109 @@ export function ExportPreview({ onClose }: { onClose: () => void }) {
           </button>
         </div>
 
-        {/* 预览区 */}
-        <div className="flex-1 overflow-y-auto px-4 py-4 relative">
-          <div
-            ref={previewRef}
-            className={`rounded-lg overflow-hidden shadow-sm ${canvasEl ? '' : 'aspect-[3/4]'}`}
-            onContextMenu={() => { if (board) track('long_press_image', { theme, genre: board.genre }); }}
-          />
-          {isLoading && (
-            <div className="absolute inset-0 flex items-center justify-center bg-[var(--bg-card)]/85">
-              <div className="w-44 flex flex-col items-center gap-3">
-                <Loader size={20} className="animate-spin text-[var(--text-muted)]" />
-                <div className="w-full h-1 rounded-full bg-[var(--border)] overflow-hidden">
-                  <div
-                    className={`h-full rounded-full bg-[var(--accent)] transition-all duration-200 ${hasFontProgress ? '' : 'w-2/5 animate-pulse'}`}
-                    style={hasFontProgress ? { width: `${progress}%` } : undefined}
-                  />
+        {/* 预览区（长图可在区内上下滚动，预览框最小高度 3:4；切换组件固定在下部不随图片滚动） */}
+        <div className="flex-1 min-h-0 flex flex-col">
+          <div ref={previewScrollRef} className="flex-1 min-h-0 overflow-y-auto px-4 pt-4 pb-1 relative">
+            <div
+              ref={previewRef}
+              className="w-full rounded-lg shadow-sm"
+              onContextMenu={() => { if (board) track('long_press_image', { theme, genre: board.genre }); }}
+            />
+            {isLoading && (
+              <div className="absolute inset-0 flex items-center justify-center bg-[var(--bg-card)]/85">
+                <div className="w-44 flex flex-col items-center gap-3">
+                  <Loader size={20} className="animate-spin text-[var(--text-muted)]" />
+                  <div className="w-full h-1 rounded-full bg-[var(--border)] overflow-hidden">
+                    <div
+                      className={`h-full rounded-full bg-[var(--accent)] transition-all duration-200 ${hasFontProgress ? '' : 'w-2/5 animate-pulse'}`}
+                      style={hasFontProgress ? { width: `${progress}%` } : undefined}
+                    />
+                  </div>
+                  <span className="text-xs text-[var(--text-muted)]">
+                    {hasFontProgress
+                      ? `加载字体 ${loadState.loaded ?? 0} / ${loadState.total}`
+                      : loadState.message ?? '处理中'}
+                  </span>
                 </div>
+              </div>
+            )}
+            {loadState.phase === 'error' && (
+              <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-[var(--bg-card)]/90">
+                <span className="text-xs text-[var(--text-muted)]">{loadState.message}</span>
+                <button
+                  onClick={() => { void render(); }}
+                  className="px-3 py-1.5 rounded-lg text-xs text-white bg-[var(--accent)] hover:opacity-85 transition-opacity"
+                >
+                  重试
+                </button>
+              </div>
+            )}
+            {loadState.phase === 'idle' && loadState.warning && (
+              <div className="text-center text-[11px] text-[var(--text-muted)] pb-1">
+                {loadState.warning}
+              </div>
+            )}
+          </div>
+          {/* 多图切换（固定高度，不随图片滚动） */}
+          <div className="shrink-0 h-10 flex items-center justify-center gap-3">
+            {isMulti && canvasEls.length > 0 && (
+              <>
+                <button
+                  className="w-7 h-7 rounded-lg flex items-center justify-center text-[var(--text-muted)] hover:bg-[var(--accent-light)] hover:text-[var(--accent)] transition-colors disabled:opacity-30"
+                  disabled={page === 0}
+                  onClick={() => setPage(p => Math.max(0, p - 1))}
+                  aria-label="上一张"
+                >
+                  <ChevronLeft size={16} />
+                </button>
+                <span className="text-xs text-[var(--text-muted)]">{page + 1} / {canvasEls.length}</span>
+                <button
+                  className="w-7 h-7 rounded-lg flex items-center justify-center text-[var(--text-muted)] hover:bg-[var(--accent-light)] hover:text-[var(--accent)] transition-colors disabled:opacity-30"
+                  disabled={page >= canvasEls.length - 1}
+                  onClick={() => setPage(p => Math.min(canvasEls.length - 1, p + 1))}
+                  aria-label="下一张"
+                >
+                  <ChevronRight size={16} />
+                </button>
+              </>
+            )}
+          </div>
+        </div>
+
+        {/* 底栏：拆分 + 字体 + 配色 + 下载 */}
+        <div className="px-4 py-3 border-t border-[var(--border)] flex flex-col gap-2.5">
+          {/* 组诗拆分滑动条（每张图 n 首 / 全部） */}
+          {sectionCount > 1 && (
+            <div className="flex flex-col gap-1">
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-[var(--text-muted)]">每张图包含</span>
                 <span className="text-xs text-[var(--text-muted)]">
-                  {hasFontProgress
-                    ? `加载字体 ${loadState.loaded ?? 0} / ${loadState.total}`
-                    : loadState.message ?? '处理中'}
+                  {splitValue === 'all'
+                    ? `全部（1 张）`
+                    : `${splitValue} 首 · 共 ${chunks.length} 张`}
                 </span>
+              </div>
+              <input
+                type="range"
+                min={0}
+                max={splitOptions.length - 1}
+                step={1}
+                value={splitOptions.indexOf(splitValue)}
+                onChange={(e) => setSplitValue(splitOptions[Number(e.target.value)])}
+                className="w-full accent-[var(--accent)]"
+              />
+              <div className="flex justify-between text-[11px] text-[var(--text-muted)]">
+                {splitOptions.map((opt, i) => (
+                  <span
+                    key={i}
+                    className={splitOptions.indexOf(splitValue) === i ? 'text-[var(--accent)] font-medium' : ''}
+                  >
+                    {opt === 'all' ? '全部' : opt}
+                  </span>
+                ))}
               </div>
             </div>
           )}
-          {loadState.phase === 'error' && (
-            <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-[var(--bg-card)]/90">
-              <span className="text-xs text-[var(--text-muted)]">{loadState.message}</span>
-              <button
-                onClick={() => { void render(); }}
-                className="px-3 py-1.5 rounded-lg text-xs text-white bg-[var(--accent)] hover:opacity-85 transition-opacity"
-              >
-                重试
-              </button>
-            </div>
-          )}
-          {loadState.phase === 'idle' && loadState.warning && (
-            <div className="mt-2 text-center text-[11px] text-[var(--text-muted)]">
-              {loadState.warning}
-            </div>
-          )}
-        </div>
-
-        {/* 底栏：字体 + 配色 + 下载 */}
-        <div className="px-4 py-3 border-t border-[var(--border)] flex flex-col gap-2.5">
           {/* 对齐方式（仅自由诗） */}
           {isFree && (
           <div className="flex gap-0.5 border border-[var(--border)] rounded-lg p-0.5 w-fit">
@@ -596,7 +725,7 @@ export function ExportPreview({ onClose }: { onClose: () => void }) {
             {canCopyImage && (
               <button
                 onClick={handleCopyImage}
-                disabled={!canvasEl || isLoading || loadState.phase === 'error' || copyState === 'copying'}
+                disabled={!canvasEls[page] || isLoading || loadState.phase === 'error' || copyState === 'copying'}
                 className={[
                   'w-8 h-8 rounded-lg flex items-center justify-center transition-all disabled:opacity-40',
                   copyState === 'done'
@@ -615,14 +744,14 @@ export function ExportPreview({ onClose }: { onClose: () => void }) {
             )}
             <button
               onClick={handleDownload}
-              disabled={!canvasEl || isLoading || loadState.phase === 'error' || downloadState === 'saving'}
+              disabled={canvasEls.length === 0 || isLoading || loadState.phase === 'error' || downloadState === 'saving'}
               className={[
                 'w-8 h-8 rounded-lg flex items-center justify-center transition-all disabled:opacity-40',
                 downloadState === 'done'
                   ? 'bg-emerald-100 text-emerald-600'
                   : 'bg-[var(--accent-light)] text-[var(--accent)] hover:opacity-80',
               ].join(' ')}
-              title="下载"
+              title={isMulti && canvasEls.length > 0 ? `下载全部（${canvasEls.length} 张）` : '下载'}
               aria-label="下载图片"
             >
               {downloadState === 'saving' ? <Loader size={16} className="animate-spin" /> :

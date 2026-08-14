@@ -1548,10 +1548,11 @@ declare global {
   }
 }
 
-export function downloadCanvas(canvas: HTMLCanvasElement, title: string, theme?: string): Promise<void> {
+export function downloadCanvas(canvas: HTMLCanvasElement, title: string, theme?: string, index?: number): Promise<void> {
   const ts = Math.floor(Date.now() / 1000);
   const safe = (s: string) => s.replace(/[\\/:*?"<>|·\s]/g, '_');
-  const fileName = `${safe(title || '诗')}_${safe(theme || '默认')}_${ts}.png`;
+  const suffix = index !== undefined ? `_${index}` : '';
+  const fileName = `${safe(title || '诗')}_${safe(theme || '默认')}${suffix}_${ts}.png`;
 
   // Android: 通过 JS Bridge 保存到相册
   if (window.AndroidBridge?.saveImage) {
