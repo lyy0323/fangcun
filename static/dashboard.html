@@ -413,7 +413,7 @@ function daysBetween(start, end) {
 function selectedDays() {
   if (rangeMode === '1d') return [document.getElementById('datePicker').value || todayUTC8()];
   if (rangeMode !== 'all') return lastNDays(parseInt(rangeMode));
-  return allCalendarDays();
+  return allCalendarDays().filter(day => day >= NORTH_STAR_LAUNCH_DAY);
 }
 
 function northStarDailyMap() {
