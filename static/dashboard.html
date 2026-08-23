@@ -182,7 +182,7 @@
 <body>
 
 <div class="header">
-  <h1>方寸 <span>Dashboard</span></h1>
+  <h1>方寸 <span id="dataSourceLabel">Dashboard</span></h1>
   <div class="header-right">
     <div class="range-btns" role="group" aria-label="统计时间范围">
       <button class="range-btn" data-range="1d" aria-pressed="false">1日</button>
@@ -272,7 +272,11 @@
 </div>
 
 <script>
-const API = '';
+const PRODUCTION_API = 'https://write.sjtuguoxue.space';
+const queryParams = new URLSearchParams(window.location.search);
+const isLocalPreview = window.location.protocol === 'file:' || ['localhost', '127.0.0.1'].includes(window.location.hostname);
+const useLocalStats = queryParams.get('data') === 'local';
+const API = isLocalPreview && !useLocalStats ? PRODUCTION_API : '';
 const TZ_OFFSET = 8;
 let allStats = [];
 let rangeMode = '7d';
@@ -280,6 +284,10 @@ let northStarMode = 'takeaway';
 let detailPage = 1;
 const DETAIL_PAGE_SIZE = 20;
 const NORTH_STAR_LAUNCH_DAY = '2026-04-21';
+
+document.getElementById('dataSourceLabel').textContent = isLocalPreview && useLocalStats
+  ? 'Dashboard · 本地数据'
+  : 'Dashboard · 线上数据';
 
 function todayUTC8() {
   const d = new Date(Date.now() + TZ_OFFSET * 3600000);
