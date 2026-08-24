@@ -24,6 +24,7 @@
     --radius: 12px;
   }
   * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { max-width: 100%; overflow-x: hidden; }
   body { font-family: var(--font-sans); color: var(--text); background: var(--bg); min-height: 100vh; }
 
   .header {
@@ -33,7 +34,7 @@
   }
   .header h1 { font-size: 1.25rem; font-weight: 700; display: flex; align-items: center; gap: 0.5rem; }
   .header h1 span { color: var(--text-muted); font-weight: 400; font-size: 0.875rem; }
-  .header-right { display: flex; align-items: center; gap: 0.75rem; }
+  .header-right { display: flex; align-items: center; gap: 0.75rem; min-width: 0; }
 
   .range-btns { display: flex; gap: 0; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
   .range-btn {
@@ -57,10 +58,10 @@
   }
   .refresh-btn:hover { background: var(--accent-light); color: var(--accent); }
 
-  .container { max-width: 1100px; margin: 0 auto; padding: 1.5rem; }
+  .container { width: 100%; max-width: 1100px; min-width: 0; margin: 0 auto; padding: 1.5rem; }
 
   .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1.5rem; }
-  .card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.25rem; box-shadow: var(--shadow); }
+  .card { min-width: 0; background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.25rem; box-shadow: var(--shadow); }
   .card-label { font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.25rem; }
   .card-value { font-size: 2rem; font-weight: 700; line-height: 1.2; }
   .card-sub { font-size: 0.8rem; color: var(--text-secondary); margin-top: 0.25rem; }
@@ -69,13 +70,13 @@
   .card--purple .card-value { color: var(--purple); }
   .card--orange .card-value { color: var(--orange); }
 
-  .section { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.25rem; margin-bottom: 1.5rem; box-shadow: var(--shadow); }
+  .section { min-width: 0; background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.25rem; margin-bottom: 1.5rem; box-shadow: var(--shadow); }
   .section-title { font-size: 0.95rem; font-weight: 600; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem; }
 
   .bar-chart { display: flex; flex-direction: column; gap: 0.6rem; }
-  .bar-row { display: flex; align-items: center; gap: 0.75rem; }
+  .bar-row { display: flex; min-width: 0; align-items: center; gap: 0.75rem; }
   .bar-label { width: 140px; flex-shrink: 0; font-size: 0.8rem; color: var(--text-secondary); text-align: right; font-family: var(--font-mono); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .bar-track { flex: 1; height: 24px; background: var(--bg); border-radius: 6px; overflow: hidden; }
+  .bar-track { flex: 1; min-width: 0; height: 24px; background: var(--bg); border-radius: 6px; overflow: hidden; }
   .bar-fill { height: 100%; border-radius: 6px; min-width: 2px; transition: width 0.5s ease; }
   .bar-count { width: 50px; font-size: 0.8rem; font-weight: 600; color: var(--text); text-align: right; font-family: var(--font-mono); }
 
@@ -112,6 +113,15 @@
   .north-star-latest { flex-shrink: 0; text-align: right; }
   .north-star-latest strong { display: block; color: var(--orange); font-family: var(--font-mono); font-size: 1.25rem; }
   .north-star-latest span { color: var(--text-muted); font-size: 0.7rem; }
+  .north-star-actions { display: flex; align-items: flex-start; gap: 1rem; }
+  .north-star-modes { display: flex; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+  .north-star-mode-btn {
+    padding: 0.35rem 0.65rem; border: none; border-right: 1px solid var(--border);
+    background: var(--bg-card); color: var(--text-secondary); cursor: pointer; font-size: 0.75rem;
+  }
+  .north-star-mode-btn:last-child { border-right: none; }
+  .north-star-mode-btn.active { background: var(--accent-light); color: var(--accent); font-weight: 600; }
+  .north-star-mode-btn:hover:not(.active) { background: var(--bg); }
   .north-star-legend { display: flex; flex-wrap: wrap; gap: 0.65rem 1rem; margin-bottom: 0.6rem; color: var(--text-secondary); font-size: 0.75rem; }
   .north-star-legend span { display: inline-flex; align-items: center; gap: 0.35rem; }
   .legend-swatch { width: 12px; height: 8px; border-radius: 2px; }
@@ -128,19 +138,39 @@
   th { text-align: left; color: var(--text-muted); font-weight: 500; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; padding: 0.5rem 0.75rem; border-bottom: 1px solid var(--border); }
   td { padding: 0.6rem 0.75rem; border-bottom: 1px solid var(--border); }
   tr:last-child td { border-bottom: none; }
-  .status-active { color: var(--green); font-weight: 600; }
-  .status-revoked { color: var(--red); font-weight: 600; }
+  .pagination { display: flex; align-items: center; justify-content: flex-end; gap: 0.75rem; margin-top: 1rem; }
+  .pagination[hidden] { display: none; }
+  #detailTitle { scroll-margin-top: 6rem; }
+  .pagination-info { color: var(--text-secondary); font-size: 0.78rem; }
+  .page-btn {
+    padding: 0.35rem 0.7rem; border: 1px solid var(--border); border-radius: 7px;
+    background: var(--bg-card); color: var(--text-secondary); cursor: pointer; font-size: 0.78rem;
+  }
+  .page-btn:hover:not(:disabled) { background: var(--accent-light); color: var(--accent); }
+  .page-btn:disabled { opacity: 0.45; cursor: default; }
 
-  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+  .grid-2 { display: grid; min-width: 0; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
   @media (max-width: 768px) {
     .header { padding: 0.75rem 1rem; align-items: flex-start; flex-wrap: wrap; gap: 0.6rem; }
     .header h1 { flex-shrink: 0; white-space: nowrap; }
-    .header-right { width: 100%; flex-wrap: wrap; justify-content: flex-end; }
+    .header-right { width: auto; flex: 1 0 100%; flex-wrap: wrap; justify-content: flex-start; gap: 0.5rem; }
+    .range-btns { flex: 1 1 230px; min-width: 0; }
+    .range-btn { flex: 1; min-width: 0; padding: 0.4rem 0.45rem; }
+    .refresh-btn { flex-shrink: 0; }
+    .cards { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.75rem; }
+    .card { padding: 1rem; }
+    .card-value { font-size: 1.75rem; }
     .grid-2 { grid-template-columns: 1fr; }
     .bar-label { width: 100px; }
     .container { padding: 1rem; }
-    .north-star-head { align-items: flex-end; }
+    .north-star-head { align-items: stretch; flex-direction: column; }
+    .north-star-actions { min-width: 0; flex-wrap: wrap; align-items: center; justify-content: space-between; }
+    .north-star-modes { max-width: 100%; }
+    .north-star-mode-btn { white-space: nowrap; }
+    .north-star-latest { margin-left: auto; }
     .north-star-svg { height: 210px; }
+    .pagination { justify-content: space-between; }
+    #detailTitle { scroll-margin-top: 9rem; }
   }
 
   .loading { text-align: center; padding: 3rem; color: var(--text-muted); }
@@ -152,15 +182,16 @@
 <body>
 
 <div class="header">
-  <h1>方寸 <span>Dashboard</span></h1>
+  <h1>方寸 <span id="dataSourceLabel">Dashboard</span></h1>
   <div class="header-right">
-    <div class="range-btns">
-      <button class="range-btn" data-range="1d">1日</button>
-      <button class="range-btn active" data-range="7d">7日</button>
-      <button class="range-btn" data-range="30d">30日</button>
-      <button class="range-btn" data-range="all">全部</button>
+    <div class="range-btns" role="group" aria-label="统计时间范围">
+      <button class="range-btn" data-range="1d" aria-pressed="false">1日</button>
+      <button class="range-btn active" data-range="7d" aria-pressed="true">7日</button>
+      <button class="range-btn" data-range="30d" aria-pressed="false">30日</button>
+      <button class="range-btn" data-range="90d" aria-pressed="false">90日</button>
+      <button class="range-btn" data-range="all" aria-pressed="false">全部</button>
     </div>
-    <input type="date" id="datePicker" class="date-picker hidden">
+    <input type="date" id="datePicker" class="date-picker hidden" aria-label="选择统计日期">
     <button class="refresh-btn" onclick="loadAll()">刷新</button>
   </div>
 </div>
@@ -168,44 +199,45 @@
 <div class="container">
   <div class="cards">
     <div class="card card--blue">
-      <div class="card-label" id="callsLabel">区间调用</div>
-      <div class="card-value" id="rangeCalls">-</div>
-      <div class="card-sub" id="rangeDesc">-</div>
+      <div class="card-label">后端 API 调用</div>
+      <div class="card-value" id="rangeApiCalls">-</div>
+      <div class="card-sub metric-range" data-note="已统计成功请求">-</div>
     </div>
     <div class="card card--green">
-      <div class="card-label">活跃 Key</div>
-      <div class="card-value" id="activeKeys">-</div>
-      <div class="card-sub">已注册</div>
+      <div class="card-label">前端事件</div>
+      <div class="card-value" id="rangeEvents">-</div>
+      <div class="card-sub metric-range" data-note="埋点事件">-</div>
     </div>
     <div class="card card--purple">
-      <div class="card-label">总调用量</div>
-      <div class="card-value" id="totalCalls">-</div>
-      <div class="card-sub">全部时间</div>
+      <div class="card-label">导出图片次数</div>
+      <div class="card-value" id="rangeExportImages">-</div>
+      <div class="card-sub metric-range" data-note="成功导出事件">-</div>
     </div>
     <div class="card card--orange">
-      <div class="card-label" id="eventsLabel">区间事件</div>
-      <div class="card-value" id="rangeEvents">-</div>
-      <div class="card-sub" id="eventsDesc">前端事件</div>
+      <div class="card-label">复制文本次数</div>
+      <div class="card-value" id="rangeCopyTexts">-</div>
+      <div class="card-sub metric-range" data-note="成功复制事件">-</div>
     </div>
   </div>
 
   <div class="section" id="northStarSection">
     <div class="north-star-head">
       <div>
-        <div class="section-title">北极星指标 · 作品带走</div>
-        <div class="north-star-note">每日成功导出、复制图片、复制文字；折线为三者总和的 30 日移动平均</div>
+        <div class="section-title" id="northStarTitle">北极星指标 · 作品带走</div>
+        <div class="north-star-note" id="northStarNote">-</div>
       </div>
-      <div class="north-star-latest">
-        <strong id="northStarLatest">-</strong>
-        <span>最近一日 MA30</span>
+      <div class="north-star-actions">
+        <div class="north-star-modes" role="group" aria-label="北极星指标口径">
+          <button class="north-star-mode-btn active" data-mode="takeaway" aria-pressed="true">作品带走（三项）</button>
+          <button class="north-star-mode-btn" data-mode="export" aria-pressed="false">仅导出图片</button>
+        </div>
+        <div class="north-star-latest">
+          <strong id="northStarLatest">-</strong>
+          <span id="northStarLatestLabel">最近一日 MA-</span>
+        </div>
       </div>
     </div>
-    <div class="north-star-legend">
-      <span><i class="legend-swatch" style="background:#2563eb"></i>导出图片</span>
-      <span><i class="legend-swatch" style="background:#7c3aed"></i>复制图片</span>
-      <span><i class="legend-swatch" style="background:#059669"></i>复制文字</span>
-      <span><i class="legend-line"></i>三者总和 MA30</span>
-    </div>
+    <div class="north-star-legend" id="northStarLegend"></div>
     <div id="northStarChart"><div class="loading">加载中</div></div>
   </div>
 
@@ -235,20 +267,27 @@
   <div class="section">
     <div class="section-title" id="detailTitle">明细</div>
     <div id="detailTable" class="table-wrap"><div class="loading">加载中</div></div>
-  </div>
-
-  <div class="section">
-    <div class="section-title">API Key 概览</div>
-    <div id="keysTable" class="table-wrap"><div class="loading">加载中</div></div>
+    <div id="detailPagination" class="pagination" aria-live="polite" hidden></div>
   </div>
 </div>
 
 <script>
-const API = '';
+const PRODUCTION_API = 'https://write.sjtuguoxue.space';
+const queryParams = new URLSearchParams(window.location.search);
+const isLocalPreview = window.location.protocol === 'file:' || ['localhost', '127.0.0.1'].includes(window.location.hostname);
+const useLocalStats = queryParams.get('data') === 'local';
+const API = isLocalPreview && !useLocalStats ? PRODUCTION_API : '';
 const TZ_OFFSET = 8;
 let allStats = [];
-let keysData = [];
 let rangeMode = '7d';
+let northStarMode = 'takeaway';
+let detailPage = 1;
+const DETAIL_PAGE_SIZE = 20;
+const NORTH_STAR_LAUNCH_DAY = '2026-04-21';
+
+document.getElementById('dataSourceLabel').textContent = isLocalPreview && useLocalStats
+  ? 'Dashboard · 本地数据'
+  : 'Dashboard · 线上数据';
 
 function todayUTC8() {
   const d = new Date(Date.now() + TZ_OFFSET * 3600000);
@@ -276,10 +315,16 @@ function formatTs(iso) {
 }
 
 function shortRoute(r) { return r.replace('/api/', ''); }
+function escapeHTML(value) {
+  return String(value).replace(/[&<>"']/g, char => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+  })[char]);
+}
 async function fetchJSON(url) { return (await fetch(url)).json(); }
 
 async function loadAll() {
-  [allStats, keysData] = await Promise.all([fetchJSON(`${API}/api/_stats/routes`), fetchJSON(`${API}/api/_stats/keys`)]);
+  allStats = await fetchJSON(`${API}/api/_stats/routes`);
+  detailPage = 1;
   render();
 }
 
@@ -298,6 +343,7 @@ function getRangeLabel() {
   if (rangeMode === '1d') return document.getElementById('datePicker').value || todayUTC8();
   if (rangeMode === '7d') return '近 7 日';
   if (rangeMode === '30d') return '近 30 日';
+  if (rangeMode === '90d') return '近 90 日';
   return '全部时间';
 }
 
@@ -305,8 +351,9 @@ function barChart(entries, maxVal, colorOffset) {
   if (!entries.length) return '<div class="empty">暂无数据</div>';
   return entries.map(([label, count], i) => {
     const pct = (count / maxVal * 100).toFixed(1);
+    const safeLabel = escapeHTML(label);
     return `<div class="bar-row">
-      <div class="bar-label" title="${label}">${label}</div>
+      <div class="bar-label" title="${safeLabel}">${safeLabel}</div>
       <div class="bar-track"><div class="bar-fill color-${(i + colorOffset) % 8}" style="width: ${pct}%"></div></div>
       <div class="bar-count">${count}</div>
     </div>`;
@@ -326,6 +373,18 @@ const NORTH_STAR_EVENTS = [
   { name: 'copy_image', label: '复制图片', color: '#7c3aed' },
   { name: 'copy_text', label: '复制文字', color: '#059669' },
 ];
+const NORTH_STAR_MODES = {
+  takeaway: {
+    eventNames: ['export_image', 'copy_image', 'copy_text'],
+    maLabel: '三项合计',
+    note: '每日成功导出、复制图片、复制文本的操作次数；4 月 21 日起按已上线天数计算 MA，满 30 天后固定为 MA30',
+  },
+  export: {
+    eventNames: ['export_image'],
+    maLabel: '导出图片',
+    note: '每日成功导出图片的操作次数；4 月 21 日起按已上线天数计算 MA，满 30 天后固定为 MA30',
+  },
+};
 
 function shiftDay(day, offset) {
   const date = new Date(`${day}T00:00:00Z`);
@@ -339,12 +398,22 @@ function calendarDays(start, end) {
   return days;
 }
 
+function allCalendarDays() {
+  const dates = allDates();
+  if (!dates.length) return [];
+  const today = todayUTC8();
+  const lastDay = dates[dates.length - 1];
+  return calendarDays(dates[0], lastDay > today ? lastDay : today);
+}
+
+function daysBetween(start, end) {
+  return Math.round((Date.parse(`${end}T00:00:00Z`) - Date.parse(`${start}T00:00:00Z`)) / 86400000);
+}
+
 function selectedDays() {
   if (rangeMode === '1d') return [document.getElementById('datePicker').value || todayUTC8()];
   if (rangeMode !== 'all') return lastNDays(parseInt(rangeMode));
-  const dates = allDates();
-  if (!dates.length) return [];
-  return calendarDays(dates[0], dates[dates.length - 1]);
+  return allCalendarDays().filter(day => day >= NORTH_STAR_LAUNCH_DAY);
 }
 
 function northStarDailyMap() {
@@ -359,40 +428,62 @@ function northStarDailyMap() {
   return map;
 }
 
+function movingAverageAt(dailyMap, day, events) {
+  const elapsedDays = daysBetween(NORTH_STAR_LAUNCH_DAY, day) + 1;
+  if (elapsedDays <= 0) return { value: null, windowSize: 0 };
+
+  const windowSize = Math.min(30, elapsedDays);
+  let sum = 0;
+  for (let offset = 0; offset < windowSize; offset++) {
+    const values = dailyMap[shiftDay(day, -offset)] || {};
+    sum += events.reduce((total, event) => total + (values[event.name] || 0), 0);
+  }
+  return { value: sum / windowSize, windowSize };
+}
+
 function renderNorthStar(days) {
   const chart = document.getElementById('northStarChart');
   const latest = document.getElementById('northStarLatest');
+  const latestLabel = document.getElementById('northStarLatestLabel');
+  const mode = NORTH_STAR_MODES[northStarMode];
+  const events = NORTH_STAR_EVENTS.filter(event => mode.eventNames.includes(event.name));
+  document.getElementById('northStarTitle').textContent = `北极星指标 · ${northStarMode === 'takeaway' ? '作品带走' : '导出图片'}`;
+  document.getElementById('northStarNote').textContent = mode.note;
+  document.getElementById('northStarLegend').innerHTML = [
+    ...events.map(event => `<span><i class="legend-swatch" style="background:${event.color}"></i>${event.label}</span>`),
+    `<span><i class="legend-line"></i>${mode.maLabel} MA1–MA30</span>`,
+  ].join('');
+
   if (!days.length) {
     chart.innerHTML = '<div class="empty">暂无北极星事件数据</div>';
     latest.textContent = '-';
+    latestLabel.textContent = '最近一日 MA-';
     return;
   }
 
   const dailyMap = northStarDailyMap();
-  const eventValues = NORTH_STAR_EVENTS.map(event => days.map(day => dailyMap[day]?.[event.name] || 0));
+  const eventValues = events.map(event => days.map(day => dailyMap[day]?.[event.name] || 0));
   const totals = days.map((_, i) => eventValues.reduce((sum, values) => sum + values[i], 0));
-  const ma30 = days.map(day => {
-    let sum = 0;
-    for (let offset = 0; offset < 30; offset++) {
-      const values = dailyMap[shiftDay(day, -offset)] || {};
-      sum += NORTH_STAR_EVENTS.reduce((total, event) => total + (values[event.name] || 0), 0);
-    }
-    return sum / 30;
-  });
-  latest.textContent = ma30[ma30.length - 1].toFixed(1);
+  const movingAverages = days.map(day => movingAverageAt(dailyMap, day, events));
+  const validMaValues = movingAverages.filter(item => item.value !== null).map(item => item.value);
+  const lastMa = movingAverages[movingAverages.length - 1];
+  latest.textContent = lastMa.value === null ? '-' : lastMa.value.toFixed(1);
+  latestLabel.textContent = lastMa.value === null ? '上线前不计算 MA' : `最近一日 MA${lastMa.windowSize}`;
 
-  if (totals.every(value => value === 0) && ma30.every(value => value === 0)) {
-    chart.innerHTML = '<div class="empty">当前区间暂无北极星事件</div>';
+  if (totals.every(value => value === 0) && validMaValues.every(value => value === 0)) {
+    chart.innerHTML = validMaValues.length
+      ? '<div class="empty">当前区间暂无北极星事件</div>'
+      : '<div class="empty">产品尚未上线，MA 不参与计算</div>';
     return;
   }
 
   const W = Math.max(chart.clientWidth || 0, 320), H = 210, PAD_L = 42, PAD_R = 42, PAD_T = 12, PAD_B = 30;
   const plotW = W - PAD_L - PAD_R, plotH = H - PAD_T - PAD_B;
   const maxDaily = Math.max(1, Math.ceil(Math.max(...totals)));
-  const maxMa30 = Math.max(0.1, Math.max(...ma30));
+  const maxMa = Math.max(0.1, ...validMaValues);
   const xAt = index => PAD_L + (days.length === 1 ? plotW / 2 : index / (days.length - 1) * plotW);
   const yAtDaily = value => PAD_T + plotH - value / maxDaily * plotH;
-  const yAtMa30 = value => PAD_T + plotH - value / maxMa30 * plotH;
+  const yAtMa = value => PAD_T + plotH - value / maxMa * plotH;
   const slotWidth = days.length === 1 ? plotW : plotW / Math.max(days.length - 1, 1);
   const barWidth = Math.max(2, Math.min(24, slotWidth * 0.62));
 
@@ -403,15 +494,15 @@ function renderNorthStar(days) {
     return `<line class="grid-line" x1="${PAD_L}" y1="${y}" x2="${W - PAD_R}" y2="${y}"/>
       <text x="${PAD_L - 5}" y="${y + 3}" text-anchor="end">${label}</text>`;
   }).join('');
-  const maAxis = [0, 0.5, 1].map(fraction => {
-    const value = maxMa30 * fraction;
-    const y = yAtMa30(value);
+  const maAxis = validMaValues.length ? [0, 0.5, 1].map(fraction => {
+    const value = maxMa * fraction;
+    const y = yAtMa(value);
     return `<text class="ma-axis" x="${W - 2}" y="${y + 3}" text-anchor="end">${value.toFixed(1)}</text>`;
-  }).join('');
+  }).join('') : '';
 
   const bars = days.map((day, dayIndex) => {
     let stacked = 0;
-    return NORTH_STAR_EVENTS.map((event, eventIndex) => {
+    return events.map((event, eventIndex) => {
       const value = eventValues[eventIndex][dayIndex];
       const y = yAtDaily(stacked + value);
       const height = value / maxDaily * plotH;
@@ -423,7 +514,12 @@ function renderNorthStar(days) {
     }).join('');
   }).join('');
 
-  const maPoints = days.map((day, index) => ({ day, value: ma30[index], x: xAt(index), y: yAtMa30(ma30[index]) }));
+  const maPoints = days.map((day, index) => ({
+    day,
+    index,
+    value: movingAverages[index].value,
+    windowSize: movingAverages[index].windowSize,
+  })).filter(point => point.value !== null).map(point => ({ ...point, x: xAt(point.index), y: yAtMa(point.value) }));
   const maPath = maPoints.map((point, index) => `${index ? 'L' : 'M'}${point.x},${point.y}`).join('');
   const maxLabels = Math.max(2, Math.floor(plotW / 62));
   const showEvery = Math.max(1, Math.ceil(days.length / maxLabels));
@@ -435,15 +531,15 @@ function renderNorthStar(days) {
       ? `<text x="${xAt(index)}" y="${H - 5}" text-anchor="middle">${day.slice(5)}</text>`
       : ''
   )).join('');
-  const dots = maPoints.map((point, index) => {
-    if (days.length > 30 && !showIndex(index)) return '';
+  const dots = maPoints.map(point => {
+    if (days.length > 30 && !showIndex(point.index)) return '';
     return `<circle class="ma-dot" cx="${point.x}" cy="${point.y}" r="3">
-      <title>${point.day} · 三者总和 MA30: ${point.value.toFixed(2)}</title>
+      <title>${point.day} · ${mode.maLabel} MA${point.windowSize}: ${point.value.toFixed(2)}</title>
     </circle>`;
   }).join('');
 
-  chart.innerHTML = `<svg class="north-star-svg" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" role="img" aria-label="作品带走北极星指标趋势">
-    ${grid}${maAxis}${bars}<path class="ma-line" d="${maPath}"/>${dots}${labels}
+  chart.innerHTML = `<svg class="north-star-svg" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" role="img" aria-label="${mode.maLabel}北极星指标趋势">
+    ${grid}${maAxis}${bars}${maPath ? `<path class="ma-line" d="${maPath}"/>` : ''}${dots}${labels}
   </svg>`;
 }
 
@@ -482,8 +578,8 @@ function renderBarTrend(days, dailyTotals, maxVal, today) {
   return `<div class="trend-area"><div class="trend-bars">${bars}</div><div class="trend-axis">${axis}</div></div>`;
 }
 
-function renderLineTrend(days, dailyTotals, maxVal) {
-  const W = 1000, H = 160, PAD_L = 40, PAD_R = 20, PAD_T = 20, PAD_B = 30;
+function renderLineTrend(days, dailyTotals, maxVal, containerWidth) {
+  const W = Math.max(containerWidth || 0, 320), H = 160, PAD_L = 40, PAD_R = 20, PAD_T = 20, PAD_B = 30;
   const plotW = W - PAD_L - PAD_R, plotH = H - PAD_T - PAD_B;
   const n = days.length;
   if (n === 0) return '<div class="empty">暂无数据</div>';
@@ -538,16 +634,21 @@ function render() {
   const label = getRangeLabel();
 
   // Cards
-  const calls = filtered.reduce((s, r) => s + r.call_count, 0);
-  document.getElementById('rangeCalls').textContent = calls.toLocaleString();
-  document.getElementById('rangeDesc').textContent = label;
-  document.getElementById('callsLabel').textContent = rangeMode === '1d' ? `${label.slice(5)} 调用` : `${label}调用`;
-  document.getElementById('activeKeys').textContent = keysData.filter(k => k.is_active).length;
-  document.getElementById('totalCalls').textContent = allStats.reduce((s, r) => s + r.call_count, 0).toLocaleString();
-  const events = filtered.filter(s => s.route.startsWith('_event:')).reduce((s, r) => s + r.call_count, 0);
-  document.getElementById('rangeEvents').textContent = events.toLocaleString();
-  document.getElementById('eventsLabel').textContent = rangeMode === '1d' ? `${label.slice(5)} 事件` : `${label}事件`;
-  document.getElementById('eventsDesc').textContent = '前端事件';
+  const apiRows = filtered.filter(row => !row.route.startsWith('_event:'));
+  const frontendEventRows = filtered.filter(row => row.route.startsWith('_event:'));
+  const eventCounts = {};
+  frontendEventRows.forEach(row => {
+    const { eventName } = parseEventProps(row.route);
+    eventCounts[eventName] = (eventCounts[eventName] || 0) + row.call_count;
+  });
+  document.getElementById('rangeApiCalls').textContent = apiRows.reduce((sum, row) => sum + row.call_count, 0).toLocaleString();
+  document.getElementById('rangeEvents').textContent = frontendEventRows.reduce((sum, row) => sum + row.call_count, 0).toLocaleString();
+  document.getElementById('rangeExportImages').textContent = (eventCounts.export_image || 0).toLocaleString();
+  document.getElementById('rangeCopyTexts').textContent = (eventCounts.copy_text || 0).toLocaleString();
+  document.querySelectorAll('.metric-range').forEach(element => {
+    const note = element.dataset?.note;
+    element.textContent = note ? `${label} · ${note}` : label;
+  });
 
   // North-star: daily successful take-away actions + their combined MA30.
   renderNorthStar(selectedDays());
@@ -559,23 +660,22 @@ function render() {
     trendSection.style.display = 'none';
   } else {
     trendSection.style.display = '';
-    const days = rangeMode === 'all' ? allDates() : lastNDays(parseInt(rangeMode));
+    const days = rangeMode === 'all' ? allCalendarDays() : lastNDays(parseInt(rangeMode));
     const dailyTotals = days.map(d => allStats.filter(s => s.date === d).reduce((sum, r) => sum + r.call_count, 0));
     const maxDaily = Math.max(...dailyTotals, 1);
 
     if (dailyTotals.every(v => v === 0)) {
       trendEl.innerHTML = '<div class="empty">暂无数据</div>';
-    } else if (rangeMode === 'all') {
-      trendEl.innerHTML = renderLineTrend(days, dailyTotals, maxDaily);
+    } else if (rangeMode === 'all' || rangeMode === '90d') {
+      trendEl.innerHTML = renderLineTrend(days, dailyTotals, maxDaily, trendEl.clientWidth);
     } else {
       trendEl.innerHTML = renderBarTrend(days, dailyTotals, maxDaily, today);
     }
   }
 
   // Route distribution
-  const apiStats = filtered.filter(s => !s.route.startsWith('_event:'));
   const routeMap = {};
-  apiStats.forEach(s => { routeMap[s.route] = (routeMap[s.route] || 0) + s.call_count; });
+  apiRows.forEach(s => { routeMap[s.route] = (routeMap[s.route] || 0) + s.call_count; });
   const routeEntries = Object.entries(routeMap).sort((a, b) => b[1] - a[1]);
   document.getElementById('routeChart').innerHTML = barChart(
     routeEntries.map(([r, c]) => [shortRoute(r), c]),
@@ -589,10 +689,9 @@ function render() {
   document.getElementById('sourceChart').innerHTML = barChart(sourceEntries, sourceEntries.length ? sourceEntries[0][1] : 1, 2);
 
   // Frontend events (merged)
-  const eventStats = filtered.filter(s => s.route.startsWith('_event:'));
   const eventNameMap = {};
   const eventPropsMap = {};
-  eventStats.forEach(s => {
+  frontendEventRows.forEach(s => {
     const { eventName, props } = parseEventProps(s.route);
     eventNameMap[eventName] = (eventNameMap[eventName] || 0) + s.call_count;
     if (!eventPropsMap[eventName]) eventPropsMap[eventName] = [];
@@ -607,8 +706,10 @@ function render() {
     eventEl.innerHTML = eventEntries.map(([name, count], i) => {
       const lbl = EVENT_LABELS[name] || name;
       const pct = (count / eventMax * 100).toFixed(1);
+      const safeName = escapeHTML(name);
+      const safeLabel = escapeHTML(lbl);
       return `<div class="bar-row">
-        <div class="bar-label" title="${name}">${lbl}</div>
+        <div class="bar-label" title="${safeName}">${safeLabel}</div>
         <div class="bar-track"><div class="bar-fill color-${(i + 4) % 8}" style="width: ${pct}%"></div></div>
         <div class="bar-count">${count}</div>
       </div>`;
@@ -622,12 +723,12 @@ function render() {
     { event: 'export_image', prop: 'theme', title: '导出图片 · 主题' },
     { event: 'export_image', prop: 'genre', title: '导出图片 · 体裁', transform: g => g === 'Shi' ? '诗' : g === 'Ci' ? '词' : '自由诗' },
     { event: 'create_board', prop: 'genre', title: '新建画板 · 体裁', transform: g => g === 'Shi' ? '诗' : g === 'Ci' ? '词' : g === 'Free' ? '自由诗' : g },
-    { event: 'create_board', prop: 'rule', title: '新建画板 · 规则' },
+    { event: 'create_board', prop: 'rule', title: '新建画板 · 规则', transform: (rule, props) => props.genre === 'Ci' ? '词' : rule },
   ];
   for (const cfg of bCfg) {
     const items = eventPropsMap[cfg.event] || [];
     const pm = {};
-    items.forEach(({ props, count }) => { let v = props[cfg.prop]; if (!v) return; if (cfg.transform) v = cfg.transform(v); pm[v] = (pm[v] || 0) + count; });
+    items.forEach(({ props, count }) => { let v = props[cfg.prop]; if (!v) return; if (cfg.transform) v = cfg.transform(v, props); pm[v] = (pm[v] || 0) + count; });
     const entries = Object.entries(pm).sort((a, b) => b[1] - a[1]);
     if (entries.length) {
       bHTML += `<div class="section"><div class="section-title">${cfg.title}</div>
@@ -639,8 +740,11 @@ function render() {
   // Detail table
   document.getElementById('detailTitle').textContent = `${label} 明细`;
   const detailEl = document.getElementById('detailTable');
+  const paginationEl = document.getElementById('detailPagination');
   if (!filtered.length) {
     detailEl.innerHTML = '<div class="empty">无调用记录</div>';
+    paginationEl.hidden = true;
+    paginationEl.innerHTML = '';
   } else {
     const grouped = {};
     filtered.forEach(s => {
@@ -649,41 +753,49 @@ function render() {
       grouped[key].call_count += s.call_count;
       if (s.last_called_at > (grouped[key].last_called_at || '')) grouped[key].last_called_at = s.last_called_at;
     });
-    const sorted = Object.values(grouped).sort((a, b) => b.call_count - a.call_count);
+    const sorted = Object.values(grouped).sort((a, b) => b.call_count - a.call_count || a.route.localeCompare(b.route));
+    const totalPages = Math.max(1, Math.ceil(sorted.length / DETAIL_PAGE_SIZE));
+    detailPage = Math.min(Math.max(1, detailPage), totalPages);
+    const pageStart = (detailPage - 1) * DETAIL_PAGE_SIZE;
+    const pageRows = sorted.slice(pageStart, pageStart + DETAIL_PAGE_SIZE);
     detailEl.innerHTML = `<table>
       <thead><tr><th>路由</th><th>来源</th><th>调用次数</th><th>最后调用</th></tr></thead>
-      <tbody>${sorted.map(s => `<tr>
-        <td style="font-family:var(--font-mono);font-size:0.8rem">${shortRoute(s.route)}</td>
-        <td style="font-size:0.8rem">${s.source}</td>
+      <tbody>${pageRows.map(s => `<tr>
+        <td style="font-family:var(--font-mono);font-size:0.8rem">${escapeHTML(shortRoute(s.route))}</td>
+        <td style="font-size:0.8rem">${escapeHTML(s.source)}</td>
         <td style="font-weight:600">${s.call_count}</td>
-        <td style="color:var(--text-secondary);font-size:0.8rem">${formatTs(s.last_called_at)}</td>
+        <td style="color:var(--text-secondary);font-size:0.8rem">${escapeHTML(formatTs(s.last_called_at))}</td>
       </tr>`).join('')}</tbody>
     </table>`;
+    paginationEl.hidden = sorted.length <= DETAIL_PAGE_SIZE;
+    paginationEl.innerHTML = `<button class="page-btn" data-page-delta="-1" onclick="changeDetailPage(-1)" ${detailPage === 1 ? 'disabled' : ''}>上一页</button>
+      <span class="pagination-info">第 ${detailPage} / ${totalPages} 页 · 共 ${sorted.length} 条</span>
+      <button class="page-btn" data-page-delta="1" onclick="changeDetailPage(1)" ${detailPage === totalPages ? 'disabled' : ''}>下一页</button>`;
   }
+}
 
-  // Keys table
-  const keysEl = document.getElementById('keysTable');
-  if (!keysData.length) { keysEl.innerHTML = '<div class="empty">暂无 API Key</div>'; }
-  else {
-    keysEl.innerHTML = `<table>
-      <thead><tr><th>名称</th><th>状态</th><th>调用次数</th><th>创建时间</th><th>最后使用</th></tr></thead>
-      <tbody>${keysData.map(k => `<tr>
-        <td style="font-weight:500">${k.name}</td>
-        <td><span class="${k.is_active ? 'status-active' : 'status-revoked'}">${k.is_active ? '活跃' : '已吊销'}</span></td>
-        <td style="font-weight:600">${k.call_count}</td>
-        <td style="color:var(--text-secondary);font-size:0.8rem">${formatTs(k.created_at)}</td>
-        <td style="color:var(--text-secondary);font-size:0.8rem">${formatTs(k.last_used_at)}</td>
-      </tr>`).join('')}</tbody>
-    </table>`;
-  }
+function changeDetailPage(delta) {
+  detailPage += delta;
+  render();
+  document.getElementById('detailTitle').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  requestAnimationFrame(() => {
+    const pagination = document.getElementById('detailPagination');
+    const sameDirection = pagination.querySelector(`[data-page-delta="${delta}"]`);
+    const focusTarget = sameDirection?.disabled ? pagination.querySelector('.page-btn:not(:disabled)') : sameDirection;
+    focusTarget?.focus({ preventScroll: true });
+  });
 }
 
 // Range buttons
 document.querySelectorAll('.range-btn').forEach(btn => {
   btn.addEventListener('click', () => {
-    document.querySelectorAll('.range-btn').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
+    document.querySelectorAll('.range-btn').forEach(button => {
+      const active = button === btn;
+      button.classList.toggle('active', active);
+      button.setAttribute('aria-pressed', String(active));
+    });
     rangeMode = btn.dataset.range;
+    detailPage = 1;
     const picker = document.getElementById('datePicker');
     if (rangeMode === '1d') { picker.classList.remove('hidden'); }
     else { picker.classList.add('hidden'); }
@@ -691,14 +803,26 @@ document.querySelectorAll('.range-btn').forEach(btn => {
   });
 });
 
+document.querySelectorAll('.north-star-mode-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.north-star-mode-btn').forEach(button => {
+      const active = button === btn;
+      button.classList.toggle('active', active);
+      button.setAttribute('aria-pressed', String(active));
+    });
+    northStarMode = btn.dataset.mode;
+    renderNorthStar(selectedDays());
+  });
+});
+
 // Init
 const picker = document.getElementById('datePicker');
 picker.value = todayUTC8();
-picker.addEventListener('change', render);
-let northStarResizeTimer;
+picker.addEventListener('change', () => { detailPage = 1; render(); });
+let dashboardResizeTimer;
 window.addEventListener('resize', () => {
-  clearTimeout(northStarResizeTimer);
-  northStarResizeTimer = setTimeout(() => renderNorthStar(selectedDays()), 100);
+  clearTimeout(dashboardResizeTimer);
+  dashboardResizeTimer = setTimeout(render, 100);
 });
 loadAll();
 </script>
