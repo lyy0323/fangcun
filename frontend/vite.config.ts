@@ -7,11 +7,12 @@ export default defineConfig({
   server: {
     port: 3000,
     proxy: {
-      '/api/validate_meter': 'https://checker.sjtuguoxue.space',
-      '/api/free_rhyme': 'https://checker.sjtuguoxue.space',
-      '/api/rules': 'https://checker.sjtuguoxue.space',
-      '/api/rhyme': 'https://checker.sjtuguoxue.space',
-      '/api/char/lookup': 'https://checker.sjtuguoxue.space',
+      // 本地联调可用 CHECKER_PROXY=http://localhost:5051 指向本地 checker 服务
+      '/api/validate_meter': process.env.CHECKER_PROXY ?? 'https://checker.sjtuguoxue.space',
+      '/api/free_rhyme': process.env.CHECKER_PROXY ?? 'https://checker.sjtuguoxue.space',
+      '/api/rules': process.env.CHECKER_PROXY ?? 'https://checker.sjtuguoxue.space',
+      '/api/rhyme': process.env.CHECKER_PROXY ?? 'https://checker.sjtuguoxue.space',
+      '/api/char/lookup': process.env.CHECKER_PROXY ?? 'https://checker.sjtuguoxue.space',
       '/api': 'http://localhost:5050',
     },
   },

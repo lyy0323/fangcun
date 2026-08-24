@@ -15,6 +15,7 @@ class RhymeCategory:
     tone_type: str
     characters: Set[str]
     relations: Dict[str, List[str]] = field(default_factory=dict)
+    subcategories: Dict[str, List[str]] = field(default_factory=dict)  # [上古韵] 细分韵部 → 字
 
 @dataclass
 class RhymeBook:

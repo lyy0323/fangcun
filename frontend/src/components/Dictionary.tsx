@@ -57,7 +57,11 @@ export function Dictionary() {
   // 结果
   const [rhymeResult, setRhymeResult] = useState<{
     tones: string[];
-    categories: { name: string; tone_type: string }[];
+    categories: {
+      name: string;
+      tone_type: string;
+      readings?: { sub: string; wangli: string; py: string; rpy: string; tone: string }[];
+    }[];
     definitions: { py: string; defs: { d: string; c?: string }[] }[];
   } | null>(null);
   const [phraseResult, setPhraseResult] = useState<[string, number][]>([]);
@@ -289,21 +293,38 @@ export function Dictionary() {
           <div className="py-1">
             {rhymeResult.categories.length > 0 ? (
               <div className="flex flex-wrap gap-1">
-                {rhymeResult.categories.map(c => (
-                  <span
-                    key={c.name}
-                    className="inline-block px-2 py-0.5 rounded text-xs border cursor-pointer transition-colors hover:opacity-80"
-                    style={{
-                      color: c.tone_type === 'P' ? '#559977' : '#557799',
-                      borderColor: (c.tone_type === 'P' ? '#559977' : '#557799') + '40',
-                      backgroundColor: (c.tone_type === 'P' ? '#559977' : '#557799') + '10',
-                    }}
-                    onClick={() => dispatch({ type: 'SET_RHYME_OVERRIDE', category: c.name })}
-                    title="点击切换右侧韵部面板"
-                  >
-                    {c.name}
-                  </span>
-                ))}
+                {rhymeResult.categories.map(c => {
+                  const badge = (
+                    <span
+                      className="inline-block px-2 py-0.5 rounded text-xs border cursor-pointer transition-colors hover:opacity-80 whitespace-nowrap"
+                      style={{
+                        color: c.tone_type === 'P' ? '#559977' : '#557799',
+                        borderColor: (c.tone_type === 'P' ? '#559977' : '#557799') + '40',
+                        backgroundColor: (c.tone_type === 'P' ? '#559977' : '#557799') + '10',
+                      }}
+                      onClick={() => dispatch({ type: 'SET_RHYME_OVERRIDE', category: c.name })}
+                      title="点击切换右侧韵部面板"
+                    >
+                      {c.name}
+                    </span>
+                  );
+                  // [上古韵] 每个读音一行：badge + 细分小韵·读音 同行
+                  if (bookName === 'Shangguyun' && c.readings && c.readings.length > 0) {
+                    return (
+                      <div key={c.name} className="flex flex-col gap-0.5 w-full">
+                        {c.readings.map((r, ri) => (
+                          <div key={ri} className="flex items-center gap-1.5">
+                            {badge}
+                            <span className="text-[10px] text-[var(--text-muted)] font-mono whitespace-nowrap">
+                              {r.sub}·{r.py}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    );
+                  }
+                  return <div key={c.name}>{badge}</div>;
+                })}
               </div>
             ) : (
               <div className="text-xs text-[var(--text-muted)]">无韵部信息</div>

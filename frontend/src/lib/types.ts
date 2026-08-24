@@ -143,12 +143,34 @@ export interface RhymeCategory {
   tone_type: 'P' | 'Z';
 }
 
+// [上古韵] 单字上古读音（char/lookup 的 rhyme_categories[i].readings）
+export interface ShangguyunReading {
+  sub: string;      // 细分韵部（如 鱼平）
+  wangli: string;   // 王力韵部（如 鱼）
+  cat: string;      // 标准韵部（如 鱼铎）
+  py: string;       // 拟音：拼音列（全音节）
+  rpy: string;      // 韵拼音列
+  tone: string;     // 平/上/去/入/次入
+  freq: number;     // 總出現次數（√→1，空→0）
+}
+
+// [上古韵] rhyme/lookup 的逐字展示详情（与 characters 对齐）
+export interface RhymeLookupDetail {
+  char: string;
+  sub?: string;
+  wangli?: string;
+  py?: string;
+  rpy?: string;
+  tone?: string;
+}
+
 export interface RhymeLookupResult {
   category_name: string;
   tone_type: string;
   total: number;
   characters: string[];
   relations: Record<string, string[]>;
+  details?: RhymeLookupDetail[];
 }
 
 export interface RuleListItem {

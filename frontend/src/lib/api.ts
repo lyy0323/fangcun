@@ -1,4 +1,4 @@
-import type { ValidationResult, RhymeLookupResult, RuleListItem, PoemSearchResult, PoemFull, FreeRhymeResult } from './types';
+import type { ValidationResult, RhymeLookupResult, RuleListItem, PoemSearchResult, PoemFull, FreeRhymeResult, RhymeCategory, ShangguyunReading } from './types';
 
 const BASE = '/api';
 
@@ -85,7 +85,7 @@ export async function charLookup(char: string, book: string) {
     get<{
       char: string;
       tones: string[];
-      rhyme_categories: { name: string; tone_type: string }[];
+      rhyme_categories: (RhymeCategory & { readings?: ShangguyunReading[] })[];
     }>(`/char/lookup?char=${enc(char)}&book=${enc(book)}`, CHECKER_BASE),
     get<{
       char: string;

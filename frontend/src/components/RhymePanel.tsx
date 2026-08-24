@@ -177,10 +177,10 @@ export function RhymePanel() {
   };
 
   const bookOptions = board?.genre === 'Shi'
-    ? [{ value: 'Pingshuiyun', label: '平水韵' }, { value: 'Zhonghua_Tongyun', label: '中华通韵' }]
+    ? [{ value: 'Pingshuiyun', label: '平水韵' }, { value: 'Zhonghua_Tongyun', label: '中华通韵' }, { value: 'Shangguyun', label: '上古韵' }]
     : board?.genre === 'Ci'
-    ? [{ value: 'Cilinzhengyun', label: '词林正韵' }, { value: 'Zhonghua_Tongyun', label: '中华通韵' }]
-    : [{ value: 'Zhonghua_Tongyun', label: '中华通韵' }, { value: 'Pingshuiyun', label: '平水韵' }, { value: 'Cilinzhengyun', label: '词林正韵' }];
+    ? [{ value: 'Cilinzhengyun', label: '词林正韵' }, { value: 'Zhonghua_Tongyun', label: '中华通韵' }, { value: 'Shangguyun', label: '上古韵' }]
+    : [{ value: 'Zhonghua_Tongyun', label: '中华通韵' }, { value: 'Pingshuiyun', label: '平水韵' }, { value: 'Cilinzhengyun', label: '词林正韵' }, { value: 'Shangguyun', label: '上古韵' }];
   const bookLabel = bookOptions.find(o => o.value === bookName)?.label ?? bookName;
 
   return (
@@ -276,7 +276,9 @@ export function RhymePanel() {
             >
               <div className="flex items-center justify-between text-sm">
                 <span>{cat.name}</span>
-                <span className="text-xs text-[var(--text-muted)]">{cat.tone_type === 'P' ? '平' : '仄'}</span>
+                {bookName !== 'Shangguyun' && (
+                  <span className="text-xs text-[var(--text-muted)]">{cat.tone_type === 'P' ? '平' : '仄'}</span>
+                )}
               </div>
               {cat.preview && <div className="text-xs text-[var(--text-muted)] tracking-wide mt-0.5">{cat.preview}</div>}
             </button>
@@ -323,7 +325,7 @@ export function RhymePanel() {
         </div>
       )}
 
-      {/* 同韵字列表（可点击填入网格） */}
+      {/* 同韵字列表（可点击填入网格，所有韵书一致：仅字排列） */}
       {rhymeChars.length > 0 && (
         <div>
           <div className="text-xs text-[var(--text-secondary)] mb-1">同韵字 <span className="text-[var(--text-muted)]">点击填入</span></div>

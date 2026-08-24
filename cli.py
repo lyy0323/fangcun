@@ -32,10 +32,10 @@ _ctx = ssl.create_default_context()
 _conns: dict[str, http.client.HTTPSConnection] = {}
 
 
-def _conn(base: str) -> http.client.HTTPSConnection:
+def _conn(base: str):
     parsed = urllib.parse.urlparse(base)
     host = parsed.hostname
-    port = parsed.port or 443
+    port = parsed.port or (80 if parsed.scheme == "http" else 443)
     key = f"{host}:{port}"
     c = _conns.get(key)
     if c:
@@ -48,7 +48,8 @@ def _conn(base: str) -> http.client.HTTPSConnection:
                 c.close()
             except Exception:
                 pass
-    c = http.client.HTTPSConnection(host, port, timeout=15, context=_ctx)
+    cls = http.client.HTTPConnection if parsed.scheme == "http" else http.client.HTTPSConnection
+    c = cls(host, port, timeout=15, context=_ctx) if parsed.scheme != "http" else cls(host, port, timeout=15)
     _conns[key] = c
     return c
 
@@ -80,7 +81,10 @@ def _post(base: str, path: str, data: dict):
 
 def _get_fresh(base: str, path: str):
     parsed = urllib.parse.urlparse(base)
-    c = http.client.HTTPSConnection(parsed.hostname, parsed.port or 443, timeout=15, context=_ctx)
+    if parsed.scheme == "http":
+        c = http.client.HTTPConnection(parsed.hostname, parsed.port or 80, timeout=15)
+    else:
+        c = http.client.HTTPSConnection(parsed.hostname, parsed.port or 443, timeout=15, context=_ctx)
     try:
         c.request("GET", path)
         return json.loads(c.getresponse().read())
@@ -355,7 +359,7 @@ def main():
     p = sub.add_parser("validate", help="校验诗词格律")
     p.add_argument("--text", required=True, help="诗词文本（标点自动忽略）")
     p.add_argument("--genre", required=True, choices=["Shi", "Ci"])
-    p.add_argument("--rhyme-book", default="Pingshuiyun", choices=["Pingshuiyun", "Cilinzhengyun", "Zhonghua_Tongyun"])
+    p.add_argument("--rhyme-book", default="Pingshuiyun", choices=["Pingshuiyun", "Cilinzhengyun", "Zhonghua_Tongyun", "Shangguyun"])
     p.add_argument("--rule", default=None, help="指定规则名")
     p.add_argument("--longpu", action="store_true")
     p.add_argument("--include-punctuation", action="store_true", help="检测句读标点（poem_text 需带标点）")
@@ -371,7 +375,7 @@ def main():
     p.add_argument("--book", default=None)
 
     p = sub.add_parser("rhyme", help="查韵部字表")
-    p.add_argument("--book", required=True, choices=["Pingshuiyun", "Cilinzhengyun", "Zhonghua_Tongyun"])
+    p.add_argument("--book", required=True, choices=["Pingshuiyun", "Cilinzhengyun", "Zhonghua_Tongyun", "Shangguyun"])
     p.add_argument("--category", required=True, help="韵部名（如 一东）")
     p.add_argument("--include", default=None)
     p.add_argument("--limit", type=int, default=None, help="返回字数上限")
@@ -388,7 +392,7 @@ def main():
 
     p = sub.add_parser("free-rhyme", help="自由诗/古体诗韵脚检测")
     p.add_argument("--text", required=True, help="诗文（句号/分号/换行自动分句）")
-    p.add_argument("--rhyme-book", default="Pingshuiyun", choices=["Pingshuiyun", "Cilinzhengyun", "Zhonghua_Tongyun"])
+    p.add_argument("--rhyme-book", default="Pingshuiyun", choices=["Pingshuiyun", "Cilinzhengyun", "Zhonghua_Tongyun", "Shangguyun"])
     p.add_argument("--merge-tones", action="store_true", help="合并平仄（新诗/歌词用）")
     p.add_argument("--pretty", action="store_true", help="人类可读输出")
 
