@@ -7,6 +7,7 @@
 <meta name="description" content="输入一个汉字，同屏查看释义（拼音、说文引文）与平水韵、词林正韵、上古韵（小韵、拟音）、中华通韵下的音韵地位。" />
 <link rel="icon" type="image/svg+xml" href="/logo.svg" />
 <link rel="stylesheet" href="/fonts/ml/result.css" />
+
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Noto Serif SC", "Songti SC", system-ui, serif; background: #FAF8F5; color: #5C534A; line-height: 1.8; font-size: 15px; }
@@ -160,6 +161,10 @@
     .back { font-size: 13px; }
     .back-long { display: none; }
     .back-short { display: inline; }
+  }
+  /* 标题族使用沐瓴体（刻本风格）；正文/信息性文字保持正文衬线 */
+  h1, h2, h3, .tone-group-title, .cat > summary .name, .sub-name, .tl-head, .brand {
+    font-family: "ml", "Noto Serif SC", "Songti SC", serif;
   }
 </style>
 </head>

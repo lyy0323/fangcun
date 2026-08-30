@@ -357,6 +357,10 @@ const SHARED_CSS = `
     .back-long { display: none; }
     .back-short { display: inline; }
   }
+  /* 标题族使用沐瓴体（刻本风格）；正文/信息性文字保持正文衬线 */
+  h1, h2, h3, .tone-group-title, .cat > summary .name, .sub-name, .tl-head, .brand {
+    font-family: "ml", "Noto Serif SC", "Songti SC", serif;
+  }
 `;
 
 function page({ title, desc, activeTab, content, extraHead = '' }) {
@@ -369,6 +373,7 @@ function page({ title, desc, activeTab, content, extraHead = '' }) {
 <title>${esc(title)} | 方寸</title>
 <meta name="description" content="${esc(desc)}" />
 <link rel="icon" type="image/svg+xml" href="/logo.svg" />
+<link rel="stylesheet" href="/fonts/ml/result.css" />
 ${extraHead}
 <style>${SHARED_CSS}</style>
 </head>
@@ -562,8 +567,7 @@ function buildPingshuiPage() {
     seoDesc: '平水韵 106 韵部完整对照：上平 15 韵、下平 15 韵、上声 29 韵、去声 30 韵、入声 17 韵。查询各韵部韵字，写律诗绝句押韵必备。',
     subtitle: `平水韵是近体诗（律诗、绝句）押韵所依据的传统韵书。它承宋代《礼部韵略》一系韵书，因金元间刊行于平水（今山西临汾）而得名，明清以来一直是科举与格律诗创作通行的押韵标准。`,
     groups,
-    colorOf: (name) => { const c = PINGSHUI_COLORS[name]; return c ? { h: c[0], s: c[1], l: c[2], ring: name.slice(-1) } : undefined; },
-    extraHead: '<link rel="stylesheet" href="/fonts/ml/result.css" />',
+    colorOf: (name) => { const c = PINGSHUI_COLORS[name]; return c ? { h: c[0], s: c[1], l: c[2], ring: name.slice(-1) } : undefined; }
   });
 }
 
@@ -577,8 +581,7 @@ function buildCilinPage() {
     seoDesc: '词林正韵 19 部完整对照，含平声、仄声、入声分部韵字。填词押韵标准韵书，平上去三声同部、入声独立。',
     subtitle: `词林正韵为清嘉庆年间戈载所编，是填词押韵的主要依据。全书以唐宋名家词的实际用韵为据分十九部，平、上、去三声同部相配，入声独用，为后世词家所宗。`,
     groups,
-    colorOf: (name) => CILIN_COLORS[name],
-    extraHead: '<link rel="stylesheet" href="/fonts/ml/result.css" />',
+    colorOf: (name) => CILIN_COLORS[name]
   });
 }
 
@@ -1052,7 +1055,6 @@ ${appJs}`;
     title: '单字查询 — 释义与四部韵书音韵地位',
     desc: '输入一个汉字，同屏查看释义（拼音、说文引文）与平水韵、词林正韵、上古韵（小韵、拟音）、中华通韵下的音韵地位。',
     activeTab: '/ref/char.html',
-    extraHead: '<link rel="stylesheet" href="/fonts/ml/result.css" />',
     content,
   });
 }
