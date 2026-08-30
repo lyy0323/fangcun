@@ -253,8 +253,12 @@ const SHARED_CSS = `
   .sub-name { font-size: 12.5px; color: #557799; font-weight: 600; margin-bottom: 3px; }
   .sub-name .cnt { color: #a09890; font-weight: 400; }
   .sub-chars { display: flex; flex-wrap: wrap; gap: 2px 10px; }
-  .sub-chars span { font-size: 14.5px; color: #4c443c; letter-spacing: 1px; }
-  .chars span { font-size: 15px; color: #4c443c; letter-spacing: 1px; }
+  .sub-chars span, .sub-chars a { font-size: 14.5px; color: #4c443c; letter-spacing: 1px; }
+  .sub-chars a { text-decoration: none; }
+  .sub-chars a:hover { color: #557799; text-decoration: underline; }
+  .chars span, .chars a { font-size: 15px; color: #4c443c; letter-spacing: 1px; }
+  .chars a { text-decoration: none; }
+  .chars a:hover { color: #557799; text-decoration: underline; }
   .chars .dim { color: #c4bcb2; }
   .search { width: 100%; max-width: 380px; padding: 9px 14px; border-radius: 9px; border: 1px solid #e0dad2; font-size: 14px; background: #fff; color: #5C534A; margin-bottom: 18px; }
   .search:focus { outline: none; border-color: #557799; }
@@ -478,7 +482,7 @@ function sortByName(names) {
 
 /** 渲染一个韵部的 details 块 */
 function catDetails(cat, color) {
-  const chars = (cat.characters || []).map((c) => `<span>${esc(c)}</span>`).join('');
+  const chars = (cat.characters || []).map((c) => `<a href="/ref/char.html?q=${encodeURIComponent(c)}">${esc(c)}</a>`).join('');
   const hsl = color ? `hsl(${color.h}, ${color.s}%, ${color.l}%)` : '';
   const dot = color ? `<span class="cat-dot" style="background:${hsl}"></span>` : '';
   // 展开后右下角半透明圆环（溢出部分被卡片裁切），环内写韵部代表字（沐瓴体、放大、同色同透明）
@@ -603,7 +607,7 @@ function buildShangguyunPage() {
     });
     const inner = subs
       .map(([subName, set]) =>
-        `<div class="sub-group"><div class="sub-name">${esc(subName)}<span class="cnt"> ${set.size} 字</span></div><div class="sub-chars">${[...set].map((c) => `<span>${esc(c)}</span>`).join('')}</div></div>`
+        `<div class="sub-group"><div class="sub-name">${esc(subName)}<span class="cnt"> ${set.size} 字</span></div><div class="sub-chars">${[...set].map((c) => `<a href="/ref/char.html?q=${encodeURIComponent(c)}">${esc(c)}</a>`).join('')}</div></div>`
       )
       .join('');
     return `<details class="cat"><summary><span class="name">${esc(cat.name)}</span><span class="cnt">${cat.characters.length} 字 · ${subs.length} 小韵</span></summary><div class="chars">${inner}</div></details>`;
@@ -1017,6 +1021,9 @@ function buildCharPage() {
     document.querySelectorAll('.ch-chip').forEach(function (b) {
       b.addEventListener('click', function () { input.value = b.getAttribute('data-ch'); query(); });
     });
+    // ?q=字 自动查询（韵书页韵字点击跳转而来）
+    var initQ = new URLSearchParams(location.search).get('q');
+    if (initQ) { input.value = initQ; query(); }
   })();
   </script>`;
   const content = `<h1>单字查询 — 释义 · 四部韵书音韵地位</h1>
