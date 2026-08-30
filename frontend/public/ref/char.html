@@ -5,6 +5,13 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>单字查询：释义与四部韵书音韵地位 | 方寸</title>
 <meta name="description" content="输入一个汉字，同屏查看释义（拼音、说文引文）与平水韵、词林正韵、上古韵（小韵、拟音）、中华通韵下的音韵地位。" />
+<link rel="canonical" href="https://write.sjtuguoxue.space/ref/char" />
+<meta property="og:title" content="单字查询：释义与四部韵书音韵地位" />
+<meta property="og:description" content="输入一个汉字，同屏查看释义（拼音、说文引文）与平水韵、词林正韵、上古韵（小韵、拟音）、中华通韵下的音韵地位。" />
+<meta property="og:type" content="website" />
+<meta property="og:url" content="https://write.sjtuguoxue.space/ref/char" />
+<meta property="og:site_name" content="方寸" />
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"WebPage","name":"单字查询：释义与四部韵书音韵地位","description":"输入一个汉字，同屏查看释义（拼音、说文引文）与平水韵、词林正韵、上古韵（小韵、拟音）、中华通韵下的音韵地位。","url":"https://write.sjtuguoxue.space/ref/char"}</script>
 <link rel="icon" type="image/svg+xml" href="/logo.svg" />
 <link rel="stylesheet" href="/fonts/ml/result.css" />
 
@@ -67,7 +74,7 @@
   .chars .dim { color: #c4bcb2; }
   .search { width: 100%; max-width: 380px; padding: 9px 14px; border-radius: 9px; border: 1px solid #e0dad2; font-size: 14px; background: #fff; color: #5C534A; margin-bottom: 18px; }
   .search:focus { outline: none; border-color: #557799; }
-  .legend { font-size: 12.5px; color: #8a8178; margin: 4px 0 16px; display: flex; gap: 14px; flex-wrap: wrap; }
+  .legend { font-size: 12.5px; color: #8a8178; margin: 4px 0 16px; display: flex; gap: 14px; flex-wrap: wrap; align-items: center; }
   .legend b { font-weight: 600; }
   .legend .yun { color: #b3543c; }
   .tp { font-size: 15px; letter-spacing: 1px; color: #4c443c; background: #fff; border: 1px solid #ece7e1; border-radius: 10px; padding: 12px 16px; margin: 8px 0 14px; line-height: 2; }
@@ -86,6 +93,8 @@
   .card .ex { background: #faf7f3; border-left: 3px solid #d8c9b8; border-radius: 0 8px 8px 0; padding: 8px 12px; margin: 10px 0 0; font-size: 13.5px; }
   .card details { margin-top: 8px; }
   .card details > summary { cursor: pointer; font-size: 13.5px; color: #557799; display: flex; align-items: center; }
+  .card details > summary::before { content: "▸"; color: #b9b0a6; font-size: 11px; margin-right: 6px; transition: transform .15s; }
+  .card details[open] > summary::before { transform: rotate(90deg); }
   .card details > summary .write-btn { float: none; margin-left: auto; }
   .card .tp { margin: 6px 0 0; font-size: 14px; }
   .article { background: #fff; border: 1px solid #ece7e1; border-radius: 12px; padding: 26px 28px; margin-bottom: 22px; }
@@ -123,6 +132,10 @@
   .badge-qin { background: #eef2f8; color: #4a6d94; border: 1px solid #c9d8e8; }
   .badge-long { background: #f7eef2; color: #8a4a63; border: 1px solid #e3c9d6; }
   .badge-other { background: #f4f1ec; color: #8a8178; border: 1px solid #e0d8cc; }
+  .lg-capsule { display: inline-flex; align-items: center; padding: 2px 12px; border-radius: 999px; font-size: 12px; font-weight: 600; }
+  .lg-long { background: #f7eef2; color: #8a4a63; border: 1px solid #e3c9d6; }
+  .lg-qin { background: #eef2f8; color: #4a6d94; border: 1px solid #c9d8e8; }
+  .lg-desc { font-size: 12px; color: #8a8178; margin-right: 14px; }
   .write-btn { float: right; display: inline-block; padding: 1px 14px; border-radius: 999px; font-size: 12.5px; border: 1px solid #557799; color: #557799; background: #fff; cursor: pointer; text-decoration: none; margin-left: 8px; }
   .write-btn:hover { background: #557799; color: #fff; text-decoration: none; }
   /* 查字页空闲态：常用字玻璃卡片墙（两行、反向滚动、可拖拽、随机浅彩底） */

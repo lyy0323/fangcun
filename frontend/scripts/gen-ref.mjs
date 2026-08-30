@@ -389,7 +389,11 @@ const SHARED_CSS = `
   }
 `;
 
-function page({ title, desc, activeTab, content, extraHead = '' }) {
+const SITE_URL = 'https://write.sjtuguoxue.space';
+
+function page({ title, desc, activeTab, content, extraHead = '', canonicalPath, ldType = 'WebPage' }) {
+  const canonical = SITE_URL + (canonicalPath || activeTab.replace(/\.html$/, ''));
+  const ld = { '@context': 'https://schema.org', '@type': ldType, name: title, description: desc, url: canonical };
   const tabsHtml = TABS.map((t) => `<a class="tab${t.href === activeTab ? ' active' : ''}" href="${t.href}">${t.label}</a>`).join('');
   return `<!DOCTYPE html>
 <html lang="zh-CN">
@@ -398,6 +402,13 @@ function page({ title, desc, activeTab, content, extraHead = '' }) {
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>${esc(title)} | 方寸</title>
 <meta name="description" content="${esc(desc)}" />
+<link rel="canonical" href="${canonical}" />
+<meta property="og:title" content="${esc(title)}" />
+<meta property="og:description" content="${esc(desc)}" />
+<meta property="og:type" content="website" />
+<meta property="og:url" content="${canonical}" />
+<meta property="og:site_name" content="方寸" />
+<script type="application/ld+json">${JSON.stringify(ld)}</script>
 <link rel="icon" type="image/svg+xml" href="/logo.svg" />
 <link rel="stylesheet" href="/fonts/ml/result.css" />
 ${extraHead}
@@ -521,7 +532,7 @@ function catDetails(cat, color) {
   return `<details class="cat"${color ? ` style="--rc:${hsl}"` : ''}><summary>${dot}<span class="name">${esc(cat.name)}</span><span class="cnt">${cat.characters?.length ?? 0} 字</span></summary><div class="chars">${chars || '<span class="dim">（无数据）</span>'}${ring}</div></details>`;
 }
 
-function buildRhymePage(bookKey, { navLabel, seoTitle, seoDesc, subtitle, legendColor, credit, groups, colorOf, catRenderer, extraHead }) {
+function buildRhymePage(bookKey, { navLabel, seoTitle, seoDesc, subtitle, legendColor, credit, groups, colorOf, catRenderer, extraHead, canonicalPath, ldType }) {
   const book = rhymeBooks[bookKey];
   const cats = book.categories;
   const nav = BOOK_NAV.map((b) => `<a class="${b.key === bookKey ? 'active' : ''}" href="${b.href}">${b.label} ${b.desc}</a>`).join('');
@@ -580,7 +591,7 @@ ${credit ? `<p class="credit">${credit}</p>` : ''}
     if (html) body += `<div class="tone-group"><div class="tone-group-title">${gName}<span class="cnt">${names.length} 韵</span></div>${html}</div>`;
   }
   body += filterJs;
-  return page({ title: seoTitle, desc: seoDesc, activeTab: '/ref/index.html', content: body, extraHead });
+  return page({ title: seoTitle, desc: seoDesc, activeTab: '/ref/index.html', content: body, extraHead, canonicalPath, ldType });
 }
 
 function buildPingshuiPage() {
@@ -588,6 +599,7 @@ function buildPingshuiPage() {
   const cats = book.categories;
   const groups = PINGSHUI_GROUPS.map(([g, names]) => [g, names]);
   return buildRhymePage('Pingshuiyun', {
+    canonicalPath: '/ref/', ldType: 'CollectionPage',
     navLabel: '平水韵',
     seoTitle: '平水韵 106 韵部总览：上平·下平·上声·去声·入声韵字查询',
     seoDesc: '平水韵 106 韵部完整对照：上平 15 韵、下平 15 韵、上声 29 韵、去声 30 韵、入声 17 韵。查询各韵部韵字，写律诗绝句押韵必备。',
@@ -602,6 +614,7 @@ function buildCilinPage() {
   const names = sortByName(Object.keys(cats));
   const groups = [['词林正韵 19 部（平·仄·入分部）', names]];
   return buildRhymePage('Cilinzhengyun', {
+    canonicalPath: '/ref/cilinzhengyun', ldType: 'CollectionPage',
     navLabel: '词林正韵',
     seoTitle: '词林正韵 19 部韵字总览：填词押韵查询',
     seoDesc: '词林正韵 19 部完整对照，含平声、仄声、入声分部韵字。填词押韵标准韵书，平上去三声同部、入声独立。',
@@ -644,6 +657,7 @@ function buildShangguyunPage() {
   const names = Object.keys(cats);
   const groups = [['上古韵 23 部（按小韵细分）', names]];
   return buildRhymePage('Shangguyun', {
+    canonicalPath: '/ref/shangguyun', ldType: 'CollectionPage',
     navLabel: '上古韵',
     seoTitle: '上古韵 23 韵部总览：《诗经》《楚辞》押韵查询',
     seoDesc: '上古音系 23 韵部完整对照（鱼铎、之职、幽觉、脂质至等），依据先秦音系归纳，《诗经》《楚辞》用韵查询，适合拟古体与仿先秦之作。',
@@ -659,6 +673,7 @@ function buildZhonghuaPage() {
   const names = sortByName(Object.keys(cats));
   const groups = [['中华通韵 16 韵（平·仄分部）', names]];
   return buildRhymePage('Zhonghua_Tongyun', {
+    canonicalPath: '/ref/zhonghua', ldType: 'CollectionPage',
     navLabel: '中华通韵',
     seoTitle: '中华通韵 16 韵部总览：普通话押韵查询',
     seoDesc: '中华通韵 16 韵完整对照（一啊、二喔、三鹅…十六儿），按现代普通话归韵，无入声，适合现代语感创作与自由诗押韵。',
@@ -860,7 +875,7 @@ function buildCipaiPage() {
 </div>
 <script src="/ref/cipai-data.js"></script>
 ${appJs}`;
-  return page({ title: '词谱格律对照：词牌平仄·句式·韵脚查询', desc: '词牌格律对照：1000+ 词牌（钦谱/龙谱），查字数、句式、平仄模板、韵脚位置。支持搜索与按字数筛选，在线填词必备。', activeTab: '/ref/cipai.html', content });
+  return page({ title: '词谱格律对照：词牌平仄·句式·韵脚查询', desc: `词牌格律对照：${ciRules.length} 个词牌变体（${new Set(ciRules.map((r) => r.cipai)).size} 个词牌），查字数、句式、平仄模板、韵脚位置。支持搜索与按字数筛选，在线填词必备。`, activeTab: '/ref/cipai.html', canonicalPath: '/ref/cipai', ldType: 'CollectionPage', content });
 }
 
 /* ------------------------------- 诗格页面 -------------------------------- */
@@ -942,7 +957,7 @@ function buildShiPage() {
   </div>
 </div>
 <p class="intro" style="margin-top:14px"><b>小结</b>：拗救的本质是维持句内与联内的平仄平衡——孤平句补平以保平声底线，对句相救以平补仄。在方寸中，标准句式与拗救句式都算正确，无须手工判断；输入诗句后若有平仄标红，先对照本节检查是否属合法的拗救句式。</p>`;
-  return page({ title: '诗格速查：五绝·七绝·五律·七律平仄格式', desc: '近体诗八种基本格式速查：五绝、七绝、五律、七律的平起/仄起句式与首句入韵变体，附平仄模板、韵脚位置与拗救（孤平自救、特拗句、对句相救）讲解。', activeTab: '/ref/shi.html', content });
+  return page({ title: '诗格速查：五绝·七绝·五律·七律平仄格式', desc: '近体诗八种基本格式速查：五绝、七绝、五律、七律的平起/仄起句式与首句入韵变体，附平仄模板、韵脚位置与拗救（孤平自救、特拗句、对句相救）讲解。', activeTab: '/ref/shi.html', canonicalPath: '/ref/shi', ldType: 'CollectionPage', content });
 }
 
 /* ------------------------------- 查字页面 -------------------------------- */
@@ -1142,6 +1157,8 @@ ${appJs}`;
     title: '单字查询：释义与四部韵书音韵地位',
     desc: '输入一个汉字，同屏查看释义（拼音、说文引文）与平水韵、词林正韵、上古韵（小韵、拟音）、中华通韵下的音韵地位。',
     activeTab: '/ref/char.html',
+    canonicalPath: '/ref/char',
+    ldType: 'WebPage',
     content,
   });
 }
@@ -1229,7 +1246,7 @@ function buildTutorialPage() {
 <p class="subtitle">从零开始学会写格律诗与填词 · 配合方寸实时校验练习</p>
 ${toc}
 ${body}`;
-  return page({ title: '格律入门教程：平仄·律诗·填词·韵书·用典', desc: '诗词格律入门教程：什么是平仄、律诗格律（粘对押韵对仗）、词牌怎么填（浣溪沙为例）、平水韵/词林正韵/中华通韵区别、典故入诗技巧。', activeTab: '/ref/tutorial.html', content });
+  return page({ title: '格律入门教程：平仄·律诗·填词·韵书·用典', desc: '诗词格律入门教程：什么是平仄、律诗格律（粘对押韵对仗）、词牌怎么填（浣溪沙为例）、平水韵/词林正韵/中华通韵区别、典故入诗技巧。', activeTab: '/ref/tutorial.html', canonicalPath: '/ref/tutorial', ldType: 'Article', content });
 }
 
 /* --------------------------------- 主流程 -------------------------------- */

@@ -5,6 +5,13 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>中华通韵 16 韵部总览：普通话押韵查询 | 方寸</title>
 <meta name="description" content="中华通韵 16 韵完整对照（一啊、二喔、三鹅…十六儿），按现代普通话归韵，无入声，适合现代语感创作与自由诗押韵。" />
+<link rel="canonical" href="https://write.sjtuguoxue.space/ref/zhonghua" />
+<meta property="og:title" content="中华通韵 16 韵部总览：普通话押韵查询" />
+<meta property="og:description" content="中华通韵 16 韵完整对照（一啊、二喔、三鹅…十六儿），按现代普通话归韵，无入声，适合现代语感创作与自由诗押韵。" />
+<meta property="og:type" content="website" />
+<meta property="og:url" content="https://write.sjtuguoxue.space/ref/zhonghua" />
+<meta property="og:site_name" content="方寸" />
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"CollectionPage","name":"中华通韵 16 韵部总览：普通话押韵查询","description":"中华通韵 16 韵完整对照（一啊、二喔、三鹅…十六儿），按现代普通话归韵，无入声，适合现代语感创作与自由诗押韵。","url":"https://write.sjtuguoxue.space/ref/zhonghua"}</script>
 <link rel="icon" type="image/svg+xml" href="/logo.svg" />
 <link rel="stylesheet" href="/fonts/ml/result.css" />
 
@@ -67,7 +74,7 @@
   .chars .dim { color: #c4bcb2; }
   .search { width: 100%; max-width: 380px; padding: 9px 14px; border-radius: 9px; border: 1px solid #e0dad2; font-size: 14px; background: #fff; color: #5C534A; margin-bottom: 18px; }
   .search:focus { outline: none; border-color: #557799; }
-  .legend { font-size: 12.5px; color: #8a8178; margin: 4px 0 16px; display: flex; gap: 14px; flex-wrap: wrap; }
+  .legend { font-size: 12.5px; color: #8a8178; margin: 4px 0 16px; display: flex; gap: 14px; flex-wrap: wrap; align-items: center; }
   .legend b { font-weight: 600; }
   .legend .yun { color: #b3543c; }
   .tp { font-size: 15px; letter-spacing: 1px; color: #4c443c; background: #fff; border: 1px solid #ece7e1; border-radius: 10px; padding: 12px 16px; margin: 8px 0 14px; line-height: 2; }
@@ -86,6 +93,8 @@
   .card .ex { background: #faf7f3; border-left: 3px solid #d8c9b8; border-radius: 0 8px 8px 0; padding: 8px 12px; margin: 10px 0 0; font-size: 13.5px; }
   .card details { margin-top: 8px; }
   .card details > summary { cursor: pointer; font-size: 13.5px; color: #557799; display: flex; align-items: center; }
+  .card details > summary::before { content: "▸"; color: #b9b0a6; font-size: 11px; margin-right: 6px; transition: transform .15s; }
+  .card details[open] > summary::before { transform: rotate(90deg); }
   .card details > summary .write-btn { float: none; margin-left: auto; }
   .card .tp { margin: 6px 0 0; font-size: 14px; }
   .article { background: #fff; border: 1px solid #ece7e1; border-radius: 12px; padding: 26px 28px; margin-bottom: 22px; }
@@ -123,11 +132,32 @@
   .badge-qin { background: #eef2f8; color: #4a6d94; border: 1px solid #c9d8e8; }
   .badge-long { background: #f7eef2; color: #8a4a63; border: 1px solid #e3c9d6; }
   .badge-other { background: #f4f1ec; color: #8a8178; border: 1px solid #e0d8cc; }
+  .lg-capsule { display: inline-flex; align-items: center; padding: 2px 12px; border-radius: 999px; font-size: 12px; font-weight: 600; }
+  .lg-long { background: #f7eef2; color: #8a4a63; border: 1px solid #e3c9d6; }
+  .lg-qin { background: #eef2f8; color: #4a6d94; border: 1px solid #c9d8e8; }
+  .lg-desc { font-size: 12px; color: #8a8178; margin-right: 14px; }
   .write-btn { float: right; display: inline-block; padding: 1px 14px; border-radius: 999px; font-size: 12.5px; border: 1px solid #557799; color: #557799; background: #fff; cursor: pointer; text-decoration: none; margin-left: 8px; }
   .write-btn:hover { background: #557799; color: #fff; text-decoration: none; }
-  .ch-chip { padding: 4px 14px; border-radius: 18px; border: 1px solid #e0dad2; background: #fff; font-size: 13px; color: #6b6360; cursor: pointer; font-family: inherit; margin: 0 6px 6px 0; }
-  .ch-chip:hover { border-color: #557799; color: #557799; }
-  .example-chips { margin: 4px 0 18px; }
+  /* 查字页空闲态：常用字玻璃卡片墙（两行、反向滚动、可拖拽、随机浅彩底） */
+  .char-marquee { overflow: hidden; position: relative; padding: 24px 0 10px; -webkit-mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent); mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent); }
+  .char-row { display: flex; gap: 14px; width: max-content; cursor: grab; will-change: transform; user-select: none; }
+  .char-row + .char-row { margin-top: 16px; }
+  .char-card {
+    flex-shrink: 0; width: 74px; height: 98px; border-radius: 16px;
+    background: hsla(var(--h), 32%, 88%, 0.55);
+    -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
+    border: 1px solid rgba(255,255,255,0.75);
+    box-shadow: 0 10px 28px rgba(92,83,74,0.10), inset 0 1px 0 rgba(255,255,255,0.85);
+    font-size: 34px; font-family: "ml", "Noto Serif SC", serif; color: #5C534A;
+    display: flex; align-items: center; justify-content: center; cursor: pointer;
+    animation: floaty 5.5s ease-in-out infinite;
+    animation-delay: calc(var(--i) * -0.28s);
+  }
+  @keyframes floaty {
+    0%, 100% { transform: rotate(var(--tilt, 0deg)) translateY(0); }
+    50% { transform: rotate(var(--tilt, 0deg)) translateY(-8px); }
+  }
+  .char-card:hover { animation: none; transform: rotate(0deg) translateY(-5px) scale(1.08); box-shadow: 0 18px 42px rgba(92,83,74,0.18); z-index: 2; }
   .char-hero { display: flex; align-items: center; gap: 14px; margin: 8px 0 22px; }
   .char-hero .big { font-size: 54px; font-weight: 400; line-height: 1.2; color: #4c443c; font-family: "ml", "Noto Serif SC", serif; }
   .def-block { margin: 0 0 22px; }
