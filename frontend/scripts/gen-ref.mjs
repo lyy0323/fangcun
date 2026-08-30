@@ -201,7 +201,8 @@ const SHARED_CSS = `
   a:hover { text-decoration: underline; }
   .topbar { position: sticky; top: 0; z-index: 20; background: #FAF8F5; border-bottom: 1px solid #e8e4e0; }
   .topbar-inner { max-width: 880px; margin: 0 auto; padding: 10px 20px; display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
-  .brand { font-size: 17px; font-weight: 700; color: #5C534A; letter-spacing: 2px; }
+  .brand { font-size: 17px; font-weight: 700; color: #5C534A; letter-spacing: 2px; display: flex; align-items: center; gap: 7px; }
+  .brand-logo { width: 22px; height: 22px; border-radius: 6px; flex-shrink: 0; }
   .brand:hover { text-decoration: none; }
   .tabs { display: flex; gap: 4px; flex-wrap: wrap; }
   .tab { padding: 5px 12px; border-radius: 8px; font-size: 14px; color: #8a8178; }
@@ -340,7 +341,7 @@ ${extraHead}
 <body>
 <header class="topbar">
   <div class="topbar-inner">
-    <a class="brand" href="/">方寸</a>
+    <a class="brand" href="/"><img class="brand-logo" src="/logo.svg" alt="方寸" />方寸</a>
     <nav class="tabs">${tabsHtml}</nav>
     <a class="back" href="/">← 返回创作</a>
   </div>
