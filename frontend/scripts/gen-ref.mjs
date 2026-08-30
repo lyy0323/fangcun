@@ -830,7 +830,7 @@ function buildCipaiPage() {
 
   const content = `<h1>词谱格律对照</h1>
 <p class="subtitle">${ciRules.length} 个词牌变体（钦谱/龙谱等）· ${new Set(ciRules.map((r) => r.cipai)).size} 个词牌 · 可搜索、按字数筛选，点开查看平仄与韵脚</p>
-<p class="intro">每个词牌固定字数、句数、句式与平仄。同一词牌常有多种“格”（钦谱、龙谱等谱本差异），钦谱、龙谱皆有时龙谱在前。韵脚配色与方寸编辑器一致：<span style="color:#559977;font-weight:600">平韵</span> <span style="color:#557799;font-weight:600">仄韵</span> <span style="color:#d97706;font-weight:600">叶韵</span>；「中」表示该字可平可仄。按字数分调：<b>小令 ≤58 字 · 中调 59–90 字 · 长调 ≥91 字</b>。</p>
+<div class="legend" style="margin-top:6px"><span><span class="sw" style="background:#559977"></span>平</span><span><span class="sw" style="background:#557799"></span>仄</span><span><span class="sw" style="background:#d97706"></span>叶</span></div>
 <div class="tabs2">
   <button class="tab2 active" data-tab="famous">常用词牌</button>
   <button class="tab2" data-tab="search">搜索</button>
