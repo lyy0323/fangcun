@@ -231,9 +231,9 @@ const SHARED_CSS = `
   details.cat > summary .name { font-weight: 600; }
   details.cat > summary .cnt { font-size: 12px; color: #a09890; margin-left: auto; }
   .cat-dot { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; display: inline-block; box-shadow: 0 0 0 1px rgba(0,0,0,0.06); }
-  .cat-ring { display: none; position: absolute; right: -46px; bottom: -46px; width: 172px; height: 172px; border-radius: 50%; border: 26px solid var(--rc-ring); pointer-events: none; z-index: -1; align-items: center; justify-content: center; }
+  .cat-ring { display: none; position: absolute; right: -46px; bottom: -46px; width: 172px; height: 172px; border-radius: 50%; border: 26px solid var(--rc-w); pointer-events: none; z-index: -1; align-items: center; justify-content: center; }
   details.cat[open] .cat-ring { display: flex; }
-  .chars .cat-ring span { font-size: 80px; font-weight: 400; color: var(--rc-char); font-family: "ml", "Noto Serif SC", serif; line-height: 1; letter-spacing: 0; }
+  .chars .cat-ring span { font-size: 80px; font-weight: 400; color: var(--rc-w); font-family: "ml", "Noto Serif SC", serif; line-height: 1; letter-spacing: 0; }
   .sw { display: inline-block; width: 12px; height: 12px; border-radius: 4px; vertical-align: -1px; margin: 0 3px; }
   .chars { padding: 4px 16px 14px; display: flex; flex-wrap: wrap; gap: 2px 10px; position: relative; z-index: 1; }
   .chars span { font-size: 15px; color: #4c443c; letter-spacing: 1px; }
@@ -367,8 +367,8 @@ function catDetails(cat, color) {
   const chars = (cat.characters || []).map((c) => `<span>${esc(c)}</span>`).join('');
   const hsl = color ? `hsl(${color[0]}, ${color[1]}%, ${color[2]}%)` : '';
   const dot = color ? `<span class="cat-dot" style="background:${hsl}"></span>` : '';
-  // 展开后右下角半透明圆环（溢出部分被卡片裁切），环内写韵部代表字（沐瓴体、放大、同色）
-  const ring = color ? `<div class="cat-ring" style="--rc-ring:hsla(${color[0]},${color[1]}%,${color[2]}%,0.13);--rc-char:hsla(${color[0]},${color[1]}%,${color[2]}%,0.5)"><span>${esc(cat.name.slice(-1))}</span></div>` : '';
+  // 展开后右下角半透明圆环（溢出部分被卡片裁切），环内写韵部代表字（沐瓴体、放大、同色同透明）
+  const ring = color ? `<div class="cat-ring" style="--rc-w:hsla(${color[0]},${color[1]}%,${color[2]}%,0.25)"><span>${esc(cat.name.slice(-1))}</span></div>` : '';
   return `<details class="cat"${color ? ` style="--rc:${hsl}"` : ''}><summary>${dot}<span class="name">${esc(cat.name)}</span><span class="cnt">${cat.characters?.length ?? 0} 字</span></summary><div class="chars">${chars || '<span class="dim">（无数据）</span>'}${ring}</div></details>`;
 }
 
