@@ -44,8 +44,92 @@ function collectRhymePositions(node, out = new Set()) {
   return out;
 }
 
+/* 韵脚配色 —— 与方寸编辑器 GridEditor 完全一致 */
+const PING_COLORS = ['#559977', '#779955', '#888855', '#669966'];
+const ZE_COLORS = ['#557799', '#775599', '#885588', '#666699'];
+const YE_COLOR = '#d97706';
+
+/** 复刻编辑器 buildRhymeColorMap：SAME_CATEGORY 分组 + neighbor 合并，平韵/仄韵分色板，叶韵橙色 */
+function buildRhymeColorMap(tonePattern, rhymeRule) {
+  const map = new Map();
+  const sameCatGroups = [];
+  const relations = [];
+  const walk = (node) => {
+    const t = node && node.type;
+    if (!t) return;
+    if (t === 'OR') { if (node.rules && node.rules[0]) walk(node.rules[0]); }
+    else if (t === 'AND') (node.rules || []).forEach(walk);
+    else if (t === 'SAME_CATEGORY') sameCatGroups.push(node.positions || []);
+    else if (t === 'RELATION') relations.push(node);
+  };
+  walk(rhymeRule);
+
+  const groups = sameCatGroups
+    .map((g) => ({ positions: g, posSet: new Set(g) }))
+    .filter((g, i, arr) => !arr.some((other, j) => j !== i && other.posSet.size > g.posSet.size && g.positions.every((p) => other.posSet.has(p))));
+
+  const groupOf = groups.map((_, i) => i);
+  const find = (i) => (groupOf[i] === i ? i : (groupOf[i] = find(groupOf[i])));
+  const union = (a, b) => { groupOf[find(a)] = find(b); };
+  const posToGroup = new Map();
+  groups.forEach((g, gi) => g.positions.forEach((p) => posToGroup.set(p, gi)));
+  for (const rel of relations) {
+    if (rel.relation === 'neighbor') {
+      const ga = posToGroup.get(rel.pos1);
+      const p2list = Array.isArray(rel.pos2) ? rel.pos2 : [rel.pos2];
+      for (const p2 of p2list) {
+        const gb = posToGroup.get(p2);
+        if (ga != null && gb != null) union(ga, gb);
+      }
+    }
+  }
+
+  const rootToColorIdx = new Map();
+  let colorCounter = 0;
+  groups.forEach((_, i) => { const root = find(i); if (!rootToColorIdx.has(root)) rootToColorIdx.set(root, colorCounter++); });
+  const totalGroups = rootToColorIdx.size;
+
+  const flat = [];
+  for (const t of tonePattern || []) {
+    if (Array.isArray(t)) flat.push(...t[0]);
+    else flat.push(t);
+  }
+  const toneOf = (pos) => flat[pos]?.tone ?? 'P';
+
+  groups.forEach((g, gi) => {
+    const cIdx = rootToColorIdx.get(find(gi)) ?? 0;
+    const pal = totalGroups > 1 ? cIdx : 0;
+    for (const pos of g.positions) {
+      const tone = toneOf(pos);
+      const palette = tone === 'Z' ? ZE_COLORS : PING_COLORS;
+      map.set(pos, palette[totalGroups > 1 ? cIdx % palette.length : 0]);
+    }
+  });
+
+  for (const rel of relations) {
+    if (rel.relation.startsWith('ye_')) {
+      const p2list = Array.isArray(rel.pos2) ? rel.pos2 : [rel.pos2];
+      for (const p of p2list) map.set(p, YE_COLOR);
+    }
+  }
+  return map;
+}
+
+/** 变体谱源：龙谱/钦谱/其他 */
+const SRC_RANK = { 龙谱: 0, 钦谱: 1, 其他: 2 };
+function variantSource(name, cipai) {
+  const rest = name.startsWith(cipai + '_') ? name.slice(cipai.length + 1) : name;
+  const src = rest.split('_')[0];
+  return src === '钦谱' || src === '龙谱' ? src : '其他';
+}
+function sourceBadge(src) {
+  const cls = src === '钦谱' ? 'badge badge-qin' : src === '龙谱' ? 'badge badge-long' : 'badge badge-other';
+  const label = src === '其他' ? '他谱' : src;
+  return `<span class="${cls}">${label}</span>`;
+}
+
 /** 词牌平仄渲染：韵脚后句号、非韵脚句末逗号、读顿号（与 checker 可读词谱一致） */
-function renderCiPattern(tp, rhymes) {
+function renderCiPattern(tp, rhymes, rhymeColors) {
   let out = '';
   let idx = 0;
   for (const t of tp) {
@@ -55,7 +139,8 @@ function renderCiPattern(tp, rhymes) {
       continue;
     }
     const ch = TONE_CHAR[t.tone] || '·';
-    out += rhymes.has(idx) ? `<b class="yun">${ch}</b>` : `<span>${ch}</span>`;
+    const color = rhymeColors?.get(idx);
+    out += color ? `<span style="color:${color};font-weight:600">${ch}</span>` : `<span>${ch}</span>`;
     if (rhymes.has(idx)) out += '<span class="punc">。</span>';
     else if (t.comment === '句') out += '<span class="punc">，</span>';
     else if (t.comment === '读') out += '<span class="punc">、</span>';
@@ -65,7 +150,7 @@ function renderCiPattern(tp, rhymes) {
 }
 
 /** 诗格平仄渲染：与 checker 可读词谱一致——变体块取第一选项，按行断句（韵脚句末句号，其余句末逗号） */
-function renderShiPattern(tp, rhymes, lineLen) {
+function renderShiPattern(tp, rhymes, lineLen, rhymeColors) {
   const flat = [];
   for (const t of tp) {
     if (Array.isArray(t)) flat.push(...t[0]);
@@ -74,7 +159,8 @@ function renderShiPattern(tp, rhymes, lineLen) {
   let out = '';
   flat.forEach((t, idx) => {
     const ch = TONE_CHAR[t.tone] || '·';
-    out += rhymes.has(idx) ? `<b class="yun">${ch}</b>` : `<span>${ch}</span>`;
+    const color = rhymeColors?.get(idx);
+    out += color ? `<span style="color:${color};font-weight:600">${ch}</span>` : `<span>${ch}</span>`;
     if (lineLen > 0 && (idx + 1) % lineLen === 0) {
       out += rhymes.has(idx) ? '<span class="punc">。</span>' : '<span class="punc">，</span>';
     }
@@ -199,6 +285,10 @@ const SHARED_CSS = `
   .tab2 { padding: 9px 18px; font-size: 15px; color: #8a8178; background: none; border: none; border-bottom: 2px solid transparent; margin-bottom: -2px; cursor: pointer; font-family: inherit; }
   .tab2:hover { color: #5C534A; }
   .tab2.active { color: #557799; font-weight: 600; border-bottom-color: #557799; }
+  .badge { display: inline-block; padding: 1px 9px; border-radius: 10px; font-size: 11.5px; font-weight: 600; margin-right: 6px; vertical-align: 1.5px; }
+  .badge-qin { background: #eef2f8; color: #4a6d94; border: 1px solid #c9d8e8; }
+  .badge-long { background: #f7eef2; color: #8a4a63; border: 1px solid #e3c9d6; }
+  .badge-other { background: #f4f1ec; color: #8a8178; border: 1px solid #e0d8cc; }
   .more-btn { display: block; margin: 14px auto; padding: 8px 22px; border-radius: 9px; border: 1px solid #e0dad2; background: #fff; font-size: 13.5px; color: #6b6360; cursor: pointer; font-family: inherit; }
   .more-btn:hover { border-color: #557799; color: #557799; }
   .empty { color: #a09890; font-size: 14px; text-align: center; padding: 30px 0; }
@@ -382,18 +472,24 @@ function compactCiTone(rule) {
 
 function ciVariantHtml(rule) {
   const rhymes = collectRhymePositions(rule.rhyme_rule);
-  const tp = renderCiPattern(rule.tone_pattern || [], rhymes);
+  const colors = buildRhymeColorMap(rule.tone_pattern, rule.rhyme_rule);
+  const tp = renderCiPattern(rule.tone_pattern || [], rhymes, colors);
+  const src = variantSource(rule.name, rule.cipai);
   const rk = rule.rhyme_rule?.type;
   const rhymeDesc = rk === 'AND' ? '复合押韵（多组）' : rk === 'OR' ? '多式押韵' : '同部押韵';
+  const short = shortName(rule.name, rule.cipai);
+  const gex = src === '其他' ? short : short.replace(src + '_', '');
   return `<div class="variant">
-    <div class="vname">${esc(shortName(rule.name, rule.cipai))} · ${rule.char_count} 字 · ${rhymeDesc} · 韵脚 ${rhymes.size} 处</div>
+    <div class="vname">${sourceBadge(src)}${esc(gex)} · ${rule.char_count} 字 · ${rhymeDesc} · 韵脚 ${rhymes.size} 处</div>
     <div class="tp">${tp}</div>
   </div>`;
 }
 
 function buildCipaiPage() {
-  // 常用词牌（服务端渲染，利于 SEO）
-  const famousList = FAMOUS_CIPAI.map((name) => ciRules.find((r) => r.cipai === name)).filter(Boolean);
+  // 常用词牌（服务端渲染，利于 SEO）；钦龙皆有时龙谱在前
+  const famousList = FAMOUS_CIPAI.map((name) =>
+    ciRules.find((r) => r.cipai === name && r.name.includes('龙谱')) || ciRules.find((r) => r.cipai === name)
+  ).filter(Boolean);
   const famous = famousList
     .map((r) => `<details class="cat" open><summary><span class="name">${esc(r.cipai)}</span><span class="cnt">${r.char_count} 字 · ${shortName(r.name, r.cipai)}</span></summary><div class="detail" style="padding:0 16px 12px">${ciVariantHtml(r)}</div></details>`)
     .join('');
@@ -411,9 +507,29 @@ function buildCipaiPage() {
       groups.set(r.c, g);
     });
     var all = Array.from(groups.values()).sort(function (a, b) { return (a.min - b.min) || a.c.localeCompare(b.c, 'zh'); });
+    // 钦龙皆有：龙谱在前（组内变体排序）
+    all.forEach(function (g) {
+      g.v.sort(function (a, b) {
+        var ra = a.src === '龙谱' ? 0 : a.src === '钦谱' ? 1 : 2;
+        var rb = b.src === '龙谱' ? 0 : b.src === '钦谱' ? 1 : 2;
+        return ra - rb;
+      });
+    });
     var PAGE = 100, shown = 0, filtered = all, totalEl = document.getElementById('c-total');
     var listEl = document.getElementById('c-list'), emptyEl = document.getElementById('c-empty');
     function TONE(t) { return t === 'P' ? '平' : t === 'Z' ? '仄' : t === 'A' ? '中' : '·'; }
+    var PINGS = ['#559977', '#779955', '#888855', '#669966'];
+    var ZES = ['#557799', '#775599', '#885588', '#666699'];
+    function colorOf(code) {
+      if (!code) return '#5C534A';
+      if (code === 'Y') return '#d97706';
+      return code.charAt(0) === 'P' ? PINGS[+code.charAt(1)] : ZES[+code.charAt(1)];
+    }
+    function badgeOf(src) {
+      if (src === '钦谱') return '<span class="badge badge-qin">钦谱</span>';
+      if (src === '龙谱') return '<span class="badge badge-long">龙谱</span>';
+      return '<span class="badge badge-other">他谱</span>';
+    }
     function renderVariant(r) {
       var out = '', idx = 0;
       for (var i = 0; i < r.tp.length; i++) {
@@ -426,11 +542,17 @@ function buildCipaiPage() {
           i = j; continue;
         }
         var yun = r.rp.indexOf(idx) !== -1;
-        out += yun ? '<b class="yun">' + TONE(ch) + '</b>' : '<span>' + TONE(ch) + '</span>';
+        if (yun) {
+          out += '<span style="color:' + colorOf(r.rc && r.rc[idx]) + ';font-weight:600">' + TONE(ch) + '</span>';
+        } else {
+          out += '<span>' + TONE(ch) + '</span>';
+        }
         idx++;
       }
       var rk = r.rk === 'AND' ? '复合押韵' : r.rk === 'OR' ? '多式押韵' : '同部押韵';
-      return '<div class="variant"><div class="vname">' + r.n.replace(r.c + '_', '') + ' · ' + r.ch + ' 字 · ' + rk + '</div><div class="tp">' + out + '</div></div>';
+      var rest = r.n.replace(r.c + '_', '');
+      var gex = (r.src === '钦谱' || r.src === '龙谱') && rest.indexOf(r.src + '_') === 0 ? rest.slice(r.src.length + 1) : rest;
+      return '<div class="variant"><div class="vname">' + badgeOf(r.src) + gex + ' · ' + r.ch + ' 字 · ' + rk + '</div><div class="tp">' + out + '</div></div>';
     }
     function render() {
       listEl.innerHTML = '';
@@ -440,7 +562,8 @@ function buildCipaiPage() {
         li.className = 'item';
         var btn = document.createElement('button');
         var first = g.v[0];
-        btn.innerHTML = '<span class="cname">' + g.c + '</span><span class="cinfo">' + g.min + '–' + g.max + ' 字 · ' + g.v.length + ' 格</span>';
+        var chInfo = g.min === g.max ? g.min + ' 字' : g.min + '–' + g.max + ' 字';
+        btn.innerHTML = '<span class="cname">' + g.c + '</span><span class="cinfo">' + chInfo + ' · ' + g.v.length + ' 格</span>';
         var detail = document.createElement('div');
         detail.className = 'detail';
         detail.style.display = 'none';
@@ -492,7 +615,7 @@ function buildCipaiPage() {
 
   const content = `<h1>词谱格律对照</h1>
 <p class="subtitle">${ciRules.length} 个词牌变体（钦谱/龙谱等）· ${new Set(ciRules.map((r) => r.cipai)).size} 个词牌 · 可搜索、按字数筛选，点开查看平仄与韵脚</p>
-<p class="intro">每个词牌固定字数、句数、句式与平仄。同一词牌常有多种"格"（钦谱、龙谱等谱本差异）。平仄标记：<b style="color:#b3543c">红字为韵脚</b>；「中」表示该字可平可仄。按字数分调：<b>小令 ≤58 字 · 中调 59–90 字 · 长调 ≥91 字</b>。</p>
+<p class="intro">每个词牌固定字数、句数、句式与平仄。同一词牌常有多种"格"（钦谱、龙谱等谱本差异），钦谱、龙谱皆有时龙谱在前。韵脚配色与方寸编辑器一致：<span style="color:#559977;font-weight:600">平韵</span> <span style="color:#557799;font-weight:600">仄韵</span> <span style="color:#d97706;font-weight:600">叶韵</span>；「中」表示该字可平可仄。按字数分调：<b>小令 ≤58 字 · 中调 59–90 字 · 长调 ≥91 字</b>。</p>
 <div class="tabs2">
   <button class="tab2 active" data-tab="famous">常用词牌</button>
   <button class="tab2" data-tab="search">搜索</button>
@@ -540,10 +663,10 @@ function buildShiPage() {
     const lineLen = Math.round((base.char_count || 0) / SHI_LINES[f.cipai]);
     const render = (r) => {
       const rhymes = collectRhymePositions(r.rhyme_rule);
-      const tp = renderShiPattern(r.tone_pattern || [], rhymes, lineLen);
+      const tp = renderShiPattern(r.tone_pattern || [], rhymes, lineLen, buildRhymeColorMap(r.tone_pattern, r.rhyme_rule));
       const rk = r.rhyme_rule?.type;
       const rhymeNote = rk === 'OR' ? '二、四、六、八句押韵，首句可入韵' : '二、四、六、八句押韵';
-      return `<div class="tp">${tp}</div><div style="font-size:12.5px;color:#a09890">${r.char_count} 字 · ${rhymeNote} · 韵脚 ${rhymes.size} 处（红字）</div>`;
+      return `<div class="tp">${tp}</div><div style="font-size:12.5px;color:#a09890">${r.char_count} 字 · ${rhymeNote} · 韵脚 ${rhymes.size} 处</div>`;
     };
     const baseBlock = `<details open><summary>标准句式</summary>${render(base)}</details>`;
     const ruBlock = ruYun ? `<details><summary>首句入韵变体</summary>${render(ruYun)}</details>` : '';
@@ -557,7 +680,7 @@ function buildShiPage() {
 
   const content = `<h1>诗格速查 — 五言七言律诗绝句平仄</h1>
 <p class="subtitle">五绝 20 字 · 七绝 28 字 · 五律 40 字 · 七律 56 字 · 共 8 种基本格式</p>
-<p class="intro">近体诗每句字数与句数固定，平仄遵循"一句之内交替、一联之内相对、联与联之间相粘"的规则。押平声韵（平水韵），二、四、六、八句押韵，首句可押可不押。<b style="color:#b3543c">红字为韵脚</b>；「中」表示该字可平可仄。</p>
+<p class="intro">近体诗每句字数与句数固定，平仄遵循"一句之内交替、一联之内相对、联与联之间相粘"的规则。押平声韵（平水韵），二、四、六、八句押韵，首句可押可不押。韵脚配色与方寸编辑器一致（近体诗押平声韵，故韵脚为<span style="color:#559977;font-weight:600">绿色</span>）；「中」表示该字可平可仄。</p>
 <div class="cards">${cards}</div>
 <h2>拗救与特殊句式</h2>
 <p class="intro">格律并非死板。当某字拗于标准句式时，可在本句或对句的特定位置用平声补救，称「<b>拗救</b>」；另有少数被认可的特殊句式可直接使用。方寸的校验器把这类句式编码为<b>句式变体块</b>——诗句匹配任一合法变体即通过校验；上方 8 种格式卡片展示的是标准句式，拗救变体见本节。</p>
@@ -683,9 +806,19 @@ ${body}`;
 /* --------------------------------- 主流程 -------------------------------- */
 
 mkdirSync(OUT, { recursive: true });
-const compactAll = ciRules.map((r) => ({
-  n: r.name, c: r.cipai, ch: r.char_count, tp: compactCiTone(r), rp: [...collectRhymePositions(r.rhyme_rule)], rk: r.rhyme_rule?.type,
-}));
+const COLOR_CODE = {};
+PING_COLORS.forEach((c, i) => { COLOR_CODE[c] = 'P' + i; });
+ZE_COLORS.forEach((c, i) => { COLOR_CODE[c] = 'Z' + i; });
+COLOR_CODE[YE_COLOR] = 'Y';
+
+const compactAll = ciRules.map((r) => {
+  const rc = {};
+  buildRhymeColorMap(r.tone_pattern, r.rhyme_rule).forEach((color, pos) => { rc[pos] = COLOR_CODE[color]; });
+  return {
+    n: r.name, c: r.cipai, ch: r.char_count, tp: compactCiTone(r), rp: [...collectRhymePositions(r.rhyme_rule)],
+    rk: r.rhyme_rule?.type, src: variantSource(r.name, r.cipai), rc,
+  };
+});
 const files = {
   'index.html': buildPingshuiPage(),
   'cilinzhengyun.html': buildCilinPage(),
