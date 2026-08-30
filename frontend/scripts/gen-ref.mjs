@@ -995,13 +995,14 @@ function buildCharPage() {
     function itemColor(b, cats) {
       if (!cats.length) return '#8a8178';
       var first = cats[0];
+      var isPing = first.tone_type === 'P'; // 平声亮色加深便于阅读，仄声不受影响
       if (b.key === 'Pingshuiyun') {
         var c = PS_COLORS[first.name];
-        if (c) return 'hsl(' + c[0] + ',' + c[1] + '%,' + c[2] + '%)';
+        if (c) return 'hsl(' + c[0] + ',' + c[1] + '%,' + (isPing ? Math.min(c[2], 50) : c[2]) + '%)';
       }
       if (b.key === 'Cilinzhengyun') {
         var c2 = CL_COLORS[first.name];
-        if (c2) return 'hsl(' + c2.h + ',' + c2.s + '%,' + c2.l + '%)';
+        if (c2) return 'hsl(' + c2.h + ',' + c2.s + '%,' + (isPing ? Math.min(c2.l, 50) : c2.l) + '%)';
       }
       return toneColor(first.tone_type);
     }
