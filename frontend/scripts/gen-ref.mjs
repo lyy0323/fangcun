@@ -180,10 +180,10 @@ const ciyun = (genre, rule, chars, title) =>
 /* ------------------------------- 页面骨架 -------------------------------- */
 
 const TABS = [
-  { href: '/ref/index.html', label: '韵书总览' },
+  { href: '/ref/index.html', label: '韵书' },
   { href: '/ref/char.html', label: '查字' },
-  { href: '/ref/cipai.html', label: '词谱格律' },
-  { href: '/ref/shi.html', label: '诗格速查' },
+  { href: '/ref/cipai.html', label: '词谱' },
+  { href: '/ref/shi.html', label: '诗格' },
   { href: '/ref/tutorial.html', label: '教程' },
 ];
 
