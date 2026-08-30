@@ -61,6 +61,10 @@
   .card { background: #fff; border: 1px solid #ece7e1; border-radius: 12px; padding: 18px 20px; }
   .card h3 { margin: 0 0 6px; font-size: 16px; }
   .card .meta { font-size: 12.5px; color: #a09890; margin-bottom: 10px; }
+  .card p { margin: 8px 0; font-size: 14px; }
+  .card ul { margin: 8px 0 8px 20px; }
+  .card li { margin: 3px 0; font-size: 14px; }
+  .card .ex { background: #faf7f3; border-left: 3px solid #d8c9b8; border-radius: 0 8px 8px 0; padding: 8px 12px; margin: 10px 0 0; font-size: 13.5px; }
   .card details { margin-top: 8px; }
   .card details > summary { cursor: pointer; font-size: 13.5px; color: #557799; }
   .card .tp { margin: 6px 0 0; font-size: 14px; }
@@ -91,6 +95,10 @@
   .filters button { padding: 6px 14px; border-radius: 18px; border: 1px solid #e0dad2; background: #fff; font-size: 13px; color: #6b6360; cursor: pointer; font-family: inherit; }
   .filters button.active { background: #557799; border-color: #557799; color: #fff; }
   .filters button:hover { border-color: #557799; }
+  .tabs2 { display: flex; gap: 2px; border-bottom: 2px solid #ece7e1; margin-bottom: 22px; }
+  .tab2 { padding: 9px 18px; font-size: 15px; color: #8a8178; background: none; border: none; border-bottom: 2px solid transparent; margin-bottom: -2px; cursor: pointer; font-family: inherit; }
+  .tab2:hover { color: #5C534A; }
+  .tab2.active { color: #557799; font-weight: 600; border-bottom-color: #557799; }
   .more-btn { display: block; margin: 14px auto; padding: 8px 22px; border-radius: 9px; border: 1px solid #e0dad2; background: #fff; font-size: 13.5px; color: #6b6360; cursor: pointer; font-family: inherit; }
   .more-btn:hover { border-color: #557799; color: #557799; }
   .empty { color: #a09890; font-size: 14px; text-align: center; padding: 30px 0; }
@@ -109,9 +117,14 @@
 <main class="container">
 <h1>词谱格律对照</h1>
 <p class="subtitle">2536 个词牌变体（钦谱/龙谱等）· 819 个词牌 · 可搜索、按字数筛选，点开查看平仄与韵脚</p>
-<p class="intro">每个词牌固定字数、句数、句式与平仄。同一词牌常有多种"格"（钦谱、龙谱等谱本差异）。平仄标记：<b style="color:#b3543c">红字为韵脚</b>；「中」表示该字可平可仄。</p>
-<h2 style="margin-top:8px">常用词牌速览</h2>
-<details class="cat" open><summary><span class="name">忆江南</span><span class="cnt">27 字 · 钦谱_格一</span></summary><div class="detail" style="padding:0 16px 12px"><div class="variant">
+<p class="intro">每个词牌固定字数、句数、句式与平仄。同一词牌常有多种"格"（钦谱、龙谱等谱本差异）。平仄标记：<b style="color:#b3543c">红字为韵脚</b>；「中」表示该字可平可仄。按字数分调：<b>小令 ≤58 字 · 中调 59–90 字 · 长调 ≥91 字</b>。</p>
+<div class="tabs2">
+  <button class="tab2 active" data-tab="famous">常用词牌</button>
+  <button class="tab2" data-tab="search">搜索</button>
+</div>
+<div id="tab-famous">
+  <p class="intro" style="margin-top:0">47 个常用词牌速览，点击展开查看句式与韵脚；全部 819 个词牌请在「搜索」中查找。</p>
+  <details class="cat" open><summary><span class="name">忆江南</span><span class="cnt">27 字 · 钦谱_格一</span></summary><div class="detail" style="padding:0 16px 12px"><div class="variant">
     <div class="vname">钦谱_格一 · 27 字 · 同部押韵 · 韵脚 3 处</div>
     <div class="tp"><span>平</span><span>中</span><span>仄</span><span class="punc">，</span><span>中</span><span>仄</span><span>仄</span><span>平</span><b class="yun">平</b><span class="punc">。</span><span>中</span><span>仄</span><span>中</span><span>平</span><span>平</span><span>仄</span><span>仄</span><span class="punc">，</span><span>中</span><span>平</span><span>平</span><span>仄</span><span>仄</span><span>平</span><b class="yun">平</b><span class="punc">。</span><span>平</span><span>仄</span><span>仄</span><span>平</span><b class="yun">平</b><span class="punc">。</span></div>
   </div></div></details><details class="cat" open><summary><span class="name">如梦令</span><span class="cnt">33 字 · 钦谱_格一</span></summary><div class="detail" style="padding:0 16px 12px"><div class="variant">
@@ -253,17 +266,20 @@
     <div class="vname">钦谱_格一 · 139 字 · 同部押韵 · 韵脚 11 处</div>
     <div class="tp"><span>平</span><span>平</span><span>仄</span><span class="punc">，</span><span>仄</span><span>平</span><span>仄</span><span>仄</span><span>平</span><b class="yun">平</b><span class="punc">。</span><span>仄</span><span>平</span><span>平</span><span class="punc">、</span><span>平</span><span>平</span><span>仄</span><span>仄</span><span class="punc">，</span><span>仄</span><span>平</span><span>仄</span><span>仄</span><span>平</span><b class="yun">平</b><span class="punc">。</span><span>仄</span><span>平</span><span>平</span><span class="punc">、</span><span>仄</span><span>平</span><span>仄</span><span>仄</span><span class="punc">，</span><span>仄</span><span>平</span><span>平</span><span>仄</span><span>仄</span><span>平</span><b class="yun">平</b><span class="punc">。</span><span>平</span><span>仄</span><span>平</span><span>平</span><span class="punc">，</span><span>仄</span><span>平</span><span>平</span><span>仄</span><span class="punc">，</span><span>仄</span><span>平</span><span>平</span><span>仄</span><span>仄</span><span>平</span><b class="yun">平</b><span class="punc">。</span><span>仄</span><span>平</span><span>仄</span><span class="punc">、</span><span>平</span><span>平</span><span>平</span><span>仄</span><span class="punc">，</span><span>仄</span><span>仄</span><span>仄</span><span>平</span><b class="yun">平</b><span class="punc">。</span><span>平</span><span>平</span><span>仄</span><span class="punc">、</span><span>平</span><span>平</span><span>仄</span><span>仄</span><span class="punc">，</span><span>平</span><span>仄</span><span>平</span><b class="yun">平</b><span class="punc">。</span><span>仄</span><span>平</span><span>平</span><span class="punc">、</span><span>平</span><span>平</span><span>仄</span><span>仄</span><span class="punc">，</span><span>仄</span><span>平</span><span>平</span><span>仄</span><span>平</span><b class="yun">平</b><span class="punc">。</span><span>仄</span><span>平</span><span>平</span><span class="punc">、</span><span>仄</span><span>平</span><span>仄</span><span>仄</span><span class="punc">，</span><span>仄</span><span>平</span><span>平</span><span>仄</span><span>仄</span><span>平</span><b class="yun">平</b><span class="punc">。</span><span>仄</span><span>仄</span><span>平</span><span>平</span><span class="punc">，</span><span>平</span><span>平</span><span>平</span><span>仄</span><span class="punc">，</span><span>平</span><span>平</span><span>仄</span><span>仄</span><span>仄</span><span>平</span><b class="yun">平</b><span class="punc">。</span><span>仄</span><span>仄</span><span>仄</span><span class="punc">、</span><span>平</span><span>平</span><span>仄</span><span>仄</span><span class="punc">，</span><span>平</span><span>仄</span><span>仄</span><span>平</span><b class="yun">平</b><span class="punc">。</span><span>平</span><span>平</span><span>仄</span><span class="punc">、</span><span>平</span><span>平</span><span>仄</span><span>仄</span><span class="punc">，</span><span>平</span><span>仄</span><span>平</span><b class="yun">平</b><span class="punc">。</span></div>
   </div></div></details>
-<h2>全部词牌（<span id="c-total">…</span> 个）</h2>
-<input id="c-search" class="search" type="search" placeholder="搜索词牌名，如：浣溪沙 / 水调歌头…" />
-<div class="filters">
-  <button data-k="all" class="active">全部</button>
-  <button data-k="s">小令 ≤40 字</button>
-  <button data-k="m">中调 41–90 字</button>
-  <button data-k="l">长调 ≥91 字</button>
 </div>
-<div id="c-list" class="cipai-list"></div>
-<div id="c-empty" class="empty">未找到匹配的词牌</div>
-<button id="c-more" class="more-btn">显示更多</button>
+<div id="tab-search" style="display:none">
+  <p class="intro" style="margin-top:0">共 <span id="c-total">…</span> 个词牌 · 输入词牌名搜索，或按字数筛选，点击词牌展开查看各格句式与韵脚。</p>
+  <input id="c-search" class="search" type="search" placeholder="搜索词牌名，如：浣溪沙 / 水调歌头…" />
+  <div class="filters">
+    <button data-k="all" class="active">全部</button>
+    <button data-k="s">小令 ≤58 字</button>
+    <button data-k="m">中调 59–90 字</button>
+    <button data-k="l">长调 ≥91 字</button>
+  </div>
+  <div id="c-list" class="cipai-list"></div>
+  <div id="c-empty" class="empty">未找到匹配的词牌</div>
+  <button id="c-more" class="more-btn">显示更多</button>
+</div>
 <script src="/ref/cipai-data.js"></script>
 
   <script>
@@ -334,14 +350,24 @@
         b.classList.add('active');
         var k = b.getAttribute('data-k');
         filtered = k === 'all' ? all : all.filter(function (g) {
-          if (k === 's') return g.max <= 40;
-          if (k === 'm') return g.min >= 41 && g.max <= 90;
+          if (k === 's') return g.max <= 58;
+          if (k === 'm') return g.min >= 59 && g.max <= 90;
           return g.min >= 91;
         });
         shown = PAGE; render();
       });
     });
     document.getElementById('c-more').addEventListener('click', function () { shown += PAGE; render(); });
+    // 常用词牌 | 搜索 双 Tab 切换
+    document.querySelectorAll('.tabs2 .tab2').forEach(function (b) {
+      b.addEventListener('click', function () {
+        document.querySelectorAll('.tabs2 .tab2').forEach(function (x) { x.classList.remove('active'); });
+        b.classList.add('active');
+        var t = b.getAttribute('data-tab');
+        document.getElementById('tab-famous').style.display = t === 'famous' ? '' : 'none';
+        document.getElementById('tab-search').style.display = t === 'search' ? '' : 'none';
+      });
+    });
     totalEl.textContent = all.length;
     shown = PAGE; render();
   })();

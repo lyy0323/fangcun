@@ -195,6 +195,10 @@ const SHARED_CSS = `
   .filters button { padding: 6px 14px; border-radius: 18px; border: 1px solid #e0dad2; background: #fff; font-size: 13px; color: #6b6360; cursor: pointer; font-family: inherit; }
   .filters button.active { background: #557799; border-color: #557799; color: #fff; }
   .filters button:hover { border-color: #557799; }
+  .tabs2 { display: flex; gap: 2px; border-bottom: 2px solid #ece7e1; margin-bottom: 22px; }
+  .tab2 { padding: 9px 18px; font-size: 15px; color: #8a8178; background: none; border: none; border-bottom: 2px solid transparent; margin-bottom: -2px; cursor: pointer; font-family: inherit; }
+  .tab2:hover { color: #5C534A; }
+  .tab2.active { color: #557799; font-weight: 600; border-bottom-color: #557799; }
   .more-btn { display: block; margin: 14px auto; padding: 8px 22px; border-radius: 9px; border: 1px solid #e0dad2; background: #fff; font-size: 13.5px; color: #6b6360; cursor: pointer; font-family: inherit; }
   .more-btn:hover { border-color: #557799; color: #557799; }
   .empty { color: #a09890; font-size: 14px; text-align: center; padding: 30px 0; }
@@ -389,9 +393,8 @@ function ciVariantHtml(rule) {
 
 function buildCipaiPage() {
   // 常用词牌（服务端渲染，利于 SEO）
-  const famous = FAMOUS_CIPAI
-    .map((name) => ciRules.find((r) => r.cipai === name))
-    .filter(Boolean)
+  const famousList = FAMOUS_CIPAI.map((name) => ciRules.find((r) => r.cipai === name)).filter(Boolean);
+  const famous = famousList
     .map((r) => `<details class="cat" open><summary><span class="name">${esc(r.cipai)}</span><span class="cnt">${r.char_count} 字 · ${shortName(r.name, r.cipai)}</span></summary><div class="detail" style="padding:0 16px 12px">${ciVariantHtml(r)}</div></details>`)
     .join('');
 
@@ -464,14 +467,24 @@ function buildCipaiPage() {
         b.classList.add('active');
         var k = b.getAttribute('data-k');
         filtered = k === 'all' ? all : all.filter(function (g) {
-          if (k === 's') return g.max <= 40;
-          if (k === 'm') return g.min >= 41 && g.max <= 90;
+          if (k === 's') return g.max <= 58;
+          if (k === 'm') return g.min >= 59 && g.max <= 90;
           return g.min >= 91;
         });
         shown = PAGE; render();
       });
     });
     document.getElementById('c-more').addEventListener('click', function () { shown += PAGE; render(); });
+    // 常用词牌 | 搜索 双 Tab 切换
+    document.querySelectorAll('.tabs2 .tab2').forEach(function (b) {
+      b.addEventListener('click', function () {
+        document.querySelectorAll('.tabs2 .tab2').forEach(function (x) { x.classList.remove('active'); });
+        b.classList.add('active');
+        var t = b.getAttribute('data-tab');
+        document.getElementById('tab-famous').style.display = t === 'famous' ? '' : 'none';
+        document.getElementById('tab-search').style.display = t === 'search' ? '' : 'none';
+      });
+    });
     totalEl.textContent = all.length;
     shown = PAGE; render();
   })();
@@ -479,20 +492,28 @@ function buildCipaiPage() {
 
   const content = `<h1>词谱格律对照</h1>
 <p class="subtitle">${ciRules.length} 个词牌变体（钦谱/龙谱等）· ${new Set(ciRules.map((r) => r.cipai)).size} 个词牌 · 可搜索、按字数筛选，点开查看平仄与韵脚</p>
-<p class="intro">每个词牌固定字数、句数、句式与平仄。同一词牌常有多种"格"（钦谱、龙谱等谱本差异）。平仄标记：<b style="color:#b3543c">红字为韵脚</b>；「中」表示该字可平可仄。</p>
-<h2 style="margin-top:8px">常用词牌速览</h2>
-${famous || '<p class="empty">暂无数据</p>'}
-<h2>全部词牌（<span id="c-total">…</span> 个）</h2>
-<input id="c-search" class="search" type="search" placeholder="搜索词牌名，如：浣溪沙 / 水调歌头…" />
-<div class="filters">
-  <button data-k="all" class="active">全部</button>
-  <button data-k="s">小令 ≤40 字</button>
-  <button data-k="m">中调 41–90 字</button>
-  <button data-k="l">长调 ≥91 字</button>
+<p class="intro">每个词牌固定字数、句数、句式与平仄。同一词牌常有多种"格"（钦谱、龙谱等谱本差异）。平仄标记：<b style="color:#b3543c">红字为韵脚</b>；「中」表示该字可平可仄。按字数分调：<b>小令 ≤58 字 · 中调 59–90 字 · 长调 ≥91 字</b>。</p>
+<div class="tabs2">
+  <button class="tab2 active" data-tab="famous">常用词牌</button>
+  <button class="tab2" data-tab="search">搜索</button>
 </div>
-<div id="c-list" class="cipai-list"></div>
-<div id="c-empty" class="empty">未找到匹配的词牌</div>
-<button id="c-more" class="more-btn">显示更多</button>
+<div id="tab-famous">
+  <p class="intro" style="margin-top:0">${famousList.length} 个常用词牌速览，点击展开查看句式与韵脚；全部 ${new Set(ciRules.map((r) => r.cipai)).size} 个词牌请在「搜索」中查找。</p>
+  ${famous || '<p class="empty">暂无数据</p>'}
+</div>
+<div id="tab-search" style="display:none">
+  <p class="intro" style="margin-top:0">共 <span id="c-total">…</span> 个词牌 · 输入词牌名搜索，或按字数筛选，点击词牌展开查看各格句式与韵脚。</p>
+  <input id="c-search" class="search" type="search" placeholder="搜索词牌名，如：浣溪沙 / 水调歌头…" />
+  <div class="filters">
+    <button data-k="all" class="active">全部</button>
+    <button data-k="s">小令 ≤58 字</button>
+    <button data-k="m">中调 59–90 字</button>
+    <button data-k="l">长调 ≥91 字</button>
+  </div>
+  <div id="c-list" class="cipai-list"></div>
+  <div id="c-empty" class="empty">未找到匹配的词牌</div>
+  <button id="c-more" class="more-btn">显示更多</button>
+</div>
 <script src="/ref/cipai-data.js"></script>
 ${appJs}`;
   return page({ title: '词谱格律对照 — 词牌平仄·句式·韵脚查询', desc: '词牌格律对照：1000+ 词牌（钦谱/龙谱），查字数、句式、平仄模板、韵脚位置。支持搜索与按字数筛选，在线填词必备。', activeTab: '/ref/cipai.html', content });
