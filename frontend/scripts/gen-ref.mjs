@@ -307,6 +307,8 @@ const SHARED_CSS = `
   .badge-qin { background: #eef2f8; color: #4a6d94; border: 1px solid #c9d8e8; }
   .badge-long { background: #f7eef2; color: #8a4a63; border: 1px solid #e3c9d6; }
   .badge-other { background: #f4f1ec; color: #8a8178; border: 1px solid #e0d8cc; }
+  .write-btn { float: right; display: inline-block; padding: 1px 14px; border-radius: 999px; font-size: 12.5px; border: 1px solid #557799; color: #557799; background: #fff; cursor: pointer; text-decoration: none; margin-left: 8px; }
+  .write-btn:hover { background: #557799; color: #fff; text-decoration: none; }
   .ch-chip { padding: 4px 14px; border-radius: 18px; border: 1px solid #e0dad2; background: #fff; font-size: 13px; color: #6b6360; cursor: pointer; font-family: inherit; margin: 0 6px 6px 0; }
   .ch-chip:hover { border-color: #557799; color: #557799; }
   .example-chips { margin: 4px 0 18px; }
@@ -654,8 +656,9 @@ function ciVariantHtml(rule) {
   const rhymeDesc = rk === 'AND' ? '复合押韵（多组）' : rk === 'OR' ? '多式押韵' : '同部押韵';
   const short = shortName(rule.name, rule.cipai);
   const gex = src === '其他' ? short : short.replace(src + '_', '');
+  const writeHref = `/?ciyun=1&genre=Ci&rule=${encodeURIComponent(rule.name)}&chars=${rule.char_count}&title=${encodeURIComponent(rule.cipai)}`;
   return `<div class="variant">
-    <div class="vname">${sourceBadge(src)}${esc(gex)} · ${rule.char_count} 字 · ${rhymeDesc} · 韵脚 ${rhymes.size} 处</div>
+    <div class="vname">${sourceBadge(src)}${esc(gex)} · ${rule.char_count} 字 · ${rhymeDesc} · 韵脚 ${rhymes.size} 处<a class="write-btn" href="${writeHref}" title="新建画板并跳转创作区">写</a></div>
     <div class="tp">${tp}</div>
   </div>`;
 }
@@ -731,8 +734,9 @@ function buildCipaiPage() {
       var rk = r.rk === 'AND' ? '复合押韵' : r.rk === 'OR' ? '多式押韵' : '同部押韵';
       var rest = r.n.replace(r.c + '_', '');
       var gex = (r.src === '钦谱' || r.src === '龙谱') && rest.indexOf(r.src + '_') === 0 ? rest.slice(r.src.length + 1) : rest;
+      var writeHref = '/?ciyun=1&genre=Ci&rule=' + encodeURIComponent(r.n) + '&chars=' + r.ch + '&title=' + encodeURIComponent(r.c);
       var tpHtml = rows.map(function (rr) { return '<div class="tp-row">' + rr + '</div>'; }).join('');
-      return '<div class="variant"><div class="vname">' + badgeOf(r.src) + gex + ' · ' + r.ch + ' 字 · ' + rk + '</div><div class="tp">' + tpHtml + '</div></div>';
+      return '<div class="variant"><div class="vname">' + badgeOf(r.src) + gex + ' · ' + r.ch + ' 字 · ' + rk + '<a class="write-btn" href="' + writeHref + '" title="新建画板并跳转创作区">写</a></div><div class="tp">' + tpHtml + '</div></div>';
     }
     function render() {
       listEl.innerHTML = '';
@@ -846,7 +850,8 @@ function buildShiPage() {
       const tp = renderShiPattern(r.tone_pattern || [], rhymes, lineLen, buildRhymeColorMap(r.tone_pattern, r.rhyme_rule));
       const rk = r.rhyme_rule?.type;
       const rhymeNote = rk === 'OR' ? '二、四、六、八句押韵，首句可入韵' : '二、四、六、八句押韵';
-      return `<div class="tp">${tp}</div><div style="font-size:12.5px;color:#a09890">${r.char_count} 字 · ${rhymeNote} · 韵脚 ${rhymes.size} 处</div>`;
+      const writeHref = `/?ciyun=1&genre=Shi&rule=${encodeURIComponent(r.name)}&chars=${r.char_count}&title=${encodeURIComponent(r.name)}`;
+      return `<div class="tp">${tp}</div><div style="font-size:12.5px;color:#a09890">${r.char_count} 字 · ${rhymeNote} · 韵脚 ${rhymes.size} 处<a class="write-btn" href="${writeHref}" title="新建画板并跳转创作区">写</a></div>`;
     };
     const baseBlock = `<details open><summary>标准句式</summary>${render(base)}</details>`;
     const ruBlock = ruYun ? `<details><summary>首句入韵变体</summary>${render(ruYun)}</details>` : '';
