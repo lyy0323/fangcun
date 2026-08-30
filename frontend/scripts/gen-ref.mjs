@@ -152,7 +152,7 @@ function renderCiPattern(tp, rhymes, rhymeColors) {
   return out;
 }
 
-/** 诗格平仄渲染：与 checker 可读词谱一致——变体块取第一选项，按行断句（韵脚句末句号，其余句末逗号） */
+/** 诗格平仄渲染：与 checker 可读词谱一致——变体块取第一选项，按行断句（韵脚句末句号，其余句末逗号），两句一行 */
 function renderShiPattern(tp, rhymes, lineLen, rhymeColors) {
   const flat = [];
   for (const t of tp) {
@@ -160,14 +160,20 @@ function renderShiPattern(tp, rhymes, lineLen, rhymeColors) {
     else flat.push(t);
   }
   let out = '';
+  let row = '';
+  let line = 0;
+  const flush = () => { if (row) { out += `<div class="tp-row">${row}</div>`; row = ''; } };
   flat.forEach((t, idx) => {
     const ch = TONE_CHAR[t.tone] || '·';
     const color = rhymeColors?.get(idx);
-    out += color ? `<span style="color:${color};font-weight:600">${ch}</span>` : `<span>${ch}</span>`;
+    row += color ? `<span style="color:${color};font-weight:600">${ch}</span>` : `<span>${ch}</span>`;
     if (lineLen > 0 && (idx + 1) % lineLen === 0) {
-      out += rhymes.has(idx) ? '<span class="punc">。</span>' : '<span class="punc">，</span>';
+      row += rhymes.has(idx) ? '<span class="punc">。</span>' : '<span class="punc">，</span>';
+      line++;
+      if (line % 2 === 0) flush();
     }
   });
+  flush();
   return out;
 }
 
