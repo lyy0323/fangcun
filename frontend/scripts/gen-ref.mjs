@@ -388,7 +388,7 @@ ${extraHead}
 <main class="container">
 ${content}
 </main>
-<footer>方寸 · 诗词创作画布 — <a href="/">写诗</a> · <a href="/ref/poetry-tools.html">工具对比</a> · <a href="/docs">API 文档</a></footer>
+<footer>方寸 · 诗词创作画布 · <a href="/">写诗</a> · <a href="/ref/poetry-tools.html">工具对比</a> · <a href="/docs">API 文档</a></footer>
 </body>
 </html>`;
 }
@@ -539,9 +539,9 @@ function buildRhymePage(bookKey, { navLabel, seoTitle, seoDesc, subtitle, legend
     })();
   </script>`;
   let body = `<h1>${seoTitle}</h1>
+<div class="book-nav">${nav}</div>
 <p class="subtitle">${subtitle}</p>
 ${credit ? `<p class="credit">${credit}</p>` : ''}
-<div class="book-nav">${nav}</div>
 <input id="cat-search" class="search" type="search" placeholder="搜索韵部名或韵字…" />
 <div class="legend">${legendColor || ''}<span>点击展开查看韵字</span></div>`;
   for (const [gName, names] of groups) {
@@ -563,7 +563,7 @@ function buildPingshuiPage() {
   const groups = PINGSHUI_GROUPS.map(([g, names]) => [g, names]);
   return buildRhymePage('Pingshuiyun', {
     navLabel: '平水韵',
-    seoTitle: '平水韵 106 韵部总览 — 上平·下平·上声·去声·入声韵字查询',
+    seoTitle: '平水韵 106 韵部总览：上平·下平·上声·去声·入声韵字查询',
     seoDesc: '平水韵 106 韵部完整对照：上平 15 韵、下平 15 韵、上声 29 韵、去声 30 韵、入声 17 韵。查询各韵部韵字，写律诗绝句押韵必备。',
     subtitle: `平水韵是近体诗（律诗、绝句）押韵所依据的传统韵书。它承宋代《礼部韵略》一系韵书，因金元间刊行于平水（今山西临汾）而得名，明清以来一直是科举与格律诗创作通行的押韵标准。`,
     groups,
@@ -577,7 +577,7 @@ function buildCilinPage() {
   const groups = [['词林正韵 19 部（平·仄·入分部）', names]];
   return buildRhymePage('Cilinzhengyun', {
     navLabel: '词林正韵',
-    seoTitle: '词林正韵 19 部韵字总览 — 填词押韵查询',
+    seoTitle: '词林正韵 19 部韵字总览：填词押韵查询',
     seoDesc: '词林正韵 19 部完整对照，含平声、仄声、入声分部韵字。填词押韵标准韵书，平上去三声同部、入声独立。',
     subtitle: `词林正韵为清嘉庆年间戈载所编，是填词押韵的主要依据。全书以唐宋名家词的实际用韵为据分十九部，平、上、去三声同部相配，入声独用，为后世词家所宗。`,
     groups,
@@ -619,7 +619,7 @@ function buildShangguyunPage() {
   const groups = [['上古韵 23 部（按小韵细分）', names]];
   return buildRhymePage('Shangguyun', {
     navLabel: '上古韵',
-    seoTitle: '上古韵 23 韵部总览 — 《诗经》《楚辞》押韵查询',
+    seoTitle: '上古韵 23 韵部总览：《诗经》《楚辞》押韵查询',
     seoDesc: '上古音系 23 韵部完整对照（鱼铎、之职、幽觉、脂质至等），依据先秦音系归纳，《诗经》《楚辞》用韵查询，适合拟古体与仿先秦之作。',
     subtitle: SHANGGUYUN_INTRO,
     credit: SHANGGUYUN_CREDIT,
@@ -634,7 +634,7 @@ function buildZhonghuaPage() {
   const groups = [['中华通韵 16 韵（平·仄分部）', names]];
   return buildRhymePage('Zhonghua_Tongyun', {
     navLabel: '中华通韵',
-    seoTitle: '中华通韵 16 韵部总览 — 普通话押韵查询',
+    seoTitle: '中华通韵 16 韵部总览：普通话押韵查询',
     seoDesc: '中华通韵 16 韵完整对照（一啊、二喔、三鹅…十六儿），按现代普通话归韵，无入声，适合现代语感创作与自由诗押韵。',
     subtitle: `中华通韵是当代通行的新韵书，由中华诗词学会组织专家依据现代汉语普通话审音归韵编订，不设入声，便于以现代语感创作旧体诗词。`,
     groups,
@@ -837,7 +837,7 @@ function buildCipaiPage() {
 </div>
 <script src="/ref/cipai-data.js"></script>
 ${appJs}`;
-  return page({ title: '词谱格律对照 — 词牌平仄·句式·韵脚查询', desc: '词牌格律对照：1000+ 词牌（钦谱/龙谱），查字数、句式、平仄模板、韵脚位置。支持搜索与按字数筛选，在线填词必备。', activeTab: '/ref/cipai.html', content });
+  return page({ title: '词谱格律对照：词牌平仄·句式·韵脚查询', desc: '词牌格律对照：1000+ 词牌（钦谱/龙谱），查字数、句式、平仄模板、韵脚位置。支持搜索与按字数筛选，在线填词必备。', activeTab: '/ref/cipai.html', content });
 }
 
 /* ------------------------------- 诗格页面 -------------------------------- */
@@ -883,7 +883,7 @@ function buildShiPage() {
     </div>`;
   }).join('');
 
-  const content = `<h1>诗格速查 — 五言七言律诗绝句平仄</h1>
+  const content = `<h1>诗格速查：五言七言律诗绝句平仄</h1>
 <p class="subtitle">五绝 20 字 · 七绝 28 字 · 五律 40 字 · 七律 56 字 · 共 8 种基本格式</p>
 <p class="intro">近体诗每句字数与句数固定，平仄遵循“一句之内交替、一联之内相对、联与联之间相粘”的规则。押平声韵（平水韵），二、四、六、八句押韵，首句可押可不押。韵脚配色与方寸编辑器一致（近体诗押平声韵，故韵脚为<span style="color:#559977;font-weight:600">绿色</span>）；「中」表示该字可平可仄。</p>
 <div class="cards">${cards}</div>
@@ -919,7 +919,7 @@ function buildShiPage() {
   </div>
 </div>
 <p class="intro" style="margin-top:14px"><b>小结</b>：拗救的本质是维持句内与联内的平仄平衡——孤平句补平以保平声底线，对句相救以平补仄。在方寸中，标准句式与拗救句式都算正确，无须手工判断；输入诗句后若有平仄标红，先对照本节检查是否属合法的拗救句式。</p>`;
-  return page({ title: '诗格速查 — 五绝·七绝·五律·七律平仄格式', desc: '近体诗八种基本格式速查：五绝、七绝、五律、七律的平起/仄起句式与首句入韵变体，附平仄模板、韵脚位置与拗救（孤平自救、特拗句、对句相救）讲解。', activeTab: '/ref/shi.html', content });
+  return page({ title: '诗格速查：五绝·七绝·五律·七律平仄格式', desc: '近体诗八种基本格式速查：五绝、七绝、五律、七律的平起/仄起句式与首句入韵变体，附平仄模板、韵脚位置与拗救（孤平自救、特拗句、对句相救）讲解。', activeTab: '/ref/shi.html', content });
 }
 
 /* ------------------------------- 查字页面 -------------------------------- */
@@ -1045,14 +1045,14 @@ function buildCharPage() {
     if (initQ) { input.value = initQ; query(); }
   })();
   </script>`;
-  const content = `<h1>单字查询 — 释义 · 四部韵书音韵地位</h1>
+  const content = `<h1>单字查询：释义 · 四部韵书音韵地位</h1>
 <p class="subtitle">输入一个汉字，同屏查看其释义，以及它在平水韵、词林正韵、上古韵、中华通韵下的韵部与声调（上古韵含小韵与拟音）。</p>
 <input id="ch-input" class="search" type="search" placeholder="输入单字，如：中 / 白 / 月 / 山 / 风…" autofocus />
 <div class="example-chips">${examples}</div>
 <div id="ch-result"></div>
 ${appJs}`;
   return page({
-    title: '单字查询 — 释义与四部韵书音韵地位',
+    title: '单字查询：释义与四部韵书音韵地位',
     desc: '输入一个汉字，同屏查看释义（拼音、说文引文）与平水韵、词林正韵、上古韵（小韵、拟音）、中华通韵下的音韵地位。',
     activeTab: '/ref/char.html',
     content,
@@ -1142,7 +1142,7 @@ function buildTutorialPage() {
 <p class="subtitle">从零开始学会写格律诗与填词 · 配合方寸实时校验练习</p>
 ${toc}
 ${body}`;
-  return page({ title: '格律入门教程 — 平仄·律诗·填词·韵书·用典', desc: '诗词格律入门教程：什么是平仄、律诗格律（粘对押韵对仗）、词牌怎么填（浣溪沙为例）、平水韵/词林正韵/中华通韵区别、典故入诗技巧。', activeTab: '/ref/tutorial.html', content });
+  return page({ title: '格律入门教程：平仄·律诗·填词·韵书·用典', desc: '诗词格律入门教程：什么是平仄、律诗格律（粘对押韵对仗）、词牌怎么填（浣溪沙为例）、平水韵/词林正韵/中华通韵区别、典故入诗技巧。', activeTab: '/ref/tutorial.html', content });
 }
 
 /* --------------------------------- 主流程 -------------------------------- */
