@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>诗格速查 — 五绝·七绝·五律·七律平仄格式 | 方寸</title>
+<meta name="description" content="近体诗八种基本格式速查：五绝、七绝、五律、七律的平起/仄起句式与首句入韵变体，附平仄模板与韵脚位置。" />
+<link rel="icon" type="image/svg+xml" href="/logo.svg" />
+
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Noto Serif SC", "Songti SC", system-ui, serif; background: #FAF8F5; color: #5C534A; line-height: 1.8; font-size: 15px; }
+  a { color: #557799; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  .topbar { position: sticky; top: 0; z-index: 20; background: #FAF8F5; border-bottom: 1px solid #e8e4e0; }
+  .topbar-inner { max-width: 880px; margin: 0 auto; padding: 10px 20px; display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+  .brand { font-size: 17px; font-weight: 700; color: #5C534A; letter-spacing: 2px; }
+  .brand:hover { text-decoration: none; }
+  .tabs { display: flex; gap: 4px; flex-wrap: wrap; }
+  .tab { padding: 5px 12px; border-radius: 8px; font-size: 14px; color: #8a8178; }
+  .tab:hover { background: #f0ece6; text-decoration: none; color: #5C534A; }
+  .tab.active { background: #557799; color: #fff; }
+  .back { margin-left: auto; font-size: 13px; color: #8a8178; white-space: nowrap; }
+  .back:hover { color: #557799; }
+  .container { max-width: 880px; margin: 0 auto; padding: 36px 20px 80px; }
+  h1 { font-size: 26px; font-weight: 700; margin-bottom: 6px; line-height: 1.4; }
+  .subtitle { font-size: 14px; color: #a09890; margin-bottom: 8px; }
+  .intro { font-size: 14.5px; color: #6b6360; margin-bottom: 28px; }
+  h2 { font-size: 20px; font-weight: 600; margin: 40px 0 14px; padding-bottom: 6px; border-bottom: 2px solid #e8e4e0; }
+  h3 { font-size: 16.5px; font-weight: 600; margin: 24px 0 10px; }
+  p { margin: 10px 0; }
+  .book-nav { display: flex; gap: 8px; flex-wrap: wrap; margin: 18px 0 26px; }
+  .book-nav a { padding: 7px 14px; border-radius: 9px; border: 1px solid #e0dad2; font-size: 14px; color: #6b6360; background: #fff; }
+  .book-nav a.active { background: #557799; border-color: #557799; color: #fff; }
+  .book-nav a:hover { text-decoration: none; border-color: #557799; }
+  .tone-group { margin: 6px 0 22px; }
+  .tone-group-title { font-size: 15px; font-weight: 600; color: #7a7066; margin: 22px 0 8px; display: flex; align-items: baseline; gap: 8px; }
+  .tone-group-title .cnt { font-size: 12px; color: #a09890; font-weight: 400; }
+  details.cat { background: #fff; border: 1px solid #ece7e1; border-radius: 10px; margin-bottom: 8px; overflow: hidden; }
+  details.cat > summary { cursor: pointer; padding: 9px 14px; font-size: 14.5px; display: flex; align-items: baseline; gap: 10px; list-style: none; user-select: none; }
+  details.cat > summary::-webkit-details-marker { display: none; }
+  details.cat > summary::before { content: "▸"; color: #b9b0a6; font-size: 12px; transition: transform .15s; }
+  details.cat[open] > summary::before { transform: rotate(90deg); }
+  details.cat > summary:hover { background: #faf7f3; }
+  details.cat > summary .name { font-weight: 600; }
+  details.cat > summary .cnt { font-size: 12px; color: #a09890; margin-left: auto; }
+  .chars { padding: 4px 16px 14px; display: flex; flex-wrap: wrap; gap: 2px 10px; }
+  .chars span { font-size: 15px; color: #4c443c; letter-spacing: 1px; }
+  .chars .dim { color: #c4bcb2; }
+  .search { width: 100%; max-width: 380px; padding: 9px 14px; border-radius: 9px; border: 1px solid #e0dad2; font-size: 14px; background: #fff; color: #5C534A; margin-bottom: 18px; }
+  .search:focus { outline: none; border-color: #557799; }
+  .legend { font-size: 12.5px; color: #8a8178; margin: 4px 0 16px; display: flex; gap: 14px; flex-wrap: wrap; }
+  .legend b { font-weight: 600; }
+  .legend .yun { color: #b3543c; }
+  .tp { font-size: 15px; letter-spacing: 1px; color: #4c443c; background: #fff; border: 1px solid #ece7e1; border-radius: 10px; padding: 12px 16px; margin: 8px 0 14px; line-height: 2; }
+  .tp b.yun { color: #b3543c; font-weight: 700; }
+  .tp .punc { color: #c4bcb2; }
+  .tp .alt { color: #557799; }
+  .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(380px, 1fr)); gap: 16px; }
+  @media (max-width: 640px) { .cards { grid-template-columns: 1fr; } }
+  .card { background: #fff; border: 1px solid #ece7e1; border-radius: 12px; padding: 18px 20px; }
+  .card h3 { margin: 0 0 6px; font-size: 16px; }
+  .card .meta { font-size: 12.5px; color: #a09890; margin-bottom: 10px; }
+  .card details { margin-top: 8px; }
+  .card details > summary { cursor: pointer; font-size: 13.5px; color: #557799; }
+  .card .tp { margin: 6px 0 0; font-size: 14px; }
+  .article { background: #fff; border: 1px solid #ece7e1; border-radius: 12px; padding: 26px 28px; margin-bottom: 22px; }
+  .article h2 { border: none; margin: 0 0 4px; padding: 0; font-size: 19px; }
+  .article .a-meta { font-size: 12.5px; color: #a09890; margin-bottom: 12px; }
+  .article ul, .article ol { margin: 8px 0 8px 22px; }
+  .article li { margin: 4px 0; }
+  .article code { background: #f4f0ea; border-radius: 5px; padding: 1px 6px; font-size: 13.5px; color: #6d5648; }
+  .article .ex { background: #faf7f3; border-left: 3px solid #d8c9b8; border-radius: 0 8px 8px 0; padding: 10px 14px; margin: 12px 0; font-size: 14px; }
+  .article .ex .yz { color: #b3543c; font-weight: 700; }
+  .cta { display: inline-block; margin-top: 10px; padding: 8px 18px; border-radius: 9px; background: #557799; color: #fff; font-size: 14px; }
+  .cta:hover { background: #46688a; text-decoration: none; }
+  .toc { background: #fff; border: 1px solid #ece7e1; border-radius: 12px; padding: 16px 22px; margin-bottom: 26px; }
+  .toc h2 { border: none; margin: 0 0 8px; padding: 0; font-size: 15px; color: #8a8178; }
+  .toc ol { margin-left: 20px; }
+  .toc li { margin: 3px 0; font-size: 14.5px; }
+  .cipai-list .item { background: #fff; border: 1px solid #ece7e1; border-radius: 10px; margin-bottom: 8px; }
+  .cipai-list .item > button { width: 100%; text-align: left; padding: 10px 16px; border: none; background: none; cursor: pointer; font-size: 14.5px; display: flex; align-items: baseline; gap: 12px; color: #4c443c; font-family: inherit; }
+  .cipai-list .item > button:hover { background: #faf7f3; }
+  .cipai-list .item > button .cname { font-weight: 600; }
+  .cipai-list .item > button .cinfo { font-size: 12px; color: #a09890; }
+  .cipai-list .item .detail { padding: 0 16px 14px; border-top: 1px dashed #ece7e1; }
+  .cipai-list .variant { margin: 10px 0; }
+  .cipai-list .variant .vname { font-size: 13px; color: #8a8178; margin-bottom: 4px; }
+  .cipai-list .variant .tp { margin: 0; font-size: 13.5px; }
+  .filters { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
+  .filters button { padding: 6px 14px; border-radius: 18px; border: 1px solid #e0dad2; background: #fff; font-size: 13px; color: #6b6360; cursor: pointer; font-family: inherit; }
+  .filters button.active { background: #557799; border-color: #557799; color: #fff; }
+  .filters button:hover { border-color: #557799; }
+  .more-btn { display: block; margin: 14px auto; padding: 8px 22px; border-radius: 9px; border: 1px solid #e0dad2; background: #fff; font-size: 13.5px; color: #6b6360; cursor: pointer; font-family: inherit; }
+  .more-btn:hover { border-color: #557799; color: #557799; }
+  .empty { color: #a09890; font-size: 14px; text-align: center; padding: 30px 0; }
+  footer { border-top: 1px solid #e8e4e0; margin-top: 60px; padding: 20px; text-align: center; font-size: 12.5px; color: #b9b0a6; }
+  footer a { color: #8a8178; }
+</style>
+</head>
+<body>
+<header class="topbar">
+  <div class="topbar-inner">
+    <a class="brand" href="/">方寸</a>
+    <nav class="tabs"><a class="tab" href="/ref/index.html">韵书总览</a><a class="tab" href="/ref/cipai.html">词谱格律</a><a class="tab active" href="/ref/shi.html">诗格速查</a><a class="tab" href="/ref/tutorial.html">教程</a></nav>
+    <a class="back" href="/">← 返回创作</a>
+  </div>
+</header>
+<main class="container">
+<h1>诗格速查 — 五言七言律诗绝句平仄</h1>
+<p class="subtitle">五绝 20 字 · 七绝 28 字 · 五律 40 字 · 七律 56 字 · 共 8 种基本格式</p>
+<p class="intro">近体诗每句字数与句数固定，平仄遵循"一句之内交替、一联之内相对、联与联之间相粘"的规则。押平声韵（平水韵），二、四、六、八句押韵，首句可押可不押。<b style="color:#b3543c">红字为韵脚</b>；「中」表示可平可仄；括号内为可平可仄的句式变体。</p>
+<div class="cards"><div class="card">
+      <h3>五绝 · 平起</h3>
+      <div class="meta">20 字 · 4 句 · 每句 5 字 · 平水韵押平声韵</div>
+      <details open><summary>标准句式</summary><div class="tp"><span class="alt">(中平平仄仄｜平平仄平仄)</span><span class="punc">。</span><span>中</span><span>仄</span><span>仄</span><span>平</span><b class="yun">平</b><span class="punc">。</span><span class="alt">(中仄中平仄平平中｜中仄中中仄中平平)</span><span>仄</span><b class="yun">平</b><span class="punc">。</span></div><div style="font-size:12.5px;color:#a09890">20 字 · 二、四、六、八句押韵 · 韵脚 2 处（红字）</div></details>
+      <details><summary>首句入韵变体</summary><div class="tp"><span class="alt yun">(中平平仄平｜平平中仄平)</span><span class="punc">。</span><span>中</span><span>仄</span><span>仄</span><span>平</span><b class="yun">平</b><span class="punc">。</span><span class="alt">(中仄中平仄平平中｜中仄中中仄中平平)</span><span>仄</span><b class="yun">平</b><span class="punc">。</span></div><div style="font-size:12.5px;color:#a09890">20 字 · 二、四、六、八句押韵，首句可入韵 · 韵脚 3 处（红字）</div></details>
+    </div><div class="card">
+      <h3>五绝 · 仄起</h3>
+      <div class="meta">20 字 · 4 句 · 每句 5 字 · 平水韵押平声韵</div>
+      <details open><summary>标准句式</summary><div class="tp"><span class="alt">(中仄中平仄平平中｜中仄中中仄中平平)</span><span>仄</span><b class="yun">平</b><span class="punc">。</span><span class="alt">(中平平仄仄｜平平仄平仄)</span><span class="punc">。</span><span>中</span><span>仄</span><span>仄</span><span>平</span><b class="yun">平</b><span class="punc">。</span></div><div style="font-size:12.5px;color:#a09890">20 字 · 二、四、六、八句押韵 · 韵脚 2 处（红字）</div></details>
+      <details><summary>首句入韵变体</summary><div class="tp"><span>中</span><span>仄</span><span>仄</span><span>平</span><b class="yun">平</b><span class="punc">。</span><span class="alt">(平平中｜中平平)</span><span>仄</span><b class="yun">平</b><span class="punc">。</span><span class="alt">(中平平仄仄｜平平仄平仄)</span><span class="punc">。</span><span>中</span><span>仄</span><span>仄</span><span>平</span><b class="yun">平</b><span class="punc">。</span></div><div style="font-size:12.5px;color:#a09890">20 字 · 二、四、六、八句押韵，首句可入韵 · 韵脚 3 处（红字）</div></details>
+    </div><div class="card">
+      <h3>五律 · 平起</h3>
+      <div class="meta">40 字 · 8 句 · 每句 5 字 · 平水韵押平声韵</div>
+      <details open><summary>标准句式</summary><div class="tp"><span class="alt">(中平平仄仄｜平平仄平仄)</span><span class="punc">。</span><span>中</span><span>仄</span><span>仄</span><span>平</span><b class="yun">平</b><span class="punc">。</span><span class="alt">(中仄中平仄平平中｜中仄中中仄中平平)</span><span>仄</span><b class="yun">平</b><span class="punc">。</span><span class="alt">(中平平仄仄｜平平仄平仄)</span><span class="punc">。</span><span>中</span><span>仄</span><span>仄</span><span>平</span><b class="yun">平</b><span class="punc">。</span><span class="alt">(中仄中平仄平平中｜中仄中中仄中平平)</span><span>仄</span><b class="yun">平</b><span class="punc">。</span></div><div style="font-size:12.5px;color:#a09890">40 字 · 二、四、六、八句押韵 · 韵脚 4 处（红字）</div></details>
+      <details><summary>首句入韵变体</summary><div class="tp"><span class="alt yun">(中平平仄平｜平平中仄平)</span><span class="punc">。</span><span>中</span><span>仄</span><span>仄</span><span>平</span><b class="yun">平</b><span class="punc">。</span><span class="alt">(中仄中平仄平平中｜中仄中中仄中平平)</span><span>仄</span><b class="yun">平</b><span class="punc">。</span><span class="alt">(中平平仄仄｜平平仄平仄)</span><span class="punc">。</span><span>中</span><span>仄</span><span>仄</span><span>平</span><b class="yun">平</b><span class="punc">。</span><span class="alt">(中仄中平仄平平中｜中仄中中仄中平平)</span><span>仄</span><b class="yun">平</b><span class="punc">。</span></div><div style="font-size:12.5px;color:#a09890">40 字 · 二、四、六、八句押韵，首句可入韵 · 韵脚 5 处（红字）</div></details>
+    </div><div class="card">
+      <h3>五律 · 仄起</h3>
+      <div class="meta">40 字 · 8 句 · 每句 5 字 · 平水韵押平声韵</div>
+      <details open><summary>标准句式</summary><div class="tp"><span class="alt">(中仄中平仄平平中｜中仄中中仄中平平)</span><span>仄</span><b class="yun">平</b><span class="punc">。</span><span class="alt">(中平平仄仄｜平平仄平仄)</span><span class="punc">。</span><span>中</span><span>仄</span><span>仄</span><span>平</span><b class="yun">平</b><span class="punc">。</span><span class="alt">(中仄中平仄平平中｜中仄中中仄中平平)</span><span>仄</span><b class="yun">平</b><span class="punc">。</span><span class="alt">(中平平仄仄｜平平仄平仄)</span><span class="punc">。</span><span>中</span><span>仄</span><span>仄</span><span>平</span><b class="yun">平</b><span class="punc">。</span></div><div style="font-size:12.5px;color:#a09890">40 字 · 二、四、六、八句押韵 · 韵脚 4 处（红字）</div></details>
+      <details><summary>首句入韵变体</summary><div class="tp"><span>中</span><span>仄</span><span>仄</span><span>平</span><b class="yun">平</b><span class="punc">。</span><span class="alt">(平平中｜中平平)</span><span>仄</span><b class="yun">平</b><span class="punc">。</span><span class="alt">(中平平仄仄｜平平仄平仄)</span><span class="punc">。</span><span>中</span><span>仄</span><span>仄</span><span>平</span><b class="yun">平</b><span class="punc">。</span><span class="alt">(中仄中平仄平平中｜中仄中中仄中平平)</span><span>仄</span><b class="yun">平</b><span class="punc">。</span><span class="alt">(中平平仄仄｜平平仄平仄)</span><span class="punc">。</span><span>中</span><span>仄</span><span>仄</span><span>平</span><b class="yun">平</b><span class="punc">。</span></div><div style="font-size:12.5px;color:#a09890">40 字 · 二、四、六、八句押韵，首句可入韵 · 韵脚 5 处（红字）</div></details>
+    </div><div class="card">
+      <h3>七绝 · 平起</h3>
+      <div class="meta">28 字 · 4 句 · 每句 7 字 · 平水韵押平声韵</div>
+      <details open><summary>标准句式</summary><div class="tp"><span>中</span><span>平</span><span class="alt">(中仄中平仄中仄平平中｜中仄中中仄中仄中平平)</span><span>仄</span><b class="yun">平</b><span class="punc">。</span><span>中</span><span>仄</span><span class="alt">(中平平仄仄｜平平仄平仄)</span><span class="punc">。</span><span>中</span><span>平</span><span>中</span><span>仄</span><span>仄</span><span>平</span><b class="yun">平</b><span class="punc">。</span></div><div style="font-size:12.5px;color:#a09890">28 字 · 二、四、六、八句押韵 · 韵脚 2 处（红字）</div></details>
+      <details><summary>首句入韵变体</summary><div class="tp"><span>中</span><span>平</span><span>中</span><span>仄</span><span>仄</span><span>平</span><b class="yun">平</b><span class="punc">。</span><span>中</span><span>仄</span><span class="alt">(平平中｜中平平)</span><span>仄</span><b class="yun">平</b><span class="punc">。</span><span>中</span><span>仄</span><span class="alt">(中平平仄仄｜平平仄平仄)</span><span class="punc">。</span><span>中</span><span>平</span><span>中</span><span>仄</span><span>仄</span><span>平</span><b class="yun">平</b><span class="punc">。</span></div><div style="font-size:12.5px;color:#a09890">28 字 · 二、四、六、八句押韵，首句可入韵 · 韵脚 3 处（红字）</div></details>
+    </div><div class="card">
+      <h3>七绝 · 仄起</h3>
+      <div class="meta">28 字 · 4 句 · 每句 7 字 · 平水韵押平声韵</div>
+      <details open><summary>标准句式</summary><div class="tp"><span>中</span><span>仄</span><span class="alt">(中平平仄仄｜平平仄平仄)</span><span class="punc">。</span><span>中</span><span>平</span><span>中</span><span>仄</span><span>仄</span><span>平</span><b class="yun">平</b><span class="punc">。</span><span>中</span><span>平</span><span class="alt">(中仄中平仄中仄平平中｜中仄中中仄中仄中平平)</span><span>仄</span><b class="yun">平</b><span class="punc">。</span></div><div style="font-size:12.5px;color:#a09890">28 字 · 二、四、六、八句押韵 · 韵脚 2 处（红字）</div></details>
+      <details><summary>首句入韵变体</summary><div class="tp"><span>中</span><span>仄</span><span class="alt yun">(中平平仄平｜平平中仄平)</span><span class="punc">。</span><span>中</span><span>平</span><span>中</span><span>仄</span><span>仄</span><span>平</span><b class="yun">平</b><span class="punc">。</span><span>中</span><span>平</span><span class="alt">(中仄中平仄中仄平平中｜中仄中中仄中仄中平平)</span><span>仄</span><b class="yun">平</b><span class="punc">。</span></div><div style="font-size:12.5px;color:#a09890">28 字 · 二、四、六、八句押韵，首句可入韵 · 韵脚 3 处（红字）</div></details>
+    </div><div class="card">
+      <h3>七律 · 平起</h3>
+      <div class="meta">56 字 · 8 句 · 每句 7 字 · 平水韵押平声韵</div>
+      <details open><summary>标准句式</summary><div class="tp"><span>中</span><span>平</span><span class="alt">(中仄中平仄中仄平平中｜中仄中中仄中仄中平平)</span><span>仄</span><b class="yun">平</b><span class="punc">。</span><span>中</span><span>仄</span><span class="alt">(中平平仄仄｜平平仄平仄)</span><span class="punc">。</span><span>中</span><span>平</span><span>中</span><span>仄</span><span>仄</span><span>平</span><b class="yun">平</b><span class="punc">。</span><span>中</span><span>平</span><span class="alt">(中仄中平仄中仄平平中｜中仄中中仄中仄中平平)</span><span>仄</span><b class="yun">平</b><span class="punc">。</span><span>中</span><span>仄</span><span class="alt">(中平平仄仄｜平平仄平仄)</span><span class="punc">。</span><span>中</span><span>平</span><span>中</span><span>仄</span><span>仄</span><span>平</span><b class="yun">平</b><span class="punc">。</span></div><div style="font-size:12.5px;color:#a09890">56 字 · 二、四、六、八句押韵 · 韵脚 4 处（红字）</div></details>
+      <details><summary>首句入韵变体</summary><div class="tp"><span>中</span><span>平</span><span>中</span><span>仄</span><span>仄</span><span>平</span><b class="yun">平</b><span class="punc">。</span><span>中</span><span>仄</span><span class="alt">(平平中｜中平平)</span><span>仄</span><b class="yun">平</b><span class="punc">。</span><span>中</span><span>仄</span><span class="alt">(中平平仄仄｜平平仄平仄)</span><span class="punc">。</span><span>中</span><span>平</span><span>中</span><span>仄</span><span>仄</span><span>平</span><b class="yun">平</b><span class="punc">。</span><span>中</span><span>平</span><span class="alt">(中仄中平仄中仄平平中｜中仄中中仄中仄中平平)</span><span>仄</span><b class="yun">平</b><span class="punc">。</span><span>中</span><span>仄</span><span class="alt">(中平平仄仄｜平平仄平仄)</span><span class="punc">。</span><span>中</span><span>平</span><span>中</span><span>仄</span><span>仄</span><span>平</span><b class="yun">平</b><span class="punc">。</span></div><div style="font-size:12.5px;color:#a09890">56 字 · 二、四、六、八句押韵，首句可入韵 · 韵脚 5 处（红字）</div></details>
+    </div><div class="card">
+      <h3>七律 · 仄起</h3>
+      <div class="meta">56 字 · 8 句 · 每句 7 字 · 平水韵押平声韵</div>
+      <details open><summary>标准句式</summary><div class="tp"><span>中</span><span>仄</span><span class="alt">(中平平仄仄｜平平仄平仄)</span><span class="punc">。</span><span>中</span><span>平</span><span>中</span><span>仄</span><span>仄</span><span>平</span><b class="yun">平</b><span class="punc">。</span><span>中</span><span>平</span><span class="alt">(中仄中平仄中仄平平中｜中仄中中仄中仄中平平)</span><span>仄</span><b class="yun">平</b><span class="punc">。</span><span>中</span><span>仄</span><span class="alt">(中平平仄仄｜平平仄平仄)</span><span class="punc">。</span><span>中</span><span>平</span><span>中</span><span>仄</span><span>仄</span><span>平</span><b class="yun">平</b><span class="punc">。</span><span>中</span><span>平</span><span class="alt">(中仄中平仄中仄平平中｜中仄中中仄中仄中平平)</span><span>仄</span><b class="yun">平</b><span class="punc">。</span></div><div style="font-size:12.5px;color:#a09890">56 字 · 二、四、六、八句押韵 · 韵脚 4 处（红字）</div></details>
+      <details><summary>首句入韵变体</summary><div class="tp"><span>中</span><span>仄</span><span class="alt yun">(中平平仄平｜平平中仄平)</span><span class="punc">。</span><span>中</span><span>平</span><span>中</span><span>仄</span><span>仄</span><span>平</span><b class="yun">平</b><span class="punc">。</span><span>中</span><span>平</span><span class="alt">(中仄中平仄中仄平平中｜中仄中中仄中仄中平平)</span><span>仄</span><b class="yun">平</b><span class="punc">。</span><span>中</span><span>仄</span><span class="alt">(中平平仄仄｜平平仄平仄)</span><span class="punc">。</span><span>中</span><span>平</span><span>中</span><span>仄</span><span>仄</span><span>平</span><b class="yun">平</b><span class="punc">。</span><span>中</span><span>平</span><span class="alt">(中仄中平仄中仄平平中｜中仄中中仄中仄中平平)</span><span>仄</span><b class="yun">平</b><span class="punc">。</span></div><div style="font-size:12.5px;color:#a09890">56 字 · 二、四、六、八句押韵，首句可入韵 · 韵脚 5 处（红字）</div></details>
+    </div></div>
+</main>
+<footer>方寸 · 诗词创作画布 — <a href="/">写诗</a> · <a href="/ref/poetry-tools.html">工具对比</a> · <a href="/docs">API 文档</a></footer>
+</body>
+</html>

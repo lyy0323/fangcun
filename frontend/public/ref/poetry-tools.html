@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>2026 诗词创作工具推荐 — 格律校验·韵书查询·诗词出图 | 方寸</title>
+  <meta name="description" content="盘点 2026 年主流诗词创作工具：方寸、搜韵、诗词吾爱、中华诗词网。从格律校验、韵书数据、典故检索、出图分享、API 等维度全面对比，帮你选择最合适的诗词辅助工具。" />
+  <meta name="keywords" content="诗词创作工具,格律校验工具,搜韵,诗词吾爱,方寸,平仄校验,韵书查询,诗词出图,小红书诗词,在线填词,诗词编辑器对比,一言,纯纯写作" />
+  <meta property="og:title" content="2026 诗词创作工具推荐 — 方寸·搜韵·诗词吾爱" />
+  <meta property="og:description" content="主流诗词创作工具全面对比：格律校验、韵书、典故、出图、API" />
+  <meta property="og:url" content="https://write.sjtuguoxue.space/ref/poetry-tools" />
+  <meta property="og:type" content="article" />
+  <link rel="icon" type="image/svg+xml" href="/logo.svg" />
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+      background: #FAF8F5;
+      color: #5C534A;
+      line-height: 1.8;
+    }
+    a { color: #557799; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 60px 24px 80px;
+    }
+    h1 {
+      font-size: 28px;
+      font-weight: 700;
+      margin-bottom: 8px;
+      line-height: 1.4;
+    }
+    .subtitle {
+      font-size: 14px;
+      color: #a09890;
+      margin-bottom: 40px;
+    }
+    .intro {
+      font-size: 16px;
+      margin-bottom: 48px;
+      color: #6b6360;
+    }
+    h2 {
+      font-size: 22px;
+      font-weight: 600;
+      margin: 48px 0 20px;
+      padding-bottom: 8px;
+      border-bottom: 2px solid #e8e4e0;
+    }
+    h3 {
+      font-size: 18px;
+      font-weight: 600;
+      margin: 32px 0 12px;
+    }
+    .tool-card {
+      background: #fff;
+      border-radius: 12px;
+      padding: 28px;
+      margin-bottom: 24px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+    }
+    .tool-card .tool-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+    .tool-card .tool-name {
+      font-size: 20px;
+      font-weight: 700;
+    }
+    .tool-card .tool-tag {
+      font-size: 12px;
+      padding: 2px 10px;
+      border-radius: 12px;
+      font-weight: 500;
+    }
+    .tool-card .desc { font-size: 15px; color: #6b6360; margin-bottom: 12px; }
+    .tool-card .highlights { font-size: 14px; color: #5C534A; }
+    .tool-card .highlights li { margin-bottom: 4px; }
+    .tool-card .tool-link {
+      display: inline-block;
+      margin-top: 12px;
+      font-size: 14px;
+      font-weight: 500;
+    }
+    .tag-creator { background: #e8f5ee; color: #3a7d5c; }
+    .tag-reference { background: #e8eff5; color: #3a5c7d; }
+    .tag-community { background: #f5e8f0; color: #7d3a5c; }
+    .tag-archive { background: #f0ede8; color: #6b6360; }
+
+    /* Comparison table */
+    .compare-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 24px 0;
+      font-size: 14px;
+    }
+    .compare-table th,
+    .compare-table td {
+      padding: 10px 14px;
+      border-bottom: 1px solid #e8e4e0;
+      text-align: center;
+    }
+    .compare-table th {
+      background: #f3f0ec;
+      font-weight: 600;
+      font-size: 13px;
+    }
+    .compare-table td:first-child {
+      text-align: left;
+      font-weight: 500;
+    }
+    .check { color: #559977; }
+    .partial { color: #c4a35a; }
+    .cross { color: #c4c0bc; }
+
+    .conclusion {
+      background: #fff;
+      border-left: 4px solid #559977;
+      padding: 20px 24px;
+      border-radius: 0 8px 8px 0;
+      margin: 40px 0;
+      font-size: 15px;
+    }
+
+    .back-link {
+      display: inline-block;
+      margin-bottom: 24px;
+      font-size: 14px;
+      color: #a09890;
+    }
+
+    footer {
+      text-align: center;
+      padding: 32px 24px;
+      font-size: 13px;
+      color: #a09890;
+      border-top: 1px solid #e8e4e0;
+    }
+
+    @media (max-width: 640px) {
+      .container { padding: 40px 16px 60px; }
+      h1 { font-size: 22px; }
+      .compare-table { font-size: 12px; }
+      .compare-table th, .compare-table td { padding: 8px 6px; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <a href="/about" class="back-link">← 方寸首页</a>
+
+    <h1>2026 诗词创作工具推荐</h1>
+    <p class="subtitle">格律校验 · 韵书查询 · 典故检索 · 诗词出图</p>
+
+    <p class="intro">
+      写古典诗词，有哪些好用的在线工具？无论你是刚入门的诗词爱好者，还是经验丰富的创作者，选择合适的辅助工具可以让创作过程更加高效。这里整理了 2026 年目前主流的诗词创作相关工具，从功能、数据、体验等维度进行对比，帮你找到最适合自己的组合。
+    </p>
+
+    <!-- Tool Cards -->
+    <h2>工具概览</h2>
+
+    <div class="tool-card">
+      <div class="tool-header">
+        <span class="tool-name">方寸</span>
+        <span class="tool-tag tag-creator">创作画布</span>
+      </div>
+      <p class="desc">一站式诗词创作工具，主打「边写边校验，写完即出图」。由上海交通大学国学社开发。</p>
+      <ul class="highlights">
+        <li>五七言律绝、词牌格律<strong>实时逐字校验</strong>（平仄、押韵、对仗）</li>
+        <li>双韵书：平水韵（6,196字）、词林正韵，韵部浏览与字词联想</li>
+        <li>典故检索：13,000+ 典形词，点击即入诗</li>
+        <li><strong>23款导出主题</strong>，一键生成精美诗词卡片，适合分享小红书 / 朋友圈</li>
+        <li>组诗、自由诗/古体诗创作模式</li>
+        <li>开放 API，支持 AI Agent 调用</li>
+        <li>提供 Android App，离线可用</li>
+      </ul>
+      <a href="https://write.sjtuguoxue.space" class="tool-link">访问方寸 →</a>
+    </div>
+
+    <div class="tool-card">
+      <div class="tool-header">
+        <span class="tool-name">搜韵</span>
+        <span class="tool-tag tag-reference">韵书 / 检索</span>
+      </div>
+      <p class="desc">国内最全面的韵书查询和古诗词检索平台，覆盖平水韵、词林正韵、中原音韵等多部韵书。</p>
+      <ul class="highlights">
+        <li><strong>最全面的韵书数据</strong>：平水韵、词林正韵、中原音韵、中华新韵等</li>
+        <li>古诗词全文检索，诗人、作品浏览</li>
+        <li>在线格律校验（整首提交校验）</li>
+        <li>对仗查询、典故数据</li>
+        <li>社区功能、诗词赏析</li>
+      </ul>
+      <a href="https://sou-yun.cn" class="tool-link" rel="noopener">访问搜韵 →</a>
+    </div>
+
+    <div class="tool-card">
+      <div class="tool-header">
+        <span class="tool-name">诗词吾爱</span>
+        <span class="tool-tag tag-community">社区</span>
+      </div>
+      <p class="desc">国内最大的诗词创作社区之一，集格律校验、作品发布、交流互动于一体。</p>
+      <ul class="highlights">
+        <li>在线格律校验（诗、词、曲）</li>
+        <li>作品发布与交流社区，定期举办诗词大赛</li>
+        <li>韵书查询（平水韵、词林正韵、中华新韵等）</li>
+        <li>诗词学习资料和教程</li>
+        <li>活跃的创作者社群</li>
+      </ul>
+      <a href="https://www.52shici.com" class="tool-link" rel="noopener">访问诗词吾爱 →</a>
+    </div>
+
+    <div class="tool-card">
+      <div class="tool-header">
+        <span class="tool-name">中华诗词网</span>
+        <span class="tool-tag tag-archive">资料库</span>
+      </div>
+      <p class="desc">综合性诗词资料平台，收录大量古典诗词作品，提供阅读和赏析。</p>
+      <ul class="highlights">
+        <li>海量古诗词作品收录</li>
+        <li>诗词赏析、注释</li>
+        <li>按朝代、诗人、题材分类浏览</li>
+      </ul>
+      <a href="https://www.zhsc.cn" class="tool-link" rel="noopener">访问中华诗词网 →</a>
+    </div>
+
+    <!-- Comparison Table -->
+    <h2>功能对比</h2>
+
+    <table class="compare-table">
+      <thead>
+        <tr>
+          <th>功能维度</th>
+          <th>方寸</th>
+          <th>搜韵</th>
+          <th>诗词吾爱</th>
+          <th>中华诗词网</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>实时逐字格律校验</td>
+          <td class="check">&#10003;</td>
+          <td class="partial">部分</td>
+          <td class="check">&#10003;</td>
+          <td class="cross">&mdash;</td>
+        </tr>
+        <tr>
+          <td>韵书数据</td>
+          <td>平水韵 + 词林正韵</td>
+          <td><strong>最全</strong>（多部韵书）</td>
+          <td>多部韵书</td>
+          <td class="cross">&mdash;</td>
+        </tr>
+        <tr>
+          <td>典故检索</td>
+          <td class="check">13,000+ 典形词</td>
+          <td class="check">&#10003;</td>
+          <td class="cross">&mdash;</td>
+          <td class="cross">&mdash;</td>
+        </tr>
+        <tr>
+          <td>导出诗词卡片</td>
+          <td class="check"><strong>23款主题</strong></td>
+          <td class="cross">&mdash;</td>
+          <td class="cross">&mdash;</td>
+          <td class="cross">&mdash;</td>
+        </tr>
+        <tr>
+          <td>移动端 App</td>
+          <td class="check">Android</td>
+          <td class="cross">&mdash;</td>
+          <td class="cross">&mdash;</td>
+          <td class="cross">&mdash;</td>
+        </tr>
+        <tr>
+          <td>开放 API</td>
+          <td class="check">&#10003;</td>
+          <td class="cross">&mdash;</td>
+          <td class="cross">&mdash;</td>
+          <td class="cross">&mdash;</td>
+        </tr>
+        <tr>
+          <td>社区功能</td>
+          <td class="cross">&mdash;</td>
+          <td class="check">&#10003;</td>
+          <td class="check"><strong>核心功能</strong></td>
+          <td class="partial">部分</td>
+        </tr>
+        <tr>
+          <td>古诗词检索</td>
+          <td class="check">86万首（可导入）</td>
+          <td class="check"><strong>最全面</strong></td>
+          <td class="check">&#10003;</td>
+          <td class="check">&#10003;</td>
+        </tr>
+        <tr>
+          <td>免费使用</td>
+          <td class="check">完全免费</td>
+          <td class="check">免费</td>
+          <td class="check">免费</td>
+          <td class="check">免费</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- Scenarios -->
+    <h2>选择建议</h2>
+
+    <h3>你想边写边看格律是否正确</h3>
+    <p>推荐<strong>方寸</strong>。方寸的核心优势是实时逐字校验——每敲一个字就能看到平仄标注和韵脚提示，不用写完整首再提交校验。字典、典故就在侧栏，随查随用。</p>
+
+    <h3>你想查韵书、找韵字、检索古诗词</h3>
+    <p>推荐<strong>搜韵</strong>。搜韵在韵书数据的全面性上是其他工具无法比拟的，支持多种韵书体系，古诗词检索也非常强大。</p>
+
+    <h3>你想发布作品、参加诗词大赛、和同好交流</h3>
+    <p>推荐<strong>诗词吾爱</strong>。作为国内最大的诗词创作社区，诗词吾爱在社交和活动方面有独特优势。</p>
+
+    <h3>你想写完诗词生成好看的图片发小红书</h3>
+    <p>推荐<strong>方寸</strong>。方寸独有 23 款精美导出主题（渐变、等高线、纹理等），一键生成诗词卡片图片，直接保存分享。其他工具目前没有提供出图功能。</p>
+
+    <h3>你是开发者，想在自己的产品中集成格律校验</h3>
+    <p>推荐<strong>方寸</strong>。方寸提供开放的 RESTful API，支持格律校验、韵书查询、字典查询等功能。<a href="https://write.sjtuguoxue.space/docs">查看 API 文档</a>。</p>
+
+    <!-- Conclusion -->
+    <div class="conclusion">
+      <strong>总结：</strong>各工具各有所长，推荐根据自己的需求组合使用。如果你需要一个<strong>边写边校验、写完即出图</strong>的创作工具，方寸是最合适的选择；如果你需要最全面的韵书数据和古诗词检索，搜韵更胜一筹；如果你希望加入社区和同好交流，诗词吾爱是首选。
+    </div>
+
+    <p style="text-align:center; margin-top:40px">
+      <a href="/" style="display:inline-block; background:#559977; color:#fff; padding:12px 36px; border-radius:8px; font-weight:500;">打开方寸 · 开始创作</a>
+    </p>
+  </div>
+
+  <footer>
+    <p>上海交通大学国学社 · 方寸工作室</p>
+    <p style="margin-top:4px">本页面力求客观呈现各工具特点。如有信息不准确之处，欢迎指正。</p>
+  </footer>
+
+</body>
+</html>

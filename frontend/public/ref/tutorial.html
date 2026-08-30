@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>格律入门教程 — 平仄·律诗·填词·韵书·用典 | 方寸</title>
+<meta name="description" content="诗词格律入门教程：什么是平仄、律诗格律（粘对押韵对仗）、词牌怎么填（浣溪沙为例）、平水韵/词林正韵/中华通韵区别、典故入诗技巧。" />
+<link rel="icon" type="image/svg+xml" href="/logo.svg" />
+
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Noto Serif SC", "Songti SC", system-ui, serif; background: #FAF8F5; color: #5C534A; line-height: 1.8; font-size: 15px; }
+  a { color: #557799; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  .topbar { position: sticky; top: 0; z-index: 20; background: #FAF8F5; border-bottom: 1px solid #e8e4e0; }
+  .topbar-inner { max-width: 880px; margin: 0 auto; padding: 10px 20px; display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+  .brand { font-size: 17px; font-weight: 700; color: #5C534A; letter-spacing: 2px; }
+  .brand:hover { text-decoration: none; }
+  .tabs { display: flex; gap: 4px; flex-wrap: wrap; }
+  .tab { padding: 5px 12px; border-radius: 8px; font-size: 14px; color: #8a8178; }
+  .tab:hover { background: #f0ece6; text-decoration: none; color: #5C534A; }
+  .tab.active { background: #557799; color: #fff; }
+  .back { margin-left: auto; font-size: 13px; color: #8a8178; white-space: nowrap; }
+  .back:hover { color: #557799; }
+  .container { max-width: 880px; margin: 0 auto; padding: 36px 20px 80px; }
+  h1 { font-size: 26px; font-weight: 700; margin-bottom: 6px; line-height: 1.4; }
+  .subtitle { font-size: 14px; color: #a09890; margin-bottom: 8px; }
+  .intro { font-size: 14.5px; color: #6b6360; margin-bottom: 28px; }
+  h2 { font-size: 20px; font-weight: 600; margin: 40px 0 14px; padding-bottom: 6px; border-bottom: 2px solid #e8e4e0; }
+  h3 { font-size: 16.5px; font-weight: 600; margin: 24px 0 10px; }
+  p { margin: 10px 0; }
+  .book-nav { display: flex; gap: 8px; flex-wrap: wrap; margin: 18px 0 26px; }
+  .book-nav a { padding: 7px 14px; border-radius: 9px; border: 1px solid #e0dad2; font-size: 14px; color: #6b6360; background: #fff; }
+  .book-nav a.active { background: #557799; border-color: #557799; color: #fff; }
+  .book-nav a:hover { text-decoration: none; border-color: #557799; }
+  .tone-group { margin: 6px 0 22px; }
+  .tone-group-title { font-size: 15px; font-weight: 600; color: #7a7066; margin: 22px 0 8px; display: flex; align-items: baseline; gap: 8px; }
+  .tone-group-title .cnt { font-size: 12px; color: #a09890; font-weight: 400; }
+  details.cat { background: #fff; border: 1px solid #ece7e1; border-radius: 10px; margin-bottom: 8px; overflow: hidden; }
+  details.cat > summary { cursor: pointer; padding: 9px 14px; font-size: 14.5px; display: flex; align-items: baseline; gap: 10px; list-style: none; user-select: none; }
+  details.cat > summary::-webkit-details-marker { display: none; }
+  details.cat > summary::before { content: "▸"; color: #b9b0a6; font-size: 12px; transition: transform .15s; }
+  details.cat[open] > summary::before { transform: rotate(90deg); }
+  details.cat > summary:hover { background: #faf7f3; }
+  details.cat > summary .name { font-weight: 600; }
+  details.cat > summary .cnt { font-size: 12px; color: #a09890; margin-left: auto; }
+  .chars { padding: 4px 16px 14px; display: flex; flex-wrap: wrap; gap: 2px 10px; }
+  .chars span { font-size: 15px; color: #4c443c; letter-spacing: 1px; }
+  .chars .dim { color: #c4bcb2; }
+  .search { width: 100%; max-width: 380px; padding: 9px 14px; border-radius: 9px; border: 1px solid #e0dad2; font-size: 14px; background: #fff; color: #5C534A; margin-bottom: 18px; }
+  .search:focus { outline: none; border-color: #557799; }
+  .legend { font-size: 12.5px; color: #8a8178; margin: 4px 0 16px; display: flex; gap: 14px; flex-wrap: wrap; }
+  .legend b { font-weight: 600; }
+  .legend .yun { color: #b3543c; }
+  .tp { font-size: 15px; letter-spacing: 1px; color: #4c443c; background: #fff; border: 1px solid #ece7e1; border-radius: 10px; padding: 12px 16px; margin: 8px 0 14px; line-height: 2; }
+  .tp b.yun { color: #b3543c; font-weight: 700; }
+  .tp .punc { color: #c4bcb2; }
+  .tp .alt { color: #557799; }
+  .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(380px, 1fr)); gap: 16px; }
+  @media (max-width: 640px) { .cards { grid-template-columns: 1fr; } }
+  .card { background: #fff; border: 1px solid #ece7e1; border-radius: 12px; padding: 18px 20px; }
+  .card h3 { margin: 0 0 6px; font-size: 16px; }
+  .card .meta { font-size: 12.5px; color: #a09890; margin-bottom: 10px; }
+  .card details { margin-top: 8px; }
+  .card details > summary { cursor: pointer; font-size: 13.5px; color: #557799; }
+  .card .tp { margin: 6px 0 0; font-size: 14px; }
+  .article { background: #fff; border: 1px solid #ece7e1; border-radius: 12px; padding: 26px 28px; margin-bottom: 22px; }
+  .article h2 { border: none; margin: 0 0 4px; padding: 0; font-size: 19px; }
+  .article .a-meta { font-size: 12.5px; color: #a09890; margin-bottom: 12px; }
+  .article ul, .article ol { margin: 8px 0 8px 22px; }
+  .article li { margin: 4px 0; }
+  .article code { background: #f4f0ea; border-radius: 5px; padding: 1px 6px; font-size: 13.5px; color: #6d5648; }
+  .article .ex { background: #faf7f3; border-left: 3px solid #d8c9b8; border-radius: 0 8px 8px 0; padding: 10px 14px; margin: 12px 0; font-size: 14px; }
+  .article .ex .yz { color: #b3543c; font-weight: 700; }
+  .cta { display: inline-block; margin-top: 10px; padding: 8px 18px; border-radius: 9px; background: #557799; color: #fff; font-size: 14px; }
+  .cta:hover { background: #46688a; text-decoration: none; }
+  .toc { background: #fff; border: 1px solid #ece7e1; border-radius: 12px; padding: 16px 22px; margin-bottom: 26px; }
+  .toc h2 { border: none; margin: 0 0 8px; padding: 0; font-size: 15px; color: #8a8178; }
+  .toc ol { margin-left: 20px; }
+  .toc li { margin: 3px 0; font-size: 14.5px; }
+  .cipai-list .item { background: #fff; border: 1px solid #ece7e1; border-radius: 10px; margin-bottom: 8px; }
+  .cipai-list .item > button { width: 100%; text-align: left; padding: 10px 16px; border: none; background: none; cursor: pointer; font-size: 14.5px; display: flex; align-items: baseline; gap: 12px; color: #4c443c; font-family: inherit; }
+  .cipai-list .item > button:hover { background: #faf7f3; }
+  .cipai-list .item > button .cname { font-weight: 600; }
+  .cipai-list .item > button .cinfo { font-size: 12px; color: #a09890; }
+  .cipai-list .item .detail { padding: 0 16px 14px; border-top: 1px dashed #ece7e1; }
+  .cipai-list .variant { margin: 10px 0; }
+  .cipai-list .variant .vname { font-size: 13px; color: #8a8178; margin-bottom: 4px; }
+  .cipai-list .variant .tp { margin: 0; font-size: 13.5px; }
+  .filters { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
+  .filters button { padding: 6px 14px; border-radius: 18px; border: 1px solid #e0dad2; background: #fff; font-size: 13px; color: #6b6360; cursor: pointer; font-family: inherit; }
+  .filters button.active { background: #557799; border-color: #557799; color: #fff; }
+  .filters button:hover { border-color: #557799; }
+  .more-btn { display: block; margin: 14px auto; padding: 8px 22px; border-radius: 9px; border: 1px solid #e0dad2; background: #fff; font-size: 13.5px; color: #6b6360; cursor: pointer; font-family: inherit; }
+  .more-btn:hover { border-color: #557799; color: #557799; }
+  .empty { color: #a09890; font-size: 14px; text-align: center; padding: 30px 0; }
+  footer { border-top: 1px solid #e8e4e0; margin-top: 60px; padding: 20px; text-align: center; font-size: 12.5px; color: #b9b0a6; }
+  footer a { color: #8a8178; }
+</style>
+</head>
+<body>
+<header class="topbar">
+  <div class="topbar-inner">
+    <a class="brand" href="/">方寸</a>
+    <nav class="tabs"><a class="tab" href="/ref/index.html">韵书总览</a><a class="tab" href="/ref/cipai.html">词谱格律</a><a class="tab" href="/ref/shi.html">诗格速查</a><a class="tab active" href="/ref/tutorial.html">教程</a></nav>
+    <a class="back" href="/">← 返回创作</a>
+  </div>
+</header>
+<main class="container">
+<h1>格律入门教程</h1>
+<p class="subtitle">从零开始学会写格律诗与填词 · 配合方寸实时校验练习</p>
+<div class="toc"><h2>目录</h2><ol><li><a href="#pingze">什么是平仄？四声与平仄的关系</a></li><li><a href="#lvshi">律诗格律入门：平仄、粘对、押韵、对仗</a></li><li><a href="#cipai">词牌怎么填：以《浣溪沙》为例</a></li><li><a href="#yunshu">平水韵 vs 中华通韵 vs 词林正韵：区别与选择</a></li><li><a href="#diangu">典故入诗：用方寸检索典故</a></li></ol></div>
+<article class="article" id="pingze"><h2>什么是平仄？四声与平仄的关系</h2><p class="a-meta">入门第一课 · 5 分钟</p>
+<p>古汉语有<b>四声</b>：<b>平、上、去、入</b>。格律诗中把它们二分：平声字为「平」，上声、去声、入声字为「仄」。</p>
+<p>现代普通话的四声（阴平、阳平、上声、去声）与古四声并不一一对应，最大的差异是<b>入声</b>：如「白、石、国、一、独」在古音里都是入声字，按格律算<b>仄声</b>，普通话里却读成了阴平/阳平。这正是初学者用普通话语感判断平仄最容易出错的地方。</p>
+<p>在<b>方寸</b>中：输入诗句即实时逐字校验平仄，不合处会标出；点击任意字可查看它在当前韵书下的声调归属（平 / 仄 / 中）。词谱中常见的「中」表示该字<b>可平可仄</b>。</p>
+<div class="ex">例：王之涣《登鹳雀楼》首句<br>白（仄）日（仄）依（平）山（平）尽（仄） → <b>仄仄平平仄</b><br>其中「白」「日」都是古入声字，普通话读平声，格律上仍算仄。</div>
+<p>掌握平仄后，可到「诗格速查」页看八种基本格式，或直接在方寸中新建画板，边写边校验。</p>
+<a class="cta" href="/?ciyun=1&genre=Shi&rule=%E4%BA%94%E7%BB%9D%E4%BB%84%E8%B5%B7&chars=20&title=%E4%BA%94%E7%BB%9D%E8%AF%95%E5%86%99">在方寸中试写一首五绝 →</a></article><article class="article" id="lvshi"><h2>律诗格律入门：平仄、粘对、押韵、对仗</h2><p class="a-meta">律诗 / 绝句 · 10 分钟</p>
+<p>近体诗分<b>绝句</b>（四句）与<b>律诗</b>（八句），每句字数五言或七言：五绝 20 字、七绝 28 字、五律 40 字、七律 56 字。其格律可概括为四件事：<b>平仄、粘对、押韵、对仗</b>。</p>
+<h3>平仄</h3>
+<p>一句之内平仄交替（如「仄仄平平仄」），一联之内两句的平仄<b>相对</b>（相反），联与联之间相<b>粘</b>（第二句与第三句前两字平仄相同）。由此推演出八种基本格式，见「诗格速查」页。</p>
+<h3>押韵</h3>
+<p>近体诗押<b>平声韵</b>（平水韵），韵脚在<b>偶数句</b>（二、四、六、八句）；首句可押可不押，押则为「首句入韵」变体。一韵到底，不换韵。</p>
+<h3>对仗</h3>
+<p>律诗的<b>颔联</b>（三、四句）与<b>颈联</b>（五、六句）必须对仗：词性相对、结构相同。绝句不要求对仗。</p>
+<div class="ex">七律仄起首句入韵，前两句示例：<br>〔仄仄平平仄仄平〕 首句入韵<br>〔平平仄仄仄平平〕 与上句相对<br>全 56 字格律模板见「诗格速查」页。</div>
+<p>在方寸中新建画板时选好格式，画布会自动标出每位的平仄要求与韵脚位置，逐字填写即实时校验，非常适合练习格律。</p>
+<a class="cta" href="/?ciyun=1&genre=Shi&rule=%E4%B8%83%E5%BE%8B%E4%BB%84%E8%B5%B7%E9%A6%96%E5%8F%A5%E5%85%A5%E9%9F%B5&chars=56&title=%E4%B8%83%E5%BE%8B%E8%AF%95%E5%86%99">在方寸中试写一首七律 →</a></article><article class="article" id="cipai"><h2>词牌怎么填：以《浣溪沙》为例</h2><p class="a-meta">填词入门 · 10 分钟</p>
+<p>词牌是词的曲调名。每个词牌都规定了<b>字数、句数、每句字数、平仄与韵脚位置</b>（合称"句式"）；同一词牌常有钦谱、龙谱等多个"格"（变体）。填词即按句式逐字填写，韵脚字须同韵部（填词用<b>词林正韵</b>）。</p>
+<p>以《浣溪沙》钦谱格一为例：<b>42 字，6 句</b>（每句 7 字，上片 3 句、下片 3 句），押平声韵，韵脚在第 1、2、3、5、6 句末（第 4 句不押）：</p>
+<div class="ex">上片：中仄中平中仄平（韵），中平中仄仄平平（韵），中平中仄仄平平（韵）<br>下片：中仄中平中仄平，中平中仄仄平平（韵），中平中仄仄平平（韵）</div>
+<p>填词步骤：① 选词牌 → ② 看句式逐字填写 → ③ 韵脚字在词林正韵中查同韵部 → ④ 整体校验平仄与押韵。常见入韵字可直接在方寸的韵部面板中查找。</p>
+<a class="cta" href="/?ciyun=1&genre=Ci&rule=%E6%B5%A3%E6%BA%AA%E6%B2%99_%E9%92%A6%E8%B0%B1_%E6%A0%BC%E4%B8%80&chars=42&title=%E6%B5%A3%E6%BA%AA%E6%B2%99%E8%AF%95%E5%A1%AB">在方寸中试填《浣溪沙》 →</a></article><article class="article" id="yunshu"><h2>平水韵 vs 中华通韵 vs 词林正韵：区别与选择</h2><p class="a-meta">韵书入门 · 6 分钟</p>
+<p>方寸内置四部韵书，适用场景不同：</p>
+<ul>
+<li><b>平水韵</b>（106 韵）：明清以来近体诗押韵的通行标准，保留入声。写律诗、绝句默认用它。</li>
+<li><b>词林正韵</b>（19 部）：清·戈载编，填词专用；特点是平、上、去三声可通押，入声独立成部。填词默认用它。</li>
+<li><b>中华通韵</b>（16 韵）：按现代普通话归韵，不分入声，适合现代语感与自由诗；方寸中自由诗默认用它。</li>
+<li><b>上古韵</b>（23 部）：依据先秦音系归纳（《诗经》《楚辞》用韵），适合拟古体与仿先秦之作。</li>
+</ul>
+<h3>怎么选</h3>
+<p>写近体诗 → 平水韵；填词 → 词林正韵；现代口语 / 自由诗 → 中华通韵；拟先秦 → 上古韵。在方寸右上角设置中可随时切换韵书，同一画板可改。四部韵书的完整韵部与韵字见「韵书总览」。</p>
+<p>提示：同一字在不同韵书中的归属可能不同（尤其入声字与古今音变字），切换韵书后校验结果会相应变化，这是正常现象。</p>
+<a class="cta" href="/ref/index.html">查看四部韵书总览 →</a></article><article class="article" id="diangu"><h2>典故入诗：用方寸检索典故</h2><p class="a-meta">进阶技巧 · 5 分钟</p>
+<p>用典能让诗句有纵深，但须准确、贴切、不堆砌。典出何处、原意如何，写之前最好先查证。</p>
+<p>在<b>方寸</b>的字典区输入关键词（支持多字），切换到「<b>典故</b>」页，即可看到相关典故条目与出处；点击条目可查看典形词、释义与相关条目，点击典形词可快速入诗。</p>
+<h3>使用技巧</h3>
+<ul>
+<li>先想<b>意象</b>再检索：如写归隐，搜「莼鲈」；写壮志难酬，搜「冯唐」「易老」。</li>
+<li>化用其语，不必整句照搬；用典后检查平仄是否合律。</li>
+<li>注意典故的<b>时代感</b>与读者接受度，冷僻典故慎用。</li>
+</ul>
+<div class="ex">例：想表达"思念家乡美食" → 检索「莼鲈」→ 得"莼鲈之思"典（晋·张翰见秋风起而思吴中莼羹鲈脍，遂辞官归乡）→ 化用为「秋风忽动莼鲈思」。</div>
+<p>典故检索与词首/词末联想、对语同位等功能共同构成方寸的"推敲"体系，创作时随时点字查询。</p></article>
+</main>
+<footer>方寸 · 诗词创作画布 — <a href="/">写诗</a> · <a href="/ref/poetry-tools.html">工具对比</a> · <a href="/docs">API 文档</a></footer>
+</body>
+</html>

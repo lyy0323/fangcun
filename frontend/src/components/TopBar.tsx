@@ -1034,6 +1034,15 @@ export function TopBar() {
 
       <div className="flex-1" />
 
+      {/* 格律参考（韵书/词谱/诗格/教程 静态页） */}
+      <button
+        className="w-8 h-8 rounded-lg border border-[var(--border)] flex items-center justify-center text-[var(--text-muted)] hover:bg-[var(--accent-light)] hover:text-[var(--accent)] transition-colors"
+        onClick={() => { window.location.href = '/ref/index.html'; track('open_ref'); }}
+        title="格律参考"
+      >
+        <BookOpen size={15} />
+      </button>
+
       {/* 设置 */}
       <button
         className="w-8 h-8 rounded-lg border border-[var(--border)] flex items-center justify-center text-[var(--text-muted)] hover:bg-[var(--accent-light)] hover:text-[var(--accent)] transition-colors"

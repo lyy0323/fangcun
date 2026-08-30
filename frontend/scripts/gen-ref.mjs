@@ -1,0 +1,648 @@
+#!/usr/bin/env node
+/**
+ * gen-ref.mjs — 生成 /ref/ 静态参考页（韵书总览 · 词谱格律 · 诗格速查 · 教程）
+ *
+ * 输出: frontend/public/ref/**   （vite dev 直接服务；build 时随 public 拷入 dist）
+ * 数据源: static/config/{rhyme_books,ci_rules,shi_rules}.json
+ *
+ * 页面清单：
+ *   index.html            韵书总览 · 平水韵（默认）
+ *   cilinzhengyun.html    韵书总览 · 词林正韵
+ *   shangguyun.html       韵书总览 · 上古韵
+ *   zhonghua.html         韵书总览 · 中华通韵
+ *   cipai.html           词谱格律（列表 + JS 搜索/展开）＋ cipai-data.js
+ *   shi.html             诗格速查（五七言 × 律绝 × 平仄起 8 格式）
+ *   tutorial.html        格律入门教程（5 篇）
+ */
+import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const ROOT = join(__dirname, '..', '..');
+const CFG = join(ROOT, 'static', 'config');
+const OUT = join(ROOT, 'frontend', 'public', 'ref');
+
+const rhymeBooks = JSON.parse(readFileSync(join(CFG, 'rhyme_books.json'), 'utf8'));
+const ciRules = JSON.parse(readFileSync(join(CFG, 'ci_rules.json'), 'utf8'));
+const shiRules = JSON.parse(readFileSync(join(CFG, 'shi_rules.json'), 'utf8'));
+
+/* ---------------------------------- 工具 ---------------------------------- */
+
+const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+
+const TONE_CHAR = { P: '平', Z: '仄', A: '中' };
+
+/** 从押韵规则 AST 收集韵脚位置（0 基字符下标） */
+function collectRhymePositions(node, out = new Set()) {
+  if (!node) return out;
+  if (node.type === 'SAME_CATEGORY') (node.positions || []).forEach((p) => out.add(p));
+  else if (node.rules) node.rules.forEach((r) => collectRhymePositions(r, out));
+  return out;
+}
+
+/** 词牌平仄渲染：扁平 {tone,comment} 数组，句/读分隔 + 韵脚标红 */
+function renderCiPattern(tp, rhymes) {
+  let out = '';
+  let idx = 0;
+  for (const t of tp) {
+    if (Array.isArray(t)) {
+      out += `<span class="alt">(${t.map((opt) => opt.map((x) => TONE_CHAR[x.tone] || '·').join('')).join('|')})</span>`;
+      idx += t[0].length;
+      continue;
+    }
+    const ch = TONE_CHAR[t.tone] || '·';
+    out += rhymes.has(idx) ? `<b class="yun">${ch}</b>` : `<span>${ch}</span>`;
+    if (t.comment === '句') out += '<span class="punc">。</span>';
+    else if (t.comment === '读') out += '<span class="punc">、</span>';
+    idx++;
+  }
+  return out;
+}
+
+/** 诗格平仄渲染：含变体块（可平可仄组），按行断句 */
+function renderShiPattern(tp, rhymes, lineLen) {
+  let out = '';
+  let idx = 0;
+  let line = 0;
+  const flushBreak = () => {
+    if (lineLen > 0 && line % lineLen === 0) out += '<span class="punc">。</span>';
+  };
+  for (const t of tp) {
+    if (Array.isArray(t)) {
+      const len = t[0].length;
+      const lastIsYun = rhymes.has(idx + len - 1);
+      out += `<span class="alt${lastIsYun ? ' yun' : ''}">(${t.map((opt) => opt.map((x) => TONE_CHAR[x.tone] || '·').join('')).join('｜')})</span>`;
+      idx += len;
+      line += len;
+      flushBreak();
+      continue;
+    }
+    const ch = TONE_CHAR[t.tone] || '·';
+    out += rhymes.has(idx) ? `<b class="yun">${ch}</b>` : `<span>${ch}</span>`;
+    idx++;
+    line++;
+    flushBreak();
+  }
+  return out;
+}
+
+/** 词牌名简写：去掉 "词牌_谱_格" 前缀 */
+function shortName(full, cipai) {
+  if (full.startsWith(cipai + '_')) return full.slice(cipai.length + 1);
+  return full;
+}
+
+const ciyun = (genre, rule, chars, title) =>
+  `/?ciyun=1&genre=${genre}&rule=${encodeURIComponent(rule)}&chars=${chars}&title=${encodeURIComponent(title)}`;
+
+/* ------------------------------- 页面骨架 -------------------------------- */
+
+const TABS = [
+  { href: '/ref/index.html', label: '韵书总览' },
+  { href: '/ref/cipai.html', label: '词谱格律' },
+  { href: '/ref/shi.html', label: '诗格速查' },
+  { href: '/ref/tutorial.html', label: '教程' },
+];
+
+const BOOK_NAV = [
+  { href: '/ref/index.html', key: 'Pingshuiyun', label: '平水韵', desc: '106 韵' },
+  { href: '/ref/cilinzhengyun.html', key: 'Cilinzhengyun', label: '词林正韵', desc: '19 部' },
+  { href: '/ref/shangguyun.html', key: 'Shangguyun', label: '上古韵', desc: '23 部' },
+  { href: '/ref/zhonghua.html', key: 'Zhonghua_Tongyun', label: '中华通韵', desc: '16 韵' },
+];
+
+const SHARED_CSS = `
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Noto Serif SC", "Songti SC", system-ui, serif; background: #FAF8F5; color: #5C534A; line-height: 1.8; font-size: 15px; }
+  a { color: #557799; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  .topbar { position: sticky; top: 0; z-index: 20; background: #FAF8F5; border-bottom: 1px solid #e8e4e0; }
+  .topbar-inner { max-width: 880px; margin: 0 auto; padding: 10px 20px; display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+  .brand { font-size: 17px; font-weight: 700; color: #5C534A; letter-spacing: 2px; }
+  .brand:hover { text-decoration: none; }
+  .tabs { display: flex; gap: 4px; flex-wrap: wrap; }
+  .tab { padding: 5px 12px; border-radius: 8px; font-size: 14px; color: #8a8178; }
+  .tab:hover { background: #f0ece6; text-decoration: none; color: #5C534A; }
+  .tab.active { background: #557799; color: #fff; }
+  .back { margin-left: auto; font-size: 13px; color: #8a8178; white-space: nowrap; }
+  .back:hover { color: #557799; }
+  .container { max-width: 880px; margin: 0 auto; padding: 36px 20px 80px; }
+  h1 { font-size: 26px; font-weight: 700; margin-bottom: 6px; line-height: 1.4; }
+  .subtitle { font-size: 14px; color: #a09890; margin-bottom: 8px; }
+  .intro { font-size: 14.5px; color: #6b6360; margin-bottom: 28px; }
+  h2 { font-size: 20px; font-weight: 600; margin: 40px 0 14px; padding-bottom: 6px; border-bottom: 2px solid #e8e4e0; }
+  h3 { font-size: 16.5px; font-weight: 600; margin: 24px 0 10px; }
+  p { margin: 10px 0; }
+  .book-nav { display: flex; gap: 8px; flex-wrap: wrap; margin: 18px 0 26px; }
+  .book-nav a { padding: 7px 14px; border-radius: 9px; border: 1px solid #e0dad2; font-size: 14px; color: #6b6360; background: #fff; }
+  .book-nav a.active { background: #557799; border-color: #557799; color: #fff; }
+  .book-nav a:hover { text-decoration: none; border-color: #557799; }
+  .tone-group { margin: 6px 0 22px; }
+  .tone-group-title { font-size: 15px; font-weight: 600; color: #7a7066; margin: 22px 0 8px; display: flex; align-items: baseline; gap: 8px; }
+  .tone-group-title .cnt { font-size: 12px; color: #a09890; font-weight: 400; }
+  details.cat { background: #fff; border: 1px solid #ece7e1; border-radius: 10px; margin-bottom: 8px; overflow: hidden; }
+  details.cat > summary { cursor: pointer; padding: 9px 14px; font-size: 14.5px; display: flex; align-items: baseline; gap: 10px; list-style: none; user-select: none; }
+  details.cat > summary::-webkit-details-marker { display: none; }
+  details.cat > summary::before { content: "▸"; color: #b9b0a6; font-size: 12px; transition: transform .15s; }
+  details.cat[open] > summary::before { transform: rotate(90deg); }
+  details.cat > summary:hover { background: #faf7f3; }
+  details.cat > summary .name { font-weight: 600; }
+  details.cat > summary .cnt { font-size: 12px; color: #a09890; margin-left: auto; }
+  .chars { padding: 4px 16px 14px; display: flex; flex-wrap: wrap; gap: 2px 10px; }
+  .chars span { font-size: 15px; color: #4c443c; letter-spacing: 1px; }
+  .chars .dim { color: #c4bcb2; }
+  .search { width: 100%; max-width: 380px; padding: 9px 14px; border-radius: 9px; border: 1px solid #e0dad2; font-size: 14px; background: #fff; color: #5C534A; margin-bottom: 18px; }
+  .search:focus { outline: none; border-color: #557799; }
+  .legend { font-size: 12.5px; color: #8a8178; margin: 4px 0 16px; display: flex; gap: 14px; flex-wrap: wrap; }
+  .legend b { font-weight: 600; }
+  .legend .yun { color: #b3543c; }
+  .tp { font-size: 15px; letter-spacing: 1px; color: #4c443c; background: #fff; border: 1px solid #ece7e1; border-radius: 10px; padding: 12px 16px; margin: 8px 0 14px; line-height: 2; }
+  .tp b.yun { color: #b3543c; font-weight: 700; }
+  .tp .punc { color: #c4bcb2; }
+  .tp .alt { color: #557799; }
+  .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(380px, 1fr)); gap: 16px; }
+  @media (max-width: 640px) { .cards { grid-template-columns: 1fr; } }
+  .card { background: #fff; border: 1px solid #ece7e1; border-radius: 12px; padding: 18px 20px; }
+  .card h3 { margin: 0 0 6px; font-size: 16px; }
+  .card .meta { font-size: 12.5px; color: #a09890; margin-bottom: 10px; }
+  .card details { margin-top: 8px; }
+  .card details > summary { cursor: pointer; font-size: 13.5px; color: #557799; }
+  .card .tp { margin: 6px 0 0; font-size: 14px; }
+  .article { background: #fff; border: 1px solid #ece7e1; border-radius: 12px; padding: 26px 28px; margin-bottom: 22px; }
+  .article h2 { border: none; margin: 0 0 4px; padding: 0; font-size: 19px; }
+  .article .a-meta { font-size: 12.5px; color: #a09890; margin-bottom: 12px; }
+  .article ul, .article ol { margin: 8px 0 8px 22px; }
+  .article li { margin: 4px 0; }
+  .article code { background: #f4f0ea; border-radius: 5px; padding: 1px 6px; font-size: 13.5px; color: #6d5648; }
+  .article .ex { background: #faf7f3; border-left: 3px solid #d8c9b8; border-radius: 0 8px 8px 0; padding: 10px 14px; margin: 12px 0; font-size: 14px; }
+  .article .ex .yz { color: #b3543c; font-weight: 700; }
+  .cta { display: inline-block; margin-top: 10px; padding: 8px 18px; border-radius: 9px; background: #557799; color: #fff; font-size: 14px; }
+  .cta:hover { background: #46688a; text-decoration: none; }
+  .toc { background: #fff; border: 1px solid #ece7e1; border-radius: 12px; padding: 16px 22px; margin-bottom: 26px; }
+  .toc h2 { border: none; margin: 0 0 8px; padding: 0; font-size: 15px; color: #8a8178; }
+  .toc ol { margin-left: 20px; }
+  .toc li { margin: 3px 0; font-size: 14.5px; }
+  .cipai-list .item { background: #fff; border: 1px solid #ece7e1; border-radius: 10px; margin-bottom: 8px; }
+  .cipai-list .item > button { width: 100%; text-align: left; padding: 10px 16px; border: none; background: none; cursor: pointer; font-size: 14.5px; display: flex; align-items: baseline; gap: 12px; color: #4c443c; font-family: inherit; }
+  .cipai-list .item > button:hover { background: #faf7f3; }
+  .cipai-list .item > button .cname { font-weight: 600; }
+  .cipai-list .item > button .cinfo { font-size: 12px; color: #a09890; }
+  .cipai-list .item .detail { padding: 0 16px 14px; border-top: 1px dashed #ece7e1; }
+  .cipai-list .variant { margin: 10px 0; }
+  .cipai-list .variant .vname { font-size: 13px; color: #8a8178; margin-bottom: 4px; }
+  .cipai-list .variant .tp { margin: 0; font-size: 13.5px; }
+  .filters { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
+  .filters button { padding: 6px 14px; border-radius: 18px; border: 1px solid #e0dad2; background: #fff; font-size: 13px; color: #6b6360; cursor: pointer; font-family: inherit; }
+  .filters button.active { background: #557799; border-color: #557799; color: #fff; }
+  .filters button:hover { border-color: #557799; }
+  .more-btn { display: block; margin: 14px auto; padding: 8px 22px; border-radius: 9px; border: 1px solid #e0dad2; background: #fff; font-size: 13.5px; color: #6b6360; cursor: pointer; font-family: inherit; }
+  .more-btn:hover { border-color: #557799; color: #557799; }
+  .empty { color: #a09890; font-size: 14px; text-align: center; padding: 30px 0; }
+  footer { border-top: 1px solid #e8e4e0; margin-top: 60px; padding: 20px; text-align: center; font-size: 12.5px; color: #b9b0a6; }
+  footer a { color: #8a8178; }
+`;
+
+function page({ title, desc, activeTab, content, extraHead = '' }) {
+  const tabsHtml = TABS.map((t) => `<a class="tab${t.href === activeTab ? ' active' : ''}" href="${t.href}">${t.label}</a>`).join('');
+  return `<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>${esc(title)} | 方寸</title>
+<meta name="description" content="${esc(desc)}" />
+<link rel="icon" type="image/svg+xml" href="/logo.svg" />
+${extraHead}
+<style>${SHARED_CSS}</style>
+</head>
+<body>
+<header class="topbar">
+  <div class="topbar-inner">
+    <a class="brand" href="/">方寸</a>
+    <nav class="tabs">${tabsHtml}</nav>
+    <a class="back" href="/">← 返回创作</a>
+  </div>
+</header>
+<main class="container">
+${content}
+</main>
+<footer>方寸 · 诗词创作画布 — <a href="/">写诗</a> · <a href="/ref/poetry-tools.html">工具对比</a> · <a href="/docs">API 文档</a></footer>
+</body>
+</html>`;
+}
+
+/* ------------------------------- 韵书页面 -------------------------------- */
+
+const PINGSHUI_GROUPS = [
+  ['上平', ['一东','二冬','三江','四支','五微','六鱼','七虞','八齐','九佳','十灰','十一真','十二文','十三元','十四寒','十五删']],
+  ['下平', ['一先','二萧','三肴','四豪','五歌','六麻','七阳','八庚','九青','十蒸','十一尤','十二侵','十三覃','十四盐','十五咸']],
+  ['上声', ['一董','二肿','三讲','四纸','五尾','六语','七麌','八荠','九蟹','十贿','十一轸','十二吻','十三阮','十四旱','十五潸','十六铣','十七筱','十八巧','十九皓','二十哿','二十一马','二十二养','二十三梗','二十四迥','二十五有','二十六寝','二十七感','二十八俭','二十九豏']],
+  ['去声', ['一送','二宋','三绛','四寘','五未','六御','七遇','八霁','九泰','十卦','十一队','十二震','十三问','十四愿','十五翰','十六谏','十七霰','十八啸','十九效','二十号','二十一个','二十二祃','二十三漾','二十四敬','二十五径','二十六宥','二十七沁','二十八勘','二十九艳','三十陷']],
+  ['入声', ['一屋','二沃','三觉','四质','五物','六月','七曷','八黠','九屑','十药','十一陌','十二锡','十三职','十四缉','十五合','十六叶','十七洽']],
+];
+
+/** 词林/中华通韵排序：第N部 或 数字序号 + 平仄入 */
+function sortByName(names) {
+  const cnNum = { 一:1, 二:2, 三:3, 四:4, 五:5, 六:6, 七:7, 八:8, 九:9, 十:10, 十一:11, 十二:12, 十三:13, 十四:14, 十五:15, 十六:16, 十七:17, 十八:18, 十九:19, 二十:20 };
+  const toneRank = { 平: 0, 仄: 1, 入: 2 };
+  const numOf = (s) => {
+    if (!s) return 99;
+    if (/^\d+$/.test(s)) return parseInt(s, 10);
+    return cnNum[s] ?? 99;
+  };
+  return [...names].sort((a, b) => {
+    const ma = a.match(/(?:第)?(\d+|[一二三四五六七八九十]+)(?:部)?(?:_([平仄入]))?/);
+    const mb = b.match(/(?:第)?(\d+|[一二三四五六七八九十]+)(?:部)?(?:_([平仄入]))?/);
+    const na = numOf(ma?.[1]);
+    const nb = numOf(mb?.[1]);
+    if (na !== nb) return na - nb;
+    return (toneRank[ma?.[2]] ?? 0) - (toneRank[mb?.[2]] ?? 0);
+  });
+}
+
+/** 渲染一个韵部的 details 块 */
+function catDetails(cat) {
+  const chars = (cat.characters || []).map((c) => `<span>${esc(c)}</span>`).join('');
+  return `<details class="cat"><summary><span class="name">${esc(cat.name)}</span><span class="cnt">${cat.characters?.length ?? 0} 字</span></summary><div class="chars">${chars || '<span class="dim">（无数据）</span>'}</div></details>`;
+}
+
+function buildRhymePage(bookKey, { navLabel, seoTitle, seoDesc, intro, groups }) {
+  const book = rhymeBooks[bookKey];
+  const cats = book.categories;
+  const nav = BOOK_NAV.map((b) => `<a class="${b.key === bookKey ? 'active' : ''}" href="${b.href}">${b.label} ${b.desc}</a>`).join('');
+  const filterJs = `
+  <script>
+    (function () {
+      var input = document.getElementById('cat-search');
+      if (!input) return;
+      input.addEventListener('input', function () {
+        var q = input.value.trim();
+        document.querySelectorAll('details.cat').forEach(function (d) {
+          var name = d.getAttribute('data-name');
+          var chars = d.getAttribute('data-chars') || '';
+          d.style.display = (!q || name.indexOf(q) !== -1 || chars.indexOf(q) !== -1) ? '' : 'none';
+        });
+      });
+    })();
+  </script>`;
+  let body = `<h1>${seoTitle}</h1>
+<p class="subtitle">${seoDesc}</p>
+<div class="book-nav">${nav}</div>
+<p class="intro">${intro}</p>
+<input id="cat-search" class="search" type="search" placeholder="搜索韵部名或韵字…" />
+<div class="legend"><span><b>${groups.length} 组</b> · 共 ${Object.keys(cats).length} 韵 · 点击展开查看韵字</span></div>`;
+  for (const [gName, names] of groups) {
+    let html = '';
+    for (const n of names) {
+      const cat = cats[n];
+      if (!cat) continue;
+      html += `<div data-name="${esc(cat.name)}" data-chars="${esc((cat.characters || []).join(''))}">${catDetails(cat)}</div>`;
+    }
+    if (html) body += `<div class="tone-group"><div class="tone-group-title">${gName}<span class="cnt">${names.length} 韵</span></div>${html}</div>`;
+  }
+  body += filterJs;
+  return page({ title: seoTitle, desc: seoDesc, activeTab: '/ref/index.html', content: body });
+}
+
+function buildPingshuiPage() {
+  const book = rhymeBooks.Pingshuiyun;
+  const cats = book.categories;
+  const groups = PINGSHUI_GROUPS.map(([g, names]) => [g, names]);
+  return buildRhymePage('Pingshuiyun', {
+    navLabel: '平水韵',
+    seoTitle: '平水韵 106 韵部总览 — 上平·下平·上声·去声·入声韵字查询',
+    seoDesc: '平水韵 106 韵部完整对照：上平 15 韵、下平 15 韵、上声 29 韵、去声 30 韵、入声 17 韵。查询各韵部韵字，写律诗绝句押韵必备。',
+    intro: `平水韵共 <b>106 韵</b>：平声 30（上平 15、下平 15）、上声 29、去声 30、入声 17。近体诗（律诗、绝句）押韵以平水韵为准，其中仄声韵不用于近体诗押韵，但入声字归属对判断平仄至关重要。韵字按使用频率排序。`,
+    groups,
+  });
+}
+
+function buildCilinPage() {
+  const cats = rhymeBooks.Cilinzhengyun.categories;
+  const names = sortByName(Object.keys(cats));
+  const groups = [['词林正韵 19 部（平·仄·入分部）', names]];
+  return buildRhymePage('Cilinzhengyun', {
+    navLabel: '词林正韵',
+    seoTitle: '词林正韵 19 部韵字总览 — 填词押韵查询',
+    seoDesc: '词林正韵 19 部完整对照，含平声、仄声、入声分部韵字。填词押韵标准韵书，支持平上去通押、入声独立。',
+    intro: `词林正韵共 <b>19 部</b>（清·戈载编），是填词的通行押韵标准：<b>平、上、去三声可通押</b>，入声字独立成部（第 18、19 部）。共分 ${names.length} 组（平/仄/入分部）。韵字按使用频率排序。`,
+    groups,
+  });
+}
+
+function buildShangguyunPage() {
+  const cats = rhymeBooks.Shangguyun.categories;
+  const names = Object.keys(cats);
+  const groups = [['上古韵 23 部（先秦音系）', names]];
+  return buildRhymePage('Shangguyun', {
+    navLabel: '上古韵',
+    seoTitle: '上古韵 23 韵部总览 — 《诗经》《楚辞》押韵查询',
+    seoDesc: '上古音系 23 韵部完整对照（鱼铎、之职、幽觉、脂质至等），依据先秦音系归纳，《诗经》《楚辞》用韵查询，适合拟古体与仿先秦之作。',
+    intro: `上古韵依据先秦音系归纳为 <b>23 部</b>（如鱼铎、之职、幽觉、耕、冬、侵等），覆盖《诗经》《楚辞》用韵。上古声调与中古不同，押韵按韵部判断，适合拟古体与仿先秦之作。韵字按使用频率排序。`,
+    groups,
+  });
+}
+
+function buildZhonghuaPage() {
+  const cats = rhymeBooks.Zhonghua_Tongyun.categories;
+  const names = sortByName(Object.keys(cats));
+  const groups = [['中华通韵 16 韵（平·仄分部）', names]];
+  return buildRhymePage('Zhonghua_Tongyun', {
+    navLabel: '中华通韵',
+    seoTitle: '中华通韵 16 韵部总览 — 普通话押韵查询',
+    seoDesc: '中华通韵 16 韵完整对照（一啊、二喔、三鹅…十六儿），按现代普通话归韵，无入声，适合现代语感创作与自由诗押韵。',
+    intro: `中华通韵共 <b>16 韵</b>（一啊、二喔、三鹅、四衣…十六儿），按现代普通话归韵，<b>不分入声</b>，适合现代语感创作；方寸中自由诗默认使用中华通韵。韵字按使用频率排序。`,
+    groups,
+  });
+}
+
+/* ------------------------------- 词谱页面 -------------------------------- */
+
+const FAMOUS_CIPAI = ['忆江南','如梦令','长相思','浣溪沙','菩萨蛮','卜算子','采桑子','清平乐','西江月','浪淘沙','鹧鸪天','虞美人','蝶恋花','临江仙','江城子','念奴娇','满江红','水调歌头','沁园春','青玉案','声声慢','一剪梅','定风波','南歌子','渔歌子','捣练子','醉花阴','鹊桥仙','踏莎行','木兰花','苏幕遮','阮郎归','天仙子','千秋岁','八声甘州','水龙吟','摸鱼儿','永遇乐','贺新郎','桂枝香','满庭芳','扬州慢','雨霖铃','兰陵王','暗香','疏影','燕山亭','多丽','望江南'];
+
+/** 词牌平仄压成紧凑串（P/Z/A + 。句 + 、读），供 cipai-data.js 使用 */
+function compactCiTone(rule) {
+  let tp = '';
+  for (const t of rule.tone_pattern || []) {
+    if (Array.isArray(t)) { tp += '(' + t.map((o) => o.map((x) => x.tone).join('')).join('|') + ')'; continue; }
+    tp += t.tone || '';
+    if (t.comment === '句') tp += '。';
+    else if (t.comment === '读') tp += '、';
+  }
+  return tp;
+}
+
+function ciVariantHtml(rule) {
+  const rhymes = collectRhymePositions(rule.rhyme_rule);
+  const tp = renderCiPattern(rule.tone_pattern || [], rhymes);
+  const rk = rule.rhyme_rule?.type;
+  const rhymeDesc = rk === 'AND' ? '复合押韵（多组）' : rk === 'OR' ? '多式押韵' : '同部押韵';
+  return `<div class="variant">
+    <div class="vname">${esc(shortName(rule.name, rule.cipai))} · ${rule.char_count} 字 · ${rhymeDesc} · 韵脚 ${rhymes.size} 处</div>
+    <div class="tp">${tp}</div>
+  </div>`;
+}
+
+function buildCipaiPage() {
+  // 常用词牌（服务端渲染，利于 SEO）
+  const famous = FAMOUS_CIPAI
+    .map((name) => ciRules.find((r) => r.cipai === name))
+    .filter(Boolean)
+    .map((r) => `<details class="cat" open><summary><span class="name">${esc(r.cipai)}</span><span class="cnt">${r.char_count} 字 · ${shortName(r.name, r.cipai)}</span></summary><div class="detail" style="padding:0 16px 12px">${ciVariantHtml(r)}</div></details>`)
+    .join('');
+
+  const appJs = `
+  <script>
+  (function () {
+    var data = window.CIPAI_DATA || [];
+    // 按词牌聚合
+    var groups = new Map();
+    data.forEach(function (r) {
+      var g = groups.get(r.c) || { c: r.c, v: [], min: Infinity, max: 0 };
+      g.v.push(r);
+      g.min = Math.min(g.min, r.ch); g.max = Math.max(g.max, r.ch);
+      groups.set(r.c, g);
+    });
+    var all = Array.from(groups.values()).sort(function (a, b) { return (a.min - b.min) || a.c.localeCompare(b.c, 'zh'); });
+    var PAGE = 100, shown = 0, filtered = all, totalEl = document.getElementById('c-total');
+    var listEl = document.getElementById('c-list'), emptyEl = document.getElementById('c-empty');
+    function TONE(t) { return t === 'P' ? '平' : t === 'Z' ? '仄' : t === 'A' ? '中' : '·'; }
+    function renderVariant(r) {
+      var out = '', idx = 0;
+      for (var i = 0; i < r.tp.length; i++) {
+        var ch = r.tp[i];
+        if (ch === '。' || ch === '、') { out += '<span class="punc">' + ch + '</span>'; continue; }
+        if (ch === '(') {
+          var j = r.tp.indexOf(')', i);
+          var alts = r.tp.slice(i + 1, j).split('|').map(function (s) { return s.split('').map(TONE).join(''); }).join('｜');
+          out += '<span class="alt">(' + alts + ')</span>';
+          i = j; continue;
+        }
+        var yun = r.rp.indexOf(idx) !== -1;
+        out += yun ? '<b class="yun">' + TONE(ch) + '</b>' : '<span>' + TONE(ch) + '</span>';
+        idx++;
+      }
+      var rk = r.rk === 'AND' ? '复合押韵' : r.rk === 'OR' ? '多式押韵' : '同部押韵';
+      return '<div class="variant"><div class="vname">' + r.n.replace(r.c + '_', '') + ' · ' + r.ch + ' 字 · ' + rk + '</div><div class="tp">' + out + '</div></div>';
+    }
+    function render() {
+      listEl.innerHTML = '';
+      var slice = filtered.slice(0, shown);
+      slice.forEach(function (g) {
+        var li = document.createElement('div');
+        li.className = 'item';
+        var btn = document.createElement('button');
+        var first = g.v[0];
+        btn.innerHTML = '<span class="cname">' + g.c + '</span><span class="cinfo">' + g.min + '–' + g.max + ' 字 · ' + g.v.length + ' 格</span>';
+        var detail = document.createElement('div');
+        detail.className = 'detail';
+        detail.style.display = 'none';
+        detail.innerHTML = g.v.map(renderVariant).join('');
+        btn.addEventListener('click', function () { detail.style.display = detail.style.display === 'none' ? '' : 'none'; });
+        li.appendChild(btn); li.appendChild(detail);
+        listEl.appendChild(li);
+      });
+      document.getElementById('c-more').style.display = shown < filtered.length ? '' : 'none';
+      emptyEl.style.display = filtered.length ? 'none' : '';
+    }
+    var qEl = document.getElementById('c-search');
+    qEl.addEventListener('input', function () {
+      var q = qEl.value.trim();
+      filtered = q ? all.filter(function (g) {
+        if (g.c.indexOf(q) !== -1) return true;
+        return g.v.some(function (r) { return r.n.indexOf(q) !== -1; });
+      }) : all;
+      shown = PAGE; render();
+    });
+    document.querySelectorAll('.filters button').forEach(function (b) {
+      b.addEventListener('click', function () {
+        document.querySelectorAll('.filters button').forEach(function (x) { x.classList.remove('active'); });
+        b.classList.add('active');
+        var k = b.getAttribute('data-k');
+        filtered = k === 'all' ? all : all.filter(function (g) {
+          if (k === 's') return g.max <= 40;
+          if (k === 'm') return g.min >= 41 && g.max <= 90;
+          return g.min >= 91;
+        });
+        shown = PAGE; render();
+      });
+    });
+    document.getElementById('c-more').addEventListener('click', function () { shown += PAGE; render(); });
+    totalEl.textContent = all.length;
+    shown = PAGE; render();
+  })();
+  </script>`;
+
+  const content = `<h1>词谱格律对照</h1>
+<p class="subtitle">${ciRules.length} 个词牌变体（钦谱/龙谱等）· ${new Set(ciRules.map((r) => r.cipai)).size} 个词牌 · 可搜索、按字数筛选，点开查看平仄与韵脚</p>
+<p class="intro">每个词牌固定字数、句数、句式与平仄。同一词牌常有多种"格"（钦谱、龙谱等谱本差异）。平仄标记：<b style="color:#b3543c">红字为韵脚</b>；「中」表示该字可平可仄。</p>
+<h2 style="margin-top:8px">常用词牌速览</h2>
+${famous || '<p class="empty">暂无数据</p>'}
+<h2>全部词牌（<span id="c-total">…</span> 个）</h2>
+<input id="c-search" class="search" type="search" placeholder="搜索词牌名，如：浣溪沙 / 水调歌头…" />
+<div class="filters">
+  <button data-k="all" class="active">全部</button>
+  <button data-k="s">小令 ≤40 字</button>
+  <button data-k="m">中调 41–90 字</button>
+  <button data-k="l">长调 ≥91 字</button>
+</div>
+<div id="c-list" class="cipai-list"></div>
+<div id="c-empty" class="empty">未找到匹配的词牌</div>
+<button id="c-more" class="more-btn">显示更多</button>
+<script src="/ref/cipai-data.js"></script>
+${appJs}`;
+  return page({ title: '词谱格律对照 — 词牌平仄·句式·韵脚查询', desc: '词牌格律对照：1000+ 词牌（钦谱/龙谱），查字数、句式、平仄模板、韵脚位置。支持搜索与按字数筛选，在线填词必备。', activeTab: '/ref/cipai.html', content });
+}
+
+/* ------------------------------- 诗格页面 -------------------------------- */
+
+const SHI_LABEL = { Qilyu: '七律', Qijue: '七绝', Wulyu: '五律', Wujue: '五绝' };
+const SHI_LINES = { Qilyu: 8, Qijue: 4, Wulyu: 8, Wujue: 4 };
+
+function buildShiPage() {
+  // 按 格式×平仄起 分组：五绝平起 / 五绝仄起 / 五律平起 / 五律仄起 / 七绝平起 / 七绝仄起 / 七律平起 / 七律仄起
+  const formats = [];
+  for (const cipai of ['Wujue', 'Wulyu', 'Qijue', 'Qilyu']) {
+    for (const qi of ['平起', '仄起']) {
+      const rules = shiRules.filter((r) => r.cipai === cipai && r.name.includes(qi));
+      if (!rules.length) continue;
+      formats.push({ cipai, qi, rules });
+    }
+  }
+  const cards = formats.map((f) => {
+    const base = f.rules.find((r) => !r.name.includes('首句入韵')) || f.rules[0];
+    const ruYun = f.rules.find((r) => r.name.includes('首句入韵'));
+    const lineLen = Math.round((base.char_count || 0) / SHI_LINES[f.cipai]);
+    const render = (r) => {
+      const rhymes = collectRhymePositions(r.rhyme_rule);
+      const tp = renderShiPattern(r.tone_pattern || [], rhymes, lineLen);
+      const rk = r.rhyme_rule?.type;
+      const rhymeNote = rk === 'OR' ? '二、四、六、八句押韵，首句可入韵' : '二、四、六、八句押韵';
+      return `<div class="tp">${tp}</div><div style="font-size:12.5px;color:#a09890">${r.char_count} 字 · ${rhymeNote} · 韵脚 ${rhymes.size} 处（红字）</div>`;
+    };
+    const baseBlock = `<details open><summary>标准句式</summary>${render(base)}</details>`;
+    const ruBlock = ruYun ? `<details><summary>首句入韵变体</summary>${render(ruYun)}</details>` : '';
+    return `<div class="card">
+      <h3>${SHI_LABEL[f.cipai]} · ${f.qi}</h3>
+      <div class="meta">${base.char_count} 字 · ${SHI_LINES[f.cipai]} 句 · 每句 ${lineLen} 字 · 平水韵押平声韵</div>
+      ${baseBlock}
+      ${ruBlock}
+    </div>`;
+  }).join('');
+
+  const content = `<h1>诗格速查 — 五言七言律诗绝句平仄</h1>
+<p class="subtitle">五绝 20 字 · 七绝 28 字 · 五律 40 字 · 七律 56 字 · 共 8 种基本格式</p>
+<p class="intro">近体诗每句字数与句数固定，平仄遵循"一句之内交替、一联之内相对、联与联之间相粘"的规则。押平声韵（平水韵），二、四、六、八句押韵，首句可押可不押。<b style="color:#b3543c">红字为韵脚</b>；「中」表示可平可仄；括号内为可平可仄的句式变体。</p>
+<div class="cards">${cards}</div>`;
+  return page({ title: '诗格速查 — 五绝·七绝·五律·七律平仄格式', desc: '近体诗八种基本格式速查：五绝、七绝、五律、七律的平起/仄起句式与首句入韵变体，附平仄模板与韵脚位置。', activeTab: '/ref/shi.html', content });
+}
+
+/* ------------------------------- 教程页面 -------------------------------- */
+
+function buildTutorialPage() {
+  const articles = [
+    {
+      id: 'pingze',
+      title: '什么是平仄？四声与平仄的关系',
+      meta: '入门第一课 · 5 分钟',
+      body: `
+<p>古汉语有<b>四声</b>：<b>平、上、去、入</b>。格律诗中把它们二分：平声字为「平」，上声、去声、入声字为「仄」。</p>
+<p>现代普通话的四声（阴平、阳平、上声、去声）与古四声并不一一对应，最大的差异是<b>入声</b>：如「白、石、国、一、独」在古音里都是入声字，按格律算<b>仄声</b>，普通话里却读成了阴平/阳平。这正是初学者用普通话语感判断平仄最容易出错的地方。</p>
+<p>在<b>方寸</b>中：输入诗句即实时逐字校验平仄，不合处会标出；点击任意字可查看它在当前韵书下的声调归属（平 / 仄 / 中）。词谱中常见的「中」表示该字<b>可平可仄</b>。</p>
+<div class="ex">例：王之涣《登鹳雀楼》首句<br>白（仄）日（仄）依（平）山（平）尽（仄） → <b>仄仄平平仄</b><br>其中「白」「日」都是古入声字，普通话读平声，格律上仍算仄。</div>
+<p>掌握平仄后，可到「诗格速查」页看八种基本格式，或直接在方寸中新建画板，边写边校验。</p>
+<a class="cta" href="${ciyun('Shi', '五绝仄起', 20, '五绝试写')}">在方寸中试写一首五绝 →</a>`,
+    },
+    {
+      id: 'lvshi',
+      title: '律诗格律入门：平仄、粘对、押韵、对仗',
+      meta: '律诗 / 绝句 · 10 分钟',
+      body: `
+<p>近体诗分<b>绝句</b>（四句）与<b>律诗</b>（八句），每句字数五言或七言：五绝 20 字、七绝 28 字、五律 40 字、七律 56 字。其格律可概括为四件事：<b>平仄、粘对、押韵、对仗</b>。</p>
+<h3>平仄</h3>
+<p>一句之内平仄交替（如「仄仄平平仄」），一联之内两句的平仄<b>相对</b>（相反），联与联之间相<b>粘</b>（第二句与第三句前两字平仄相同）。由此推演出八种基本格式，见「诗格速查」页。</p>
+<h3>押韵</h3>
+<p>近体诗押<b>平声韵</b>（平水韵），韵脚在<b>偶数句</b>（二、四、六、八句）；首句可押可不押，押则为「首句入韵」变体。一韵到底，不换韵。</p>
+<h3>对仗</h3>
+<p>律诗的<b>颔联</b>（三、四句）与<b>颈联</b>（五、六句）必须对仗：词性相对、结构相同。绝句不要求对仗。</p>
+<div class="ex">七律仄起首句入韵，前两句示例：<br>〔仄仄平平仄仄平〕 首句入韵<br>〔平平仄仄仄平平〕 与上句相对<br>全 56 字格律模板见「诗格速查」页。</div>
+<p>在方寸中新建画板时选好格式，画布会自动标出每位的平仄要求与韵脚位置，逐字填写即实时校验，非常适合练习格律。</p>
+<a class="cta" href="${ciyun('Shi', '七律仄起首句入韵', 56, '七律试写')}">在方寸中试写一首七律 →</a>`,
+    },
+    {
+      id: 'cipai',
+      title: '词牌怎么填：以《浣溪沙》为例',
+      meta: '填词入门 · 10 分钟',
+      body: `
+<p>词牌是词的曲调名。每个词牌都规定了<b>字数、句数、每句字数、平仄与韵脚位置</b>（合称"句式"）；同一词牌常有钦谱、龙谱等多个"格"（变体）。填词即按句式逐字填写，韵脚字须同韵部（填词用<b>词林正韵</b>）。</p>
+<p>以《浣溪沙》钦谱格一为例：<b>42 字，6 句</b>（每句 7 字，上片 3 句、下片 3 句），押平声韵，韵脚在第 1、2、3、5、6 句末（第 4 句不押）：</p>
+<div class="ex">上片：中仄中平中仄平（韵），中平中仄仄平平（韵），中平中仄仄平平（韵）<br>下片：中仄中平中仄平，中平中仄仄平平（韵），中平中仄仄平平（韵）</div>
+<p>填词步骤：① 选词牌 → ② 看句式逐字填写 → ③ 韵脚字在词林正韵中查同韵部 → ④ 整体校验平仄与押韵。常见入韵字可直接在方寸的韵部面板中查找。</p>
+<a class="cta" href="${ciyun('Ci', '浣溪沙_钦谱_格一', 42, '浣溪沙试填')}">在方寸中试填《浣溪沙》 →</a>`,
+    },
+    {
+      id: 'yunshu',
+      title: '平水韵 vs 中华通韵 vs 词林正韵：区别与选择',
+      meta: '韵书入门 · 6 分钟',
+      body: `
+<p>方寸内置四部韵书，适用场景不同：</p>
+<ul>
+<li><b>平水韵</b>（106 韵）：明清以来近体诗押韵的通行标准，保留入声。写律诗、绝句默认用它。</li>
+<li><b>词林正韵</b>（19 部）：清·戈载编，填词专用；特点是平、上、去三声可通押，入声独立成部。填词默认用它。</li>
+<li><b>中华通韵</b>（16 韵）：按现代普通话归韵，不分入声，适合现代语感与自由诗；方寸中自由诗默认用它。</li>
+<li><b>上古韵</b>（23 部）：依据先秦音系归纳（《诗经》《楚辞》用韵），适合拟古体与仿先秦之作。</li>
+</ul>
+<h3>怎么选</h3>
+<p>写近体诗 → 平水韵；填词 → 词林正韵；现代口语 / 自由诗 → 中华通韵；拟先秦 → 上古韵。在方寸右上角设置中可随时切换韵书，同一画板可改。四部韵书的完整韵部与韵字见「韵书总览」。</p>
+<p>提示：同一字在不同韵书中的归属可能不同（尤其入声字与古今音变字），切换韵书后校验结果会相应变化，这是正常现象。</p>
+<a class="cta" href="/ref/index.html">查看四部韵书总览 →</a>`,
+    },
+    {
+      id: 'diangu',
+      title: '典故入诗：用方寸检索典故',
+      meta: '进阶技巧 · 5 分钟',
+      body: `
+<p>用典能让诗句有纵深，但须准确、贴切、不堆砌。典出何处、原意如何，写之前最好先查证。</p>
+<p>在<b>方寸</b>的字典区输入关键词（支持多字），切换到「<b>典故</b>」页，即可看到相关典故条目与出处；点击条目可查看典形词、释义与相关条目，点击典形词可快速入诗。</p>
+<h3>使用技巧</h3>
+<ul>
+<li>先想<b>意象</b>再检索：如写归隐，搜「莼鲈」；写壮志难酬，搜「冯唐」「易老」。</li>
+<li>化用其语，不必整句照搬；用典后检查平仄是否合律。</li>
+<li>注意典故的<b>时代感</b>与读者接受度，冷僻典故慎用。</li>
+</ul>
+<div class="ex">例：想表达"思念家乡美食" → 检索「莼鲈」→ 得"莼鲈之思"典（晋·张翰见秋风起而思吴中莼羹鲈脍，遂辞官归乡）→ 化用为「秋风忽动莼鲈思」。</div>
+<p>典故检索与词首/词末联想、对语同位等功能共同构成方寸的"推敲"体系，创作时随时点字查询。</p>`,
+    },
+  ];
+  const toc = `<div class="toc"><h2>目录</h2><ol>${articles.map((a) => `<li><a href="#${a.id}">${a.title}</a></li>`).join('')}</ol></div>`;
+  const body = articles.map((a) => `<article class="article" id="${a.id}"><h2>${a.title}</h2><p class="a-meta">${a.meta}</p>${a.body}</article>`).join('');
+  const content = `<h1>格律入门教程</h1>
+<p class="subtitle">从零开始学会写格律诗与填词 · 配合方寸实时校验练习</p>
+${toc}
+${body}`;
+  return page({ title: '格律入门教程 — 平仄·律诗·填词·韵书·用典', desc: '诗词格律入门教程：什么是平仄、律诗格律（粘对押韵对仗）、词牌怎么填（浣溪沙为例）、平水韵/词林正韵/中华通韵区别、典故入诗技巧。', activeTab: '/ref/tutorial.html', content });
+}
+
+/* --------------------------------- 主流程 -------------------------------- */
+
+mkdirSync(OUT, { recursive: true });
+const compactAll = ciRules.map((r) => ({
+  n: r.name, c: r.cipai, ch: r.char_count, tp: compactCiTone(r), rp: [...collectRhymePositions(r.rhyme_rule)], rk: r.rhyme_rule?.type,
+}));
+const files = {
+  'index.html': buildPingshuiPage(),
+  'cilinzhengyun.html': buildCilinPage(),
+  'shangguyun.html': buildShangguyunPage(),
+  'zhonghua.html': buildZhonghuaPage(),
+  'cipai.html': buildCipaiPage(),
+  'cipai-data.js': `/* 自动生成：词牌全量数据（精简字段） */\nwindow.CIPAI_DATA=${JSON.stringify(compactAll)};\n`,
+  'shi.html': buildShiPage(),
+  'tutorial.html': buildTutorialPage(),
+};
+
+for (const [name, html] of Object.entries(files)) {
+  writeFileSync(join(OUT, name), html, 'utf8');
+  console.log(`  ✓ ${name} (${(html.length / 1024).toFixed(1)} KB)`);
+}
+console.log(`\n生成完成 → ${OUT}`);
