@@ -222,7 +222,7 @@ const SHARED_CSS = `
   .tone-group { margin: 6px 0 22px; }
   .tone-group-title { font-size: 15px; font-weight: 600; color: #7a7066; margin: 22px 0 8px; display: flex; align-items: baseline; gap: 8px; }
   .tone-group-title .cnt { font-size: 12px; color: #a09890; font-weight: 400; }
-  details.cat { background: #fff; border: 1px solid #ece7e1; border-radius: 10px; margin-bottom: 8px; overflow: visible; position: relative; }
+  details.cat { background: #fff; border: 1px solid #ece7e1; border-radius: 10px; margin-bottom: 8px; overflow: hidden; position: relative; }
   details.cat > summary { cursor: pointer; padding: 9px 14px; font-size: 14.5px; display: flex; align-items: center; gap: 10px; list-style: none; user-select: none; border-radius: 10px; }
   details.cat > summary::-webkit-details-marker { display: none; }
   details.cat > summary::before { content: "▸"; color: #b9b0a6; font-size: 12px; transition: transform .15s; }
@@ -231,9 +231,9 @@ const SHARED_CSS = `
   details.cat > summary .name { font-weight: 600; }
   details.cat > summary .cnt { font-size: 12px; color: #a09890; margin-left: auto; }
   .cat-dot { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; display: inline-block; box-shadow: 0 0 0 1px rgba(0,0,0,0.06); }
-  .cat-ring { display: none; position: absolute; right: -44px; bottom: -44px; width: 168px; height: 168px; border-radius: 50%; border: 26px solid var(--rc); opacity: 0.28; pointer-events: none; z-index: 0; align-items: center; justify-content: center; }
+  .cat-ring { display: none; position: absolute; right: -46px; bottom: -46px; width: 172px; height: 172px; border-radius: 50%; border: 26px solid var(--rc-ring); pointer-events: none; z-index: 0; align-items: center; justify-content: center; }
   details.cat[open] .cat-ring { display: flex; }
-  .cat-ring span { font-size: 58px; font-weight: 700; color: var(--rc); }
+  .cat-ring span { font-size: 80px; font-weight: 400; color: var(--rc-char); font-family: "ml", "Noto Serif SC", serif; line-height: 1; }
   .sw { display: inline-block; width: 12px; height: 12px; border-radius: 4px; vertical-align: -1px; margin: 0 3px; }
   .chars { padding: 4px 16px 14px; display: flex; flex-wrap: wrap; gap: 2px 10px; position: relative; z-index: 1; }
   .chars span { font-size: 15px; color: #4c443c; letter-spacing: 1px; }
@@ -367,12 +367,12 @@ function catDetails(cat, color) {
   const chars = (cat.characters || []).map((c) => `<span>${esc(c)}</span>`).join('');
   const hsl = color ? `hsl(${color[0]}, ${color[1]}%, ${color[2]}%)` : '';
   const dot = color ? `<span class="cat-dot" style="background:${hsl}"></span>` : '';
-  // 展开后右下角半透明半溢出大圆环，环内写韵部代表字（去数字前缀取末字）
-  const ring = color ? `<div class="cat-ring" style="--rc:${hsl}"><span>${esc(cat.name.slice(-1))}</span></div>` : '';
+  // 展开后右下角半透明圆环（溢出部分被卡片裁切），环内写韵部代表字（沐瓴体、放大、同色）
+  const ring = color ? `<div class="cat-ring" style="--rc-ring:hsla(${color[0]},${color[1]}%,${color[2]}%,0.13);--rc-char:hsla(${color[0]},${color[1]}%,${color[2]}%,0.5)"><span>${esc(cat.name.slice(-1))}</span></div>` : '';
   return `<details class="cat"${color ? ` style="--rc:${hsl}"` : ''}><summary>${dot}<span class="name">${esc(cat.name)}</span><span class="cnt">${cat.characters?.length ?? 0} 字</span></summary><div class="chars">${chars || '<span class="dim">（无数据）</span>'}${ring}</div></details>`;
 }
 
-function buildRhymePage(bookKey, { navLabel, seoTitle, seoDesc, intro, groups, colorOf }) {
+function buildRhymePage(bookKey, { navLabel, seoTitle, seoDesc, intro, groups, colorOf, extraHead }) {
   const book = rhymeBooks[bookKey];
   const cats = book.categories;
   const nav = BOOK_NAV.map((b) => `<a class="${b.key === bookKey ? 'active' : ''}" href="${b.href}">${b.label} ${b.desc}</a>`).join('');
@@ -407,7 +407,7 @@ function buildRhymePage(bookKey, { navLabel, seoTitle, seoDesc, intro, groups, c
     if (html) body += `<div class="tone-group"><div class="tone-group-title">${gName}<span class="cnt">${names.length} 韵</span></div>${html}</div>`;
   }
   body += filterJs;
-  return page({ title: seoTitle, desc: seoDesc, activeTab: '/ref/index.html', content: body });
+  return page({ title: seoTitle, desc: seoDesc, activeTab: '/ref/index.html', content: body, extraHead });
 }
 
 function buildPingshuiPage() {
@@ -421,6 +421,7 @@ function buildPingshuiPage() {
     intro: `平水韵共 <b>106 韵</b>：平声 30（上平 15、下平 15）、上声 29、去声 30、入声 17。近体诗（律诗、绝句）押韵以平水韵为准，其中仄声韵不用于近体诗押韵，但入声字归属对判断平仄至关重要。韵字按使用频率排序。韵部色标与「平水韵诗词上色器」一致：<span class="sw" style="background:hsl(192,80%,80%)"></span>平声亮色 · <span class="sw" style="background:hsl(192,80%,20%)"></span>上声暗色 · <span class="sw" style="background:hsl(192,80%,30%)"></span>去声暗色 · <span class="sw" style="background:hsl(192,30%,20%)"></span>入声浊色。`,
     groups,
     colorOf: (name) => PINGSHUI_COLORS[name],
+    extraHead: '<link rel="stylesheet" href="/fonts/ml/result.css" />',
   });
 }
 
