@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useBoardContext, useActiveBoard } from '../context/BoardContext';
 import { PLACEHOLDER, resolveAuthor } from '../lib/types';
-import { Layers, Plus, ClipboardType, Check, Upload, Sun, Moon, Settings, ChevronRight, ChevronDown, X, BookOpen, Lightbulb, SendHorizontal, ExternalLink, Download, FolderUp, ImageDown, ScrollText, FolderPlus, Pencil, FolderInput, ChevronUp, ArrowUpDown, ArrowDown, ArrowUp, ArrowDownAZ, Undo2, Redo2, FileText } from 'lucide-react';
+import { Layers, Plus, ClipboardType, Check, Upload, Sun, Moon, Settings, ChevronRight, ChevronDown, X, BookOpen, Library, Lightbulb, SendHorizontal, ExternalLink, Download, FolderUp, ImageDown, ScrollText, FolderPlus, Pencil, FolderInput, ChevronUp, ArrowUpDown, ArrowDown, ArrowUp, ArrowDownAZ, Undo2, Redo2, FileText } from 'lucide-react';
 import type { Board, SortMode } from '../lib/types';
 import { track } from '../lib/api';
 import { ExportPreview } from './ExportPreview';
@@ -1040,7 +1040,7 @@ export function TopBar() {
         onClick={() => { window.location.href = '/ref/index.html'; track('open_ref'); }}
         title="格律参考"
       >
-        <BookOpen size={15} />
+        <Library size={15} />
       </button>
 
       {/* 设置 */}
