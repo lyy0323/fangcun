@@ -210,6 +210,7 @@ const SHARED_CSS = `
   .tab.active { background: #557799; color: #fff; }
   .back { margin-left: auto; font-size: 13px; color: #8a8178; white-space: nowrap; }
   .back:hover { color: #557799; }
+  .back-short { display: none; }
   .container { max-width: 880px; margin: 0 auto; padding: 36px 20px 80px; }
   h1 { font-size: 26px; font-weight: 700; margin-bottom: 6px; line-height: 1.4; }
   .subtitle { font-size: 14px; color: #a09890; margin-bottom: 8px; }
@@ -323,6 +324,17 @@ const SHARED_CSS = `
   .empty { color: #a09890; font-size: 14px; text-align: center; padding: 30px 0; }
   footer { border-top: 1px solid #e8e4e0; margin-top: 60px; padding: 20px; text-align: center; font-size: 12.5px; color: #b9b0a6; }
   footer a { color: #8a8178; }
+  /* 移动端顶栏压缩为单行（目标 ≥375px 宽度） */
+  @media (max-width: 700px) {
+    .topbar-inner { padding: 8px 10px; gap: 10px; flex-wrap: nowrap; }
+    .brand { font-size: 14px; letter-spacing: 1px; gap: 5px; }
+    .brand-logo { width: 20px; height: 20px; }
+    .tabs { gap: 2px; flex-wrap: nowrap; }
+    .tab { padding: 4px 8px; font-size: 13px; }
+    .back { font-size: 13px; }
+    .back-long { display: none; }
+    .back-short { display: inline; }
+  }
 `;
 
 function page({ title, desc, activeTab, content, extraHead = '' }) {
@@ -343,7 +355,7 @@ ${extraHead}
   <div class="topbar-inner">
     <a class="brand" href="/"><img class="brand-logo" src="/logo.svg" alt="方寸" />方寸</a>
     <nav class="tabs">${tabsHtml}</nav>
-    <a class="back" href="/">← 返回创作</a>
+    <a class="back" href="/"><span class="back-long">← 返回创作</span><span class="back-short">← 返回</span></a>
   </div>
 </header>
 <main class="container">
