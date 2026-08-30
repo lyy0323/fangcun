@@ -281,6 +281,8 @@ const SHARED_CSS = `
   .card .ex { background: #faf7f3; border-left: 3px solid #d8c9b8; border-radius: 0 8px 8px 0; padding: 8px 12px; margin: 10px 0 0; font-size: 13.5px; }
   .card details { margin-top: 8px; }
   .card details > summary { cursor: pointer; font-size: 13.5px; color: #557799; display: flex; align-items: center; }
+  .card details > summary::before { content: "▸"; color: #b9b0a6; font-size: 11px; margin-right: 6px; transition: transform .15s; }
+  .card details[open] > summary::before { transform: rotate(90deg); }
   .card details > summary .write-btn { float: none; margin-left: auto; }
   .card .tp { margin: 6px 0 0; font-size: 14px; }
   .article { background: #fff; border: 1px solid #ece7e1; border-radius: 12px; padding: 26px 28px; margin-bottom: 22px; }
