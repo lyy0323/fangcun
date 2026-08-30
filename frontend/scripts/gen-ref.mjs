@@ -270,7 +270,8 @@ const SHARED_CSS = `
   .card li { margin: 3px 0; font-size: 14px; }
   .card .ex { background: #faf7f3; border-left: 3px solid #d8c9b8; border-radius: 0 8px 8px 0; padding: 8px 12px; margin: 10px 0 0; font-size: 13.5px; }
   .card details { margin-top: 8px; }
-  .card details > summary { cursor: pointer; font-size: 13.5px; color: #557799; }
+  .card details > summary { cursor: pointer; font-size: 13.5px; color: #557799; display: flex; align-items: center; }
+  .card details > summary .write-btn { float: none; margin-left: auto; }
   .card .tp { margin: 6px 0 0; font-size: 14px; }
   .article { background: #fff; border: 1px solid #ece7e1; border-radius: 12px; padding: 26px 28px; margin-bottom: 22px; }
   .article h2 { border: none; margin: 0 0 4px; padding: 0; font-size: 19px; }
@@ -850,11 +851,11 @@ function buildShiPage() {
       const tp = renderShiPattern(r.tone_pattern || [], rhymes, lineLen, buildRhymeColorMap(r.tone_pattern, r.rhyme_rule));
       const rk = r.rhyme_rule?.type;
       const rhymeNote = rk === 'OR' ? '二、四、六、八句押韵，首句可入韵' : '二、四、六、八句押韵';
-      const writeHref = `/?ciyun=1&genre=Shi&rule=${encodeURIComponent(r.name)}&chars=${r.char_count}&title=${encodeURIComponent(r.name)}`;
-      return `<div class="tp">${tp}</div><div style="font-size:12.5px;color:#a09890">${r.char_count} 字 · ${rhymeNote} · 韵脚 ${rhymes.size} 处<a class="write-btn" href="${writeHref}" title="新建画板并跳转创作区">写</a></div>`;
+      return `<div class="tp">${tp}</div><div style="font-size:12.5px;color:#a09890">${r.char_count} 字 · ${rhymeNote} · 韵脚 ${rhymes.size} 处</div>`;
     };
-    const baseBlock = `<details open><summary>标准句式</summary>${render(base)}</details>`;
-    const ruBlock = ruYun ? `<details><summary>首句入韵变体</summary>${render(ruYun)}</details>` : '';
+    const writeHref = (r) => `/?ciyun=1&genre=Shi&rule=${encodeURIComponent(r.name)}&chars=${r.char_count}&title=${encodeURIComponent(r.name)}`;
+    const baseBlock = `<details open><summary><span class="sum-label">标准句式</span><a class="write-btn" href="${writeHref(base)}" title="新建画板并跳转创作区">写</a></summary>${render(base)}</details>`;
+    const ruBlock = ruYun ? `<details><summary><span class="sum-label">首句入韵变体</span><a class="write-btn" href="${writeHref(ruYun)}" title="新建画板并跳转创作区">写</a></summary>${render(ruYun)}</details>` : '';
     return `<div class="card">
       <h3>${SHI_LABEL[f.cipai]} · ${f.qi}</h3>
       <div class="meta">${base.char_count} 字 · ${SHI_LINES[f.cipai]} 句 · 每句 ${lineLen} 字 · 平水韵押平声韵</div>
