@@ -320,9 +320,26 @@ const SHARED_CSS = `
   .badge-other { background: #f4f1ec; color: #8a8178; border: 1px solid #e0d8cc; }
   .write-btn { float: right; display: inline-block; padding: 1px 14px; border-radius: 999px; font-size: 12.5px; border: 1px solid #557799; color: #557799; background: #fff; cursor: pointer; text-decoration: none; margin-left: 8px; }
   .write-btn:hover { background: #557799; color: #fff; text-decoration: none; }
-  .ch-chip { padding: 4px 14px; border-radius: 18px; border: 1px solid #e0dad2; background: #fff; font-size: 13px; color: #6b6360; cursor: pointer; font-family: inherit; margin: 0 6px 6px 0; }
-  .ch-chip:hover { border-color: #557799; color: #557799; }
-  .example-chips { margin: 4px 0 18px; }
+  /* 查字页空闲态：常用字玻璃卡片墙（悬浮、从右向左缓慢滚动） */
+  .char-marquee { overflow: hidden; position: relative; padding: 24px 0 10px; -webkit-mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent); mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent); }
+  .char-track { display: flex; gap: 14px; width: max-content; animation: marquee 120s linear infinite; }
+  @keyframes marquee { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+  .char-card {
+    flex-shrink: 0; width: 74px; height: 98px; border-radius: 16px;
+    background: rgba(255,255,255,0.55);
+    -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
+    border: 1px solid rgba(255,255,255,0.75);
+    box-shadow: 0 10px 28px rgba(92,83,74,0.10), inset 0 1px 0 rgba(255,255,255,0.85);
+    font-size: 34px; font-family: "ml", "Noto Serif SC", serif; color: #5C534A;
+    display: flex; align-items: center; justify-content: center; cursor: pointer;
+    animation: floaty 5.5s ease-in-out infinite;
+    animation-delay: calc(var(--i) * -0.28s);
+  }
+  @keyframes floaty {
+    0%, 100% { transform: rotate(var(--tilt, 0deg)) translateY(0); }
+    50% { transform: rotate(var(--tilt, 0deg)) translateY(-8px); }
+  }
+  .char-card:hover { animation: none; transform: rotate(0deg) translateY(-5px) scale(1.08); box-shadow: 0 18px 42px rgba(92,83,74,0.18); z-index: 2; }
   .char-hero { display: flex; align-items: center; gap: 14px; margin: 8px 0 22px; }
   .char-hero .big { font-size: 54px; font-weight: 400; line-height: 1.2; color: #4c443c; font-family: "ml", "Noto Serif SC", serif; }
   .def-block { margin: 0 0 22px; }
@@ -927,10 +944,14 @@ function buildShiPage() {
 
 /* ------------------------------- 查字页面 -------------------------------- */
 
-const CHAR_EXAMPLES = ['中', '白', '月', '山', '风'];
+/** 100 个常用字（查字页空闲态滚动卡片墙） */
+const COMMON_CHARS = '天地人日月山水风云雨雪春夏秋冬江海河湖波潮花草树木石玉火土田竹梅兰菊荷松柏柳桃李杏诗词歌赋文章琴棋书画笔墨纸砚亭台楼阁门窗桥路马车舟剑弓箭灯钟龙凤虎鹤燕雀鱼鸟虫兽酒茶米盐肉豆果瓜菜香红黄蓝白黑金银铜铁光';
 
 function buildCharPage() {
-  const examples = CHAR_EXAMPLES.map((c) => `<button class="ch-chip" data-ch="${esc(c)}">${c}</button>`).join('');
+  const cards = [...COMMON_CHARS].map((c, i) => {
+    const tilt = ((i * 7) % 5) - 2; // 轻微交替角度 -2..2deg
+    return `<button class="char-card" data-ch="${esc(c)}" style="--tilt:${tilt}deg;--i:${i}">${esc(c)}</button>`;
+  }).join('');
   const appJs = `
   <script>
   (function () {
@@ -1040,7 +1061,7 @@ function buildCharPage() {
     }
     input.addEventListener('input', function () { clearTimeout(timer); timer = setTimeout(query, 250); });
     input.addEventListener('keydown', function (e) { if (e.key === 'Enter') { clearTimeout(timer); query(); } });
-    document.querySelectorAll('.ch-chip').forEach(function (b) {
+    document.querySelectorAll('.char-card').forEach(function (b) {
       b.addEventListener('click', function () { input.value = b.getAttribute('data-ch'); query(); });
     });
     // ?q=字 自动查询（韵书页韵字点击跳转而来）
@@ -1051,8 +1072,7 @@ function buildCharPage() {
   const content = `<h1>单字查询：释义 · 四部韵书音韵地位</h1>
 <p class="subtitle">输入一个汉字，同屏查看其释义，以及它在平水韵、词林正韵、上古韵、中华通韵下的韵部与声调（上古韵含小韵与拟音）。</p>
 <input id="ch-input" class="search" type="search" placeholder="输入单字，如：中 / 白 / 月 / 山 / 风…" autofocus />
-<div class="example-chips">${examples}</div>
-<div id="ch-result"><div class="empty" style="padding:56px 0;text-align:center">输入一个汉字，这里将显示其释义与四部韵书音韵地位</div></div>
+<div id="ch-result"><div class="char-marquee"><div class="char-track">${cards}${cards}</div></div></div>
 ${appJs}`;
   return page({
     title: '单字查询：释义与四部韵书音韵地位',
