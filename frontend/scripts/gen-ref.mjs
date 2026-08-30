@@ -131,21 +131,24 @@ function sourceBadge(src) {
 /** 词牌平仄渲染：韵脚后句号、非韵脚句末逗号、读顿号（与 checker 可读词谱一致） */
 function renderCiPattern(tp, rhymes, rhymeColors) {
   let out = '';
+  let row = '';
   let idx = 0;
+  const flush = () => { if (row) { out += `<div class="tp-row">${row}</div>`; row = ''; } };
   for (const t of tp) {
     if (Array.isArray(t)) {
-      out += `<span class="alt">(${t.map((opt) => opt.map((x) => TONE_CHAR[x.tone] || '·').join('')).join('|')})</span>`;
+      row += `<span class="alt">(${t.map((opt) => opt.map((x) => TONE_CHAR[x.tone] || '·').join('')).join('|')})</span>`;
       idx += t[0].length;
       continue;
     }
     const ch = TONE_CHAR[t.tone] || '·';
     const color = rhymeColors?.get(idx);
-    out += color ? `<span style="color:${color};font-weight:600">${ch}</span>` : `<span>${ch}</span>`;
-    if (rhymes.has(idx)) out += '<span class="punc">。</span>';
-    else if (t.comment === '句') out += '<span class="punc">，</span>';
-    else if (t.comment === '读') out += '<span class="punc">、</span>';
+    row += color ? `<span style="color:${color};font-weight:600">${ch}</span>` : `<span>${ch}</span>`;
+    if (rhymes.has(idx)) { row += '<span class="punc">。</span>'; flush(); }
+    else if (t.comment === '句') { row += '<span class="punc">，</span>'; flush(); }
+    else if (t.comment === '读') row += '<span class="punc">、</span>';
     idx++;
   }
+  flush();
   return out;
 }
 
@@ -253,6 +256,7 @@ const SHARED_CSS = `
   .legend b { font-weight: 600; }
   .legend .yun { color: #b3543c; }
   .tp { font-size: 15px; letter-spacing: 1px; color: #4c443c; background: #fff; border: 1px solid #ece7e1; border-radius: 10px; padding: 12px 16px; margin: 8px 0 14px; line-height: 2; }
+  .tp-row { display: block; }
   .tp b.yun { color: #b3543c; font-weight: 700; }
   .tp .punc { color: #c4bcb2; }
   .tp .alt { color: #557799; }
@@ -702,28 +706,33 @@ function buildCipaiPage() {
       return '<span class="badge badge-other">他谱</span>';
     }
     function renderVariant(r) {
-      var out = '', idx = 0;
+      var rows = [];
+      var row = '', idx = 0;
+      function flush() { if (row) { rows.push(row); row = ''; } }
       for (var i = 0; i < r.tp.length; i++) {
         var ch = r.tp[i];
-        if (ch === '。' || ch === '、' || ch === '，') { out += '<span class="punc">' + ch + '</span>'; continue; }
+        if (ch === '。' || ch === '，') { row += '<span class="punc">' + ch + '</span>'; flush(); continue; }
+        if (ch === '、') { row += '<span class="punc">、</span>'; continue; }
         if (ch === '(') {
           var j = r.tp.indexOf(')', i);
           var alts = r.tp.slice(i + 1, j).split('|').map(function (s) { return s.split('').map(TONE).join(''); }).join('｜');
-          out += '<span class="alt">(' + alts + ')</span>';
+          row += '<span class="alt">(' + alts + ')</span>';
           i = j; continue;
         }
         var yun = r.rp.indexOf(idx) !== -1;
         if (yun) {
-          out += '<span style="color:' + colorOf(r.rc && r.rc[idx]) + ';font-weight:600">' + TONE(ch) + '</span>';
+          row += '<span style="color:' + colorOf(r.rc && r.rc[idx]) + ';font-weight:600">' + TONE(ch) + '</span>';
         } else {
-          out += '<span>' + TONE(ch) + '</span>';
+          row += '<span>' + TONE(ch) + '</span>';
         }
         idx++;
       }
+      flush();
       var rk = r.rk === 'AND' ? '复合押韵' : r.rk === 'OR' ? '多式押韵' : '同部押韵';
       var rest = r.n.replace(r.c + '_', '');
       var gex = (r.src === '钦谱' || r.src === '龙谱') && rest.indexOf(r.src + '_') === 0 ? rest.slice(r.src.length + 1) : rest;
-      return '<div class="variant"><div class="vname">' + badgeOf(r.src) + gex + ' · ' + r.ch + ' 字 · ' + rk + '</div><div class="tp">' + out + '</div></div>';
+      var tpHtml = rows.map(function (rr) { return '<div class="tp-row">' + rr + '</div>'; }).join('');
+      return '<div class="variant"><div class="vname">' + badgeOf(r.src) + gex + ' · ' + r.ch + ' 字 · ' + rk + '</div><div class="tp">' + tpHtml + '</div></div>';
     }
     function render() {
       listEl.innerHTML = '';
