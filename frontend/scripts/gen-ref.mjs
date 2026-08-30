@@ -320,13 +320,13 @@ const SHARED_CSS = `
   .badge-other { background: #f4f1ec; color: #8a8178; border: 1px solid #e0d8cc; }
   .write-btn { float: right; display: inline-block; padding: 1px 14px; border-radius: 999px; font-size: 12.5px; border: 1px solid #557799; color: #557799; background: #fff; cursor: pointer; text-decoration: none; margin-left: 8px; }
   .write-btn:hover { background: #557799; color: #fff; text-decoration: none; }
-  /* 查字页空闲态：常用字玻璃卡片墙（悬浮、从右向左缓慢滚动） */
+  /* 查字页空闲态：常用字玻璃卡片墙（两行、反向滚动、可拖拽、随机浅彩底） */
   .char-marquee { overflow: hidden; position: relative; padding: 24px 0 10px; -webkit-mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent); mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent); }
-  .char-track { display: flex; gap: 14px; width: max-content; animation: marquee 120s linear infinite; }
-  @keyframes marquee { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+  .char-row { display: flex; gap: 14px; width: max-content; cursor: grab; will-change: transform; user-select: none; }
+  .char-row + .char-row { margin-top: 16px; }
   .char-card {
     flex-shrink: 0; width: 74px; height: 98px; border-radius: 16px;
-    background: rgba(255,255,255,0.55);
+    background: hsla(var(--h), 65%, 88%, 0.55);
     -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
     border: 1px solid rgba(255,255,255,0.75);
     box-shadow: 0 10px 28px rgba(92,83,74,0.10), inset 0 1px 0 rgba(255,255,255,0.85);
@@ -948,10 +948,6 @@ function buildShiPage() {
 const COMMON_CHARS = '天地人日月山水风云雨雪春夏秋冬江海河湖波潮花草树木石玉火土田竹梅兰菊荷松柏柳桃李杏诗词歌赋文章琴棋书画笔墨纸砚亭台楼阁门窗桥路马车舟剑弓箭灯钟龙凤虎鹤燕雀鱼鸟虫兽酒茶米盐肉豆果瓜菜香红黄蓝白黑金银铜铁';
 
 function buildCharPage() {
-  const cards = [...COMMON_CHARS].map((c, i) => {
-    const tilt = ((i * 7) % 5) - 2; // 轻微交替角度 -2..2deg
-    return `<button class="char-card" data-ch="${esc(c)}" style="--tilt:${tilt}deg;--i:${i}">${esc(c)}</button>`;
-  }).join('');
   const appJs = `
   <script>
   (function () {
@@ -1061,9 +1057,74 @@ function buildCharPage() {
     }
     input.addEventListener('input', function () { clearTimeout(timer); timer = setTimeout(query, 250); });
     input.addEventListener('keydown', function (e) { if (e.key === 'Enter') { clearTimeout(timer); query(); } });
-    document.querySelectorAll('.char-card').forEach(function (b) {
-      b.addEventListener('click', function () { input.value = b.getAttribute('data-ch'); query(); });
-    });
+    // 空闲态：100 常用字分两行玻璃卡片墙——每次乱序、第二行反向滚动、可拖拽、随机浅彩底
+    var COMMON = '${COMMON_CHARS}';
+    function shuffleArr(a) {
+      for (var i = a.length - 1; i > 0; i--) {
+        var j = Math.floor(Math.random() * (i + 1));
+        var t = a[i]; a[i] = a[j]; a[j] = t;
+      }
+      return a;
+    }
+    function startRowScroll(rowEl, dir) {
+      var offset = 0, raf = null, dragging = false, startX = 0, startOffset = 0;
+      rowEl.__moved = false;
+      function step() {
+        if (!rowEl.isConnected) return;
+        offset += 0.35 * dir;
+        var half = rowEl.scrollWidth / 2;
+        if (offset < -half) offset += half;
+        if (offset > 0) offset -= half;
+        rowEl.style.transform = 'translateX(' + offset + 'px)';
+        raf = requestAnimationFrame(step);
+      }
+      rowEl.addEventListener('pointerdown', function (e) {
+        dragging = true; rowEl.__moved = false; cancelAnimationFrame(raf);
+        startX = e.clientX; startOffset = offset;
+        rowEl.setPointerCapture(e.pointerId);
+        rowEl.style.cursor = 'grabbing';
+      });
+      rowEl.addEventListener('pointermove', function (e) {
+        if (!dragging) return;
+        if (Math.abs(e.clientX - startX) > 5) rowEl.__moved = true;
+        offset = startOffset + (e.clientX - startX);
+        var half = rowEl.scrollWidth / 2;
+        if (offset < -half) offset += half;
+        if (offset > 0) offset -= half;
+        rowEl.style.transform = 'translateX(' + offset + 'px)';
+      });
+      function endDrag() {
+        if (!dragging) return;
+        dragging = false; rowEl.style.cursor = '';
+        raf = requestAnimationFrame(step);
+      }
+      rowEl.addEventListener('pointerup', endDrag);
+      rowEl.addEventListener('pointercancel', endDrag);
+      raf = requestAnimationFrame(step);
+    }
+    (function initIdle() {
+      var chars = shuffleArr(COMMON.split(''));
+      var rows = document.querySelectorAll('.char-row');
+      if (!rows.length) return;
+      [chars.slice(0, 50), chars.slice(50)].forEach(function (list, ri) {
+        var rowEl = rows[ri];
+        var html = '';
+        list.concat(list).forEach(function (c, i) {
+          var tilt = ((i * 7) % 5) - 2;
+          var hue = Math.floor(Math.random() * 360);
+          html += '<button class="char-card" data-ch="' + c + '" style="--tilt:' + tilt + 'deg;--h:' + hue + ';--i:' + i + '">' + c + '</button>';
+        });
+        rowEl.innerHTML = html;
+        startRowScroll(rowEl, ri === 0 ? -1 : 1);
+      });
+      document.querySelectorAll('.char-row').forEach(function (row) {
+        row.addEventListener('click', function (e) {
+          if (row.__moved) return; // 拖拽过则不触发查询
+          var card = e.target.closest ? e.target.closest('.char-card') : null;
+          if (card) { input.value = card.getAttribute('data-ch'); query(); }
+        });
+      });
+    })();
     // ?q=字 自动查询（韵书页韵字点击跳转而来）
     var initQ = new URLSearchParams(location.search).get('q');
     if (initQ) { input.value = initQ; query(); }
@@ -1072,7 +1133,7 @@ function buildCharPage() {
   const content = `<h1>单字查询：释义 · 四部韵书音韵地位</h1>
 <p class="subtitle">输入一个汉字，同屏查看其释义，以及它在平水韵、词林正韵、上古韵、中华通韵下的韵部与声调（上古韵含小韵与拟音）。</p>
 <input id="ch-input" class="search" type="search" placeholder="输入单字，如：中 / 白 / 月 / 山 / 风…" autofocus />
-<div id="ch-result"><div class="char-marquee"><div class="char-track">${cards}${cards}</div></div></div>
+<div id="ch-result"><div class="char-marquee"><div class="char-row"></div><div class="char-row"></div></div></div>
 ${appJs}`;
   return page({
     title: '单字查询：释义与四部韵书音韵地位',
