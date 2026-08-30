@@ -144,7 +144,7 @@ function renderCiPattern(tp, rhymes, rhymeColors) {
     const color = rhymeColors?.get(idx);
     row += color ? `<span style="color:${color};font-weight:600">${ch}</span>` : `<span>${ch}</span>`;
     if (rhymes.has(idx)) { row += '<span class="punc">。</span>'; flush(); }
-    else if (t.comment === '句') { row += '<span class="punc">，</span>'; flush(); }
+    else if (t.comment === '句') row += '<span class="punc">，</span>';
     else if (t.comment === '读') row += '<span class="punc">、</span>';
     idx++;
   }
@@ -711,8 +711,8 @@ function buildCipaiPage() {
       function flush() { if (row) { rows.push(row); row = ''; } }
       for (var i = 0; i < r.tp.length; i++) {
         var ch = r.tp[i];
-        if (ch === '。' || ch === '，') { row += '<span class="punc">' + ch + '</span>'; flush(); continue; }
-        if (ch === '、') { row += '<span class="punc">、</span>'; continue; }
+        if (ch === '。') { row += '<span class="punc">。</span>'; flush(); continue; }
+        if (ch === '，' || ch === '、') { row += '<span class="punc">' + ch + '</span>'; continue; }
         if (ch === '(') {
           var j = r.tp.indexOf(')', i);
           var alts = r.tp.slice(i + 1, j).split('|').map(function (s) { return s.split('').map(TONE).join(''); }).join('｜');
