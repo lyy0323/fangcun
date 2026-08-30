@@ -308,15 +308,22 @@ const SHARED_CSS = `
   .example-chips { margin: 4px 0 18px; }
   .char-hero { display: flex; align-items: center; gap: 14px; margin: 8px 0 22px; }
   .char-hero .big { font-size: 54px; font-weight: 400; line-height: 1.2; color: #4c443c; font-family: "ml", "Noto Serif SC", serif; }
-  .def-reading { margin: 10px 0; }
-  .def-py { font-size: 13px; color: #557799; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; margin-bottom: 4px; }
-  .def-item { font-size: 14px; margin: 3px 0; color: #4c443c; }
+  .def-block { margin: 0 0 22px; }
+  .def-reading { margin: 7px 0; }
+  .def-py { font-size: 13px; color: #557799; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; margin-bottom: 2px; }
+  .def-item { font-size: 13.5px; margin: 2px 0; color: #4c443c; }
   .def-no { color: #a09890; margin-right: 4px; font-size: 12px; }
   .def-c { font-size: 11.5px; color: #a09890; padding-left: 18px; margin-top: 2px; line-height: 1.6; }
-  .chip { display: inline-block; padding: 2px 10px; border-radius: 999px; font-size: 12.5px; border: 1px solid; margin: 2px 4px 2px 0; }
+  .chip { display: inline-block; padding: 2px 10px; border-radius: 999px; font-size: 12.5px; border: 1px solid; margin: 2px 4px 2px 0; text-decoration: none; }
   .sg-line { margin: 3px 0; }
   .sg-reading { font-size: 12.5px; color: #6b6360; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
   .loading { text-align: center; padding: 30px 0; color: #a09890; }
+  .timeline { margin: 8px 0 10px; }
+  .tl-item { position: relative; padding: 0 0 18px 30px; border-left: 2px solid #ece7e1; }
+  .tl-item:last-child { border-left-color: transparent; padding-bottom: 0; }
+  .tl-dot { position: absolute; left: -8px; top: 3px; width: 14px; height: 14px; border-radius: 50%; border: 2px solid #fff; box-shadow: 0 0 0 1px rgba(0,0,0,0.08); }
+  .tl-head { font-size: 14.5px; font-weight: 600; color: #5C534A; margin: 0 0 6px; }
+  .tl-body { font-size: 13.5px; }
   .more-btn { display: block; margin: 14px auto; padding: 8px 22px; border-radius: 9px; border: 1px solid #e0dad2; background: #fff; font-size: 13.5px; color: #6b6360; cursor: pointer; font-family: inherit; }
   .more-btn:hover { border-color: #557799; color: #557799; }
   .empty { color: #a09890; font-size: 14px; text-align: center; padding: 30px 0; }
@@ -475,7 +482,7 @@ function buildRhymePage(bookKey, { navLabel, seoTitle, seoDesc, subtitle, legend
     (function () {
       var input = document.getElementById('cat-search');
       if (!input) return;
-      input.addEventListener('input', function () {
+      function apply() {
         var q = input.value.trim();
         // 按 wrapper（带 data-name/data-chars）过滤韵部卡片
         document.querySelectorAll('[data-name]').forEach(function (d) {
@@ -491,7 +498,22 @@ function buildRhymePage(bookKey, { navLabel, seoTitle, seoDesc, subtitle, legend
           });
           g.style.display = any ? '' : 'none';
         });
-      });
+      }
+      input.addEventListener('input', apply);
+      // ?q=字 自动查询（查字页 badge 跳转而来）：过滤、展开并滚动到首个命中韵部
+      var q = new URLSearchParams(location.search).get('q');
+      if (q) {
+        input.value = q;
+        apply();
+        var first = Array.prototype.find.call(document.querySelectorAll('[data-name]'), function (d) {
+          return d.style.display !== 'none';
+        });
+        if (first) {
+          var de = first.querySelector('details.cat');
+          if (de) de.setAttribute('open', '');
+          first.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }
     })();
   </script>`;
   let body = `<h1>${seoTitle}</h1>
@@ -879,11 +901,17 @@ function buildCharPage() {
     var IS_ANDROID = /FangcunAndroid/.test(navigator.userAgent);
     var CHECKER = IS_ANDROID ? 'https://checker.sjtuguoxue.space/api' : '/api';
     var BOOKS = [
+      { key: 'Shangguyun', label: '上古韵' },
       { key: 'Pingshuiyun', label: '平水韵' },
       { key: 'Cilinzhengyun', label: '词林正韵' },
-      { key: 'Shangguyun', label: '上古韵' },
       { key: 'Zhonghua_Tongyun', label: '中华通韵' }
     ];
+    var BOOK_PAGE = {
+      Shangguyun: '/ref/shangguyun.html',
+      Pingshuiyun: '/ref/index.html',
+      Cilinzhengyun: '/ref/cilinzhengyun.html',
+      Zhonghua_Tongyun: '/ref/zhonghua.html'
+    };
     var input = document.getElementById('ch-input');
     var resultEl = document.getElementById('ch-result');
     var timer = null;
@@ -913,11 +941,9 @@ function buildCharPage() {
     function render(char, res) {
       var defs = (res[4] && res[4].definitions) || [];
       var html = '<div class="char-hero"><span class="big">' + char + '</span></div>';
-      // 释义
-      html += '<h2>释义</h2><div class="card">';
-      if (!defs.length) {
-        html += '<p class="empty" style="padding:8px 0">未收录释义</p>';
-      } else {
+      // 释义（紧凑直排，无标题）
+      if (defs.length) {
+        html += '<div class="def-block">';
         defs.forEach(function (rd) {
           html += '<div class="def-reading"><div class="def-py">' + (rd.py || '') + '</div>';
           rd.defs.forEach(function (d, di) {
@@ -927,31 +953,35 @@ function buildCharPage() {
           });
           html += '</div>';
         });
+        html += '</div>';
       }
-      html += '</div>';
-      // 四部音韵地位
-      html += '<h2>四部韵书音韵地位</h2><div class="cards">';
+      // 音韵地位 · 时间线（上古 → 平水 → 词林 → 新韵）
+      html += '<div class="timeline">';
       BOOKS.forEach(function (b, bi) {
         var data = res[bi];
         var cats = (data && data.rhyme_categories) || [];
-        html += '<div class="card"><h3>' + b.label + '</h3>';
+        var href = BOOK_PAGE[b.key] + '?q=' + enc(char);
+        var dotColor = cats.length ? toneColor(cats[0].tone_type) : '#8a8178';
+        html += '<div class="tl-item"><span class="tl-dot" style="background:' + dotColor + '"></span>';
+        html += '<div class="tl-head">' + b.label + '</div><div class="tl-body">';
         if (!cats.length) {
-          html += '<p class="empty" style="padding:6px 0">未收录</p>';
+          html += '<span class="empty" style="padding:2px 0">未收录</span>';
         } else {
           cats.forEach(function (c) {
             var col = toneColor(c.tone_type);
             if (b.key === 'Shangguyun' && c.readings && c.readings.length) {
               c.readings.forEach(function (r) {
-                html += '<div class="sg-line"><span class="chip" style="color:' + col + ';border-color:' + col + '40;background:' + col + '10">' + c.name + '</span>' +
+                html += '<div class="sg-line"><a class="chip" style="color:' + col + ';border-color:' + col + '40;background:' + col + '10" href="' + href + '">' + c.name + '</a>' +
                   '<span class="sg-reading">' + r.sub + ' · ' + r.py + (r.rpy ? '（' + r.rpy + '）' : '') + '</span></div>';
               });
             } else {
-              html += '<span class="chip" style="color:' + col + ';border-color:' + col + '40;background:' + col + '10">' + c.name + '</span>';
+              html += '<a class="chip" style="color:' + col + ';border-color:' + col + '40;background:' + col + '10" href="' + href + '">' + c.name + '</a>';
             }
           });
         }
-        html += '</div>';
+        html += '</div></div>';
       });
+      html += '</div>';
       html += '</div>';
       resultEl.innerHTML = html;
     }

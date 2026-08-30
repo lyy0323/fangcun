@@ -121,15 +121,22 @@
   .example-chips { margin: 4px 0 18px; }
   .char-hero { display: flex; align-items: center; gap: 14px; margin: 8px 0 22px; }
   .char-hero .big { font-size: 54px; font-weight: 400; line-height: 1.2; color: #4c443c; font-family: "ml", "Noto Serif SC", serif; }
-  .def-reading { margin: 10px 0; }
-  .def-py { font-size: 13px; color: #557799; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; margin-bottom: 4px; }
-  .def-item { font-size: 14px; margin: 3px 0; color: #4c443c; }
+  .def-block { margin: 0 0 22px; }
+  .def-reading { margin: 7px 0; }
+  .def-py { font-size: 13px; color: #557799; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; margin-bottom: 2px; }
+  .def-item { font-size: 13.5px; margin: 2px 0; color: #4c443c; }
   .def-no { color: #a09890; margin-right: 4px; font-size: 12px; }
   .def-c { font-size: 11.5px; color: #a09890; padding-left: 18px; margin-top: 2px; line-height: 1.6; }
-  .chip { display: inline-block; padding: 2px 10px; border-radius: 999px; font-size: 12.5px; border: 1px solid; margin: 2px 4px 2px 0; }
+  .chip { display: inline-block; padding: 2px 10px; border-radius: 999px; font-size: 12.5px; border: 1px solid; margin: 2px 4px 2px 0; text-decoration: none; }
   .sg-line { margin: 3px 0; }
   .sg-reading { font-size: 12.5px; color: #6b6360; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
   .loading { text-align: center; padding: 30px 0; color: #a09890; }
+  .timeline { margin: 8px 0 10px; }
+  .tl-item { position: relative; padding: 0 0 18px 30px; border-left: 2px solid #ece7e1; }
+  .tl-item:last-child { border-left-color: transparent; padding-bottom: 0; }
+  .tl-dot { position: absolute; left: -8px; top: 3px; width: 14px; height: 14px; border-radius: 50%; border: 2px solid #fff; box-shadow: 0 0 0 1px rgba(0,0,0,0.08); }
+  .tl-head { font-size: 14.5px; font-weight: 600; color: #5C534A; margin: 0 0 6px; }
+  .tl-body { font-size: 13.5px; }
   .more-btn { display: block; margin: 14px auto; padding: 8px 22px; border-radius: 9px; border: 1px solid #e0dad2; background: #fff; font-size: 13.5px; color: #6b6360; cursor: pointer; font-family: inherit; }
   .more-btn:hover { border-color: #557799; color: #557799; }
   .empty { color: #a09890; font-size: 14px; text-align: center; padding: 30px 0; }
@@ -167,7 +174,7 @@
     (function () {
       var input = document.getElementById('cat-search');
       if (!input) return;
-      input.addEventListener('input', function () {
+      function apply() {
         var q = input.value.trim();
         // 按 wrapper（带 data-name/data-chars）过滤韵部卡片
         document.querySelectorAll('[data-name]').forEach(function (d) {
@@ -183,7 +190,22 @@
           });
           g.style.display = any ? '' : 'none';
         });
-      });
+      }
+      input.addEventListener('input', apply);
+      // ?q=字 自动查询（查字页 badge 跳转而来）：过滤、展开并滚动到首个命中韵部
+      var q = new URLSearchParams(location.search).get('q');
+      if (q) {
+        input.value = q;
+        apply();
+        var first = Array.prototype.find.call(document.querySelectorAll('[data-name]'), function (d) {
+          return d.style.display !== 'none';
+        });
+        if (first) {
+          var de = first.querySelector('details.cat');
+          if (de) de.setAttribute('open', '');
+          first.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }
     })();
   </script>
 </main>
