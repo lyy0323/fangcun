@@ -686,13 +686,11 @@ function ciVariantHtml(rule) {
   const colors = buildRhymeColorMap(rule.tone_pattern, rule.rhyme_rule);
   const tp = renderCiPattern(rule.tone_pattern || [], rhymes, colors);
   const src = variantSource(rule.name, rule.cipai);
-  const rk = rule.rhyme_rule?.type;
-  const rhymeDesc = rk === 'AND' ? '复合押韵（多组）' : rk === 'OR' ? '多式押韵' : '同部押韵';
   const short = shortName(rule.name, rule.cipai);
   const gex = src === '其他' ? short : short.replace(src + '_', '');
   const writeHref = `/?ciyun=1&genre=Ci&rule=${encodeURIComponent(rule.name)}&chars=${rule.char_count}&title=${encodeURIComponent(rule.cipai)}`;
   return `<div class="variant">
-    <div class="vname">${sourceBadge(src)}${esc(gex)} · ${rule.char_count} 字 · ${rhymeDesc} · 韵脚 ${rhymes.size} 处<a class="write-btn" href="${writeHref}" title="新建画板并跳转创作区">写</a></div>
+    <div class="vname">${sourceBadge(src)}${esc(gex)} · ${rule.char_count} 字<a class="write-btn" href="${writeHref}" title="新建画板并跳转创作区">写</a></div>
     <div class="tp">${tp}</div>
   </div>`;
 }
@@ -765,12 +763,11 @@ function buildCipaiPage() {
         idx++;
       }
       flush();
-      var rk = r.rk === 'AND' ? '复合押韵' : r.rk === 'OR' ? '多式押韵' : '同部押韵';
       var rest = r.n.replace(r.c + '_', '');
       var gex = (r.src === '钦谱' || r.src === '龙谱') && rest.indexOf(r.src + '_') === 0 ? rest.slice(r.src.length + 1) : rest;
       var writeHref = '/?ciyun=1&genre=Ci&rule=' + encodeURIComponent(r.n) + '&chars=' + r.ch + '&title=' + encodeURIComponent(r.c);
       var tpHtml = rows.map(function (rr) { return '<div class="tp-row">' + rr + '</div>'; }).join('');
-      return '<div class="variant"><div class="vname">' + badgeOf(r.src) + gex + ' · ' + r.ch + ' 字 · ' + rk + '<a class="write-btn" href="' + writeHref + '" title="新建画板并跳转创作区">写</a></div><div class="tp">' + tpHtml + '</div></div>';
+      return '<div class="variant"><div class="vname">' + badgeOf(r.src) + gex + ' · ' + r.ch + ' 字<a class="write-btn" href="' + writeHref + '" title="新建画板并跳转创作区">写</a></div><div class="tp">' + tpHtml + '</div></div>';
     }
     function render() {
       listEl.innerHTML = '';
