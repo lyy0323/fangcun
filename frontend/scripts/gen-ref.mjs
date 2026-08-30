@@ -205,7 +205,7 @@ const BOOK_NAV = [
 
 const SHARED_CSS = `
   * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Noto Serif SC", "Songti SC", system-ui, serif; background: #FAF8F5; color: #5C534A; line-height: 1.8; font-size: 15px; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Noto Serif SC", "Songti SC", system-ui, serif; background: #FAF8F5; color: #5C534A; line-height: 1.8; font-size: 15px; min-height: 100vh; display: flex; flex-direction: column; }
   a { color: #557799; text-decoration: none; }
   a:hover { text-decoration: underline; }
   .topbar { position: sticky; top: 0; z-index: 20; background: #FAF8F5; border-bottom: 1px solid #e8e4e0; }
@@ -220,7 +220,7 @@ const SHARED_CSS = `
   .back { margin-left: auto; font-size: 13px; color: #8a8178; white-space: nowrap; }
   .back:hover { color: #557799; }
   .back-short { display: none; }
-  .container { max-width: 880px; margin: 0 auto; padding: 36px 20px 80px; }
+  .container { max-width: 880px; margin: 0 auto; padding: 36px 20px 80px; flex: 1; width: 100%; }
   h1 { font-size: 26px; font-weight: 700; margin-bottom: 6px; line-height: 1.4; }
   .subtitle { font-size: 14px; color: #a09890; margin-bottom: 8px; }
   .intro { font-size: 14.5px; color: #6b6360; margin-bottom: 28px; }
@@ -1052,7 +1052,7 @@ function buildCharPage() {
 <p class="subtitle">输入一个汉字，同屏查看其释义，以及它在平水韵、词林正韵、上古韵、中华通韵下的韵部与声调（上古韵含小韵与拟音）。</p>
 <input id="ch-input" class="search" type="search" placeholder="输入单字，如：中 / 白 / 月 / 山 / 风…" autofocus />
 <div class="example-chips">${examples}</div>
-<div id="ch-result"></div>
+<div id="ch-result"><div class="empty" style="padding:56px 0;text-align:center">输入一个汉字，这里将显示其释义与四部韵书音韵地位</div></div>
 ${appJs}`;
   return page({
     title: '单字查询：释义与四部韵书音韵地位',
