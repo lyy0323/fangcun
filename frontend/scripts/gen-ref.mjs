@@ -326,7 +326,7 @@ const SHARED_CSS = `
   .char-row + .char-row { margin-top: 16px; }
   .char-card {
     flex-shrink: 0; width: 74px; height: 98px; border-radius: 16px;
-    background: hsla(var(--h), 65%, 88%, 0.55);
+    background: hsla(var(--h), 32%, 88%, 0.55);
     -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
     border: 1px solid rgba(255,255,255,0.75);
     box-shadow: 0 10px 28px rgba(92,83,74,0.10), inset 0 1px 0 rgba(255,255,255,0.85);
