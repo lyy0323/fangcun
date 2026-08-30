@@ -345,6 +345,7 @@ const SHARED_CSS = `
   .more-btn:hover { border-color: #557799; color: #557799; }
   .empty { color: #a09890; font-size: 14px; text-align: center; padding: 30px 0; }
   footer { border-top: 1px solid #e8e4e0; margin-top: 60px; padding: 20px; text-align: center; font-size: 12.5px; color: #b9b0a6; }
+  footer .links { margin-top: 4px; }
   footer a { color: #8a8178; }
   /* 移动端顶栏压缩为单行（目标 ≥375px 宽度） */
   @media (max-width: 700px) {
@@ -388,7 +389,7 @@ ${extraHead}
 <main class="container">
 ${content}
 </main>
-<footer>© 上海交大国学社·文韵部×技术部 · 方寸 · <a href="/">写诗</a> · <a href="/ref/poetry-tools.html">工具对比</a> · <a href="/docs">API 文档</a></footer>
+<footer><div class="copy">© 上海交大国学社·文韵部×技术部</div><div class="links"><a href="https://sjtuguoxue.space" target="_blank" rel="noopener">南洋吟游诗词平台</a> · 方寸 · <a href="/">写诗</a> · <a href="/ref/poetry-tools.html">工具对比</a> · <a href="/docs">API 文档</a></div></footer>
 </body>
 </html>`;
 }
