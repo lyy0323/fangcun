@@ -222,15 +222,20 @@ const SHARED_CSS = `
   .tone-group { margin: 6px 0 22px; }
   .tone-group-title { font-size: 15px; font-weight: 600; color: #7a7066; margin: 22px 0 8px; display: flex; align-items: baseline; gap: 8px; }
   .tone-group-title .cnt { font-size: 12px; color: #a09890; font-weight: 400; }
-  details.cat { background: #fff; border: 1px solid #ece7e1; border-radius: 10px; margin-bottom: 8px; overflow: hidden; }
-  details.cat > summary { cursor: pointer; padding: 9px 14px; font-size: 14.5px; display: flex; align-items: baseline; gap: 10px; list-style: none; user-select: none; }
+  details.cat { background: #fff; border: 1px solid #ece7e1; border-radius: 10px; margin-bottom: 8px; overflow: visible; position: relative; }
+  details.cat > summary { cursor: pointer; padding: 9px 14px; font-size: 14.5px; display: flex; align-items: center; gap: 10px; list-style: none; user-select: none; border-radius: 10px; }
   details.cat > summary::-webkit-details-marker { display: none; }
   details.cat > summary::before { content: "▸"; color: #b9b0a6; font-size: 12px; transition: transform .15s; }
   details.cat[open] > summary::before { transform: rotate(90deg); }
   details.cat > summary:hover { background: #faf7f3; }
   details.cat > summary .name { font-weight: 600; }
   details.cat > summary .cnt { font-size: 12px; color: #a09890; margin-left: auto; }
-  .chars { padding: 4px 16px 14px; display: flex; flex-wrap: wrap; gap: 2px 10px; }
+  .cat-dot { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; display: inline-block; box-shadow: 0 0 0 1px rgba(0,0,0,0.06); }
+  .cat-ring { display: none; position: absolute; right: -44px; bottom: -44px; width: 168px; height: 168px; border-radius: 50%; border: 26px solid var(--rc); opacity: 0.28; pointer-events: none; z-index: 0; align-items: center; justify-content: center; }
+  details.cat[open] .cat-ring { display: flex; }
+  .cat-ring span { font-size: 58px; font-weight: 700; color: var(--rc); }
+  .sw { display: inline-block; width: 12px; height: 12px; border-radius: 4px; vertical-align: -1px; margin: 0 3px; }
+  .chars { padding: 4px 16px 14px; display: flex; flex-wrap: wrap; gap: 2px 10px; position: relative; z-index: 1; }
   .chars span { font-size: 15px; color: #4c443c; letter-spacing: 1px; }
   .chars .dim { color: #c4bcb2; }
   .search { width: 100%; max-width: 380px; padding: 9px 14px; border-radius: 9px; border: 1px solid #e0dad2; font-size: 14px; background: #fff; color: #5C534A; margin-bottom: 18px; }
@@ -327,6 +332,9 @@ ${content}
 
 /* ------------------------------- 韵书页面 -------------------------------- */
 
+/** 平水韵 106 韵配色（与「平水韵诗词上色器」一致：平声亮 / 上声暗 / 去声暗 / 入声浊） */
+const PINGSHUI_COLORS = {"一东":[192,80,80],"二冬":[204,80,80],"三江":[36,80,80],"四支":[216,80,80],"五微":[228,80,80],"六鱼":[60,80,80],"七虞":[72,80,80],"八齐":[240,80,80],"九佳":[252,80,80],"十灰":[264,80,80],"十一真":[84,80,80],"十二文":[96,80,80],"十三元":[108,80,80],"十四寒":[120,80,80],"十五删":[132,80,80],"一先":[144,80,80],"二萧":[324,80,80],"三肴":[336,80,80],"四豪":[348,80,80],"五歌":[0,80,80],"六麻":[12,80,80],"七阳":[24,80,80],"八庚":[156,80,80],"九青":[168,80,80],"十蒸":[180,80,80],"十一尤":[48,80,80],"十二侵":[312,80,80],"十三覃":[300,80,80],"十四盐":[288,80,80],"十五咸":[276,80,80],"一董":[192,80,20],"二肿":[204,80,20],"三讲":[36,80,20],"四纸":[216,80,20],"五尾":[228,80,20],"六语":[60,80,20],"七麌":[72,80,20],"八荠":[240,80,20],"九蟹":[252,80,20],"十贿":[264,80,20],"十一轸":[84,80,20],"十二吻":[96,80,20],"十三阮":[108,80,20],"十四旱":[120,80,20],"十五潸":[132,80,20],"十六铣":[144,80,20],"十七筱":[324,80,20],"十八巧":[336,80,20],"十九皓":[348,80,20],"二十哿":[0,80,20],"二十一马":[12,80,20],"二十二养":[24,80,20],"二十三梗":[156,80,20],"二十四迥":[180,80,20],"二十五有":[48,80,20],"二十六寝":[312,80,20],"二十七感":[300,80,20],"二十八俭":[288,80,20],"二十九豏":[276,80,20],"一送":[192,80,30],"二宋":[204,80,30],"三绛":[36,80,30],"四寘":[216,80,30],"五未":[228,80,30],"六御":[60,80,30],"七遇":[72,80,30],"八霁":[240,80,30],"九泰":[252,80,30],"十卦":[264,80,30],"十一队":[84,80,30],"十二震":[96,80,30],"十三问":[108,80,30],"十四愿":[120,80,30],"十五翰":[132,80,30],"十六谏":[144,80,30],"十七霰":[324,80,30],"十八啸":[336,80,30],"十九效":[348,80,30],"二十号":[0,80,30],"二十一个":[12,80,30],"二十二祃":[24,80,30],"二十三漾":[156,80,30],"二十四敬":[168,80,30],"二十五径":[180,80,30],"二十六宥":[48,80,30],"二十七沁":[312,80,30],"二十八勘":[300,80,30],"二十九艳":[288,80,30],"三十陷":[276,80,30],"一屋":[192,30,20],"二沃":[204,30,20],"三觉":[36,30,20],"四质":[84,30,20],"五物":[96,30,20],"六月":[108,30,20],"七曷":[120,30,20],"八黠":[132,30,20],"九屑":[144,30,20],"十药":[24,30,20],"十一陌":[156,30,20],"十二锡":[168,30,20],"十三职":[180,30,20],"十四缉":[312,30,20],"十五合":[300,30,20],"十六叶":[288,30,20],"十七洽":[276,30,20]};
+
 const PINGSHUI_GROUPS = [
   ['上平', ['一东','二冬','三江','四支','五微','六鱼','七虞','八齐','九佳','十灰','十一真','十二文','十三元','十四寒','十五删']],
   ['下平', ['一先','二萧','三肴','四豪','五歌','六麻','七阳','八庚','九青','十蒸','十一尤','十二侵','十三覃','十四盐','十五咸']],
@@ -355,12 +363,16 @@ function sortByName(names) {
 }
 
 /** 渲染一个韵部的 details 块 */
-function catDetails(cat) {
+function catDetails(cat, color) {
   const chars = (cat.characters || []).map((c) => `<span>${esc(c)}</span>`).join('');
-  return `<details class="cat"><summary><span class="name">${esc(cat.name)}</span><span class="cnt">${cat.characters?.length ?? 0} 字</span></summary><div class="chars">${chars || '<span class="dim">（无数据）</span>'}</div></details>`;
+  const hsl = color ? `hsl(${color[0]}, ${color[1]}%, ${color[2]}%)` : '';
+  const dot = color ? `<span class="cat-dot" style="background:${hsl}"></span>` : '';
+  // 展开后右下角半透明半溢出大圆环，环内写韵部代表字（去数字前缀取末字）
+  const ring = color ? `<div class="cat-ring" style="--rc:${hsl}"><span>${esc(cat.name.slice(-1))}</span></div>` : '';
+  return `<details class="cat"${color ? ` style="--rc:${hsl}"` : ''}><summary>${dot}<span class="name">${esc(cat.name)}</span><span class="cnt">${cat.characters?.length ?? 0} 字</span></summary><div class="chars">${chars || '<span class="dim">（无数据）</span>'}${ring}</div></details>`;
 }
 
-function buildRhymePage(bookKey, { navLabel, seoTitle, seoDesc, intro, groups }) {
+function buildRhymePage(bookKey, { navLabel, seoTitle, seoDesc, intro, groups, colorOf }) {
   const book = rhymeBooks[bookKey];
   const cats = book.categories;
   const nav = BOOK_NAV.map((b) => `<a class="${b.key === bookKey ? 'active' : ''}" href="${b.href}">${b.label} ${b.desc}</a>`).join('');
@@ -390,7 +402,7 @@ function buildRhymePage(bookKey, { navLabel, seoTitle, seoDesc, intro, groups })
     for (const n of names) {
       const cat = cats[n];
       if (!cat) continue;
-      html += `<div data-name="${esc(cat.name)}" data-chars="${esc((cat.characters || []).join(''))}">${catDetails(cat)}</div>`;
+      html += `<div data-name="${esc(cat.name)}" data-chars="${esc((cat.characters || []).join(''))}">${catDetails(cat, colorOf?.(cat.name))}</div>`;
     }
     if (html) body += `<div class="tone-group"><div class="tone-group-title">${gName}<span class="cnt">${names.length} 韵</span></div>${html}</div>`;
   }
@@ -406,8 +418,9 @@ function buildPingshuiPage() {
     navLabel: '平水韵',
     seoTitle: '平水韵 106 韵部总览 — 上平·下平·上声·去声·入声韵字查询',
     seoDesc: '平水韵 106 韵部完整对照：上平 15 韵、下平 15 韵、上声 29 韵、去声 30 韵、入声 17 韵。查询各韵部韵字，写律诗绝句押韵必备。',
-    intro: `平水韵共 <b>106 韵</b>：平声 30（上平 15、下平 15）、上声 29、去声 30、入声 17。近体诗（律诗、绝句）押韵以平水韵为准，其中仄声韵不用于近体诗押韵，但入声字归属对判断平仄至关重要。韵字按使用频率排序。`,
+    intro: `平水韵共 <b>106 韵</b>：平声 30（上平 15、下平 15）、上声 29、去声 30、入声 17。近体诗（律诗、绝句）押韵以平水韵为准，其中仄声韵不用于近体诗押韵，但入声字归属对判断平仄至关重要。韵字按使用频率排序。韵部色标与「平水韵诗词上色器」一致：<span class="sw" style="background:hsl(192,80%,80%)"></span>平声亮色 · <span class="sw" style="background:hsl(192,80%,20%)"></span>上声暗色 · <span class="sw" style="background:hsl(192,80%,30%)"></span>去声暗色 · <span class="sw" style="background:hsl(192,30%,20%)"></span>入声浊色。`,
     groups,
+    colorOf: (name) => PINGSHUI_COLORS[name],
   });
 }
 
