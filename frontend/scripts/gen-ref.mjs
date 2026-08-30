@@ -33,15 +33,18 @@ const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replac
 
 const TONE_CHAR = { P: '平', Z: '仄', A: '中' };
 
-/** 从押韵规则 AST 收集韵脚位置（0 基字符下标） */
+/** 从押韵规则 AST 收集韵脚位置（0 基字符下标；SAME_CATEGORY + RELATION，与 checker 一致） */
 function collectRhymePositions(node, out = new Set()) {
   if (!node) return out;
   if (node.type === 'SAME_CATEGORY') (node.positions || []).forEach((p) => out.add(p));
-  else if (node.rules) node.rules.forEach((r) => collectRhymePositions(r, out));
+  else if (node.type === 'RELATION') {
+    out.add(node.pos1);
+    (Array.isArray(node.pos2) ? node.pos2 : [node.pos2]).forEach((p) => out.add(p));
+  } else if (node.rules) node.rules.forEach((r) => collectRhymePositions(r, out));
   return out;
 }
 
-/** 词牌平仄渲染：扁平 {tone,comment} 数组，句/读分隔 + 韵脚标红 */
+/** 词牌平仄渲染：韵脚后句号、非韵脚句末逗号、读顿号（与 checker 可读词谱一致） */
 function renderCiPattern(tp, rhymes) {
   let out = '';
   let idx = 0;
@@ -53,37 +56,29 @@ function renderCiPattern(tp, rhymes) {
     }
     const ch = TONE_CHAR[t.tone] || '·';
     out += rhymes.has(idx) ? `<b class="yun">${ch}</b>` : `<span>${ch}</span>`;
-    if (t.comment === '句') out += '<span class="punc">。</span>';
+    if (rhymes.has(idx)) out += '<span class="punc">。</span>';
+    else if (t.comment === '句') out += '<span class="punc">，</span>';
     else if (t.comment === '读') out += '<span class="punc">、</span>';
     idx++;
   }
   return out;
 }
 
-/** 诗格平仄渲染：含变体块（可平可仄组），按行断句 */
+/** 诗格平仄渲染：与 checker 可读词谱一致——变体块取第一选项，按行断句（韵脚句末句号，其余句末逗号） */
 function renderShiPattern(tp, rhymes, lineLen) {
-  let out = '';
-  let idx = 0;
-  let line = 0;
-  const flushBreak = () => {
-    if (lineLen > 0 && line % lineLen === 0) out += '<span class="punc">。</span>';
-  };
+  const flat = [];
   for (const t of tp) {
-    if (Array.isArray(t)) {
-      const len = t[0].length;
-      const lastIsYun = rhymes.has(idx + len - 1);
-      out += `<span class="alt${lastIsYun ? ' yun' : ''}">(${t.map((opt) => opt.map((x) => TONE_CHAR[x.tone] || '·').join('')).join('｜')})</span>`;
-      idx += len;
-      line += len;
-      flushBreak();
-      continue;
-    }
+    if (Array.isArray(t)) flat.push(...t[0]);
+    else flat.push(t);
+  }
+  let out = '';
+  flat.forEach((t, idx) => {
     const ch = TONE_CHAR[t.tone] || '·';
     out += rhymes.has(idx) ? `<b class="yun">${ch}</b>` : `<span>${ch}</span>`;
-    idx++;
-    line++;
-    flushBreak();
-  }
+    if (lineLen > 0 && (idx + 1) % lineLen === 0) {
+      out += rhymes.has(idx) ? '<span class="punc">。</span>' : '<span class="punc">，</span>';
+    }
+  });
   return out;
 }
 
@@ -361,14 +356,18 @@ function buildZhonghuaPage() {
 
 const FAMOUS_CIPAI = ['忆江南','如梦令','长相思','浣溪沙','菩萨蛮','卜算子','采桑子','清平乐','西江月','浪淘沙','鹧鸪天','虞美人','蝶恋花','临江仙','江城子','念奴娇','满江红','水调歌头','沁园春','青玉案','声声慢','一剪梅','定风波','南歌子','渔歌子','捣练子','醉花阴','鹊桥仙','踏莎行','木兰花','苏幕遮','阮郎归','天仙子','千秋岁','八声甘州','水龙吟','摸鱼儿','永遇乐','贺新郎','桂枝香','满庭芳','扬州慢','雨霖铃','兰陵王','暗香','疏影','燕山亭','多丽','望江南'];
 
-/** 词牌平仄压成紧凑串（P/Z/A + 。句 + 、读），供 cipai-data.js 使用 */
+/** 词牌平仄压成紧凑串（P/Z/A + 。韵脚/，句末/、读），供 cipai-data.js 使用 */
 function compactCiTone(rule) {
+  const rhymes = collectRhymePositions(rule.rhyme_rule);
   let tp = '';
+  let idx = 0;
   for (const t of rule.tone_pattern || []) {
-    if (Array.isArray(t)) { tp += '(' + t.map((o) => o.map((x) => x.tone).join('')).join('|') + ')'; continue; }
+    if (Array.isArray(t)) { tp += '(' + t.map((o) => o.map((x) => x.tone).join('')).join('|') + ')'; idx += t[0].length; continue; }
     tp += t.tone || '';
-    if (t.comment === '句') tp += '。';
+    if (rhymes.has(idx)) tp += '。';
+    else if (t.comment === '句') tp += '，';
     else if (t.comment === '读') tp += '、';
+    idx++;
   }
   return tp;
 }
@@ -412,7 +411,7 @@ function buildCipaiPage() {
       var out = '', idx = 0;
       for (var i = 0; i < r.tp.length; i++) {
         var ch = r.tp[i];
-        if (ch === '。' || ch === '、') { out += '<span class="punc">' + ch + '</span>'; continue; }
+        if (ch === '。' || ch === '、' || ch === '，') { out += '<span class="punc">' + ch + '</span>'; continue; }
         if (ch === '(') {
           var j = r.tp.indexOf(')', i);
           var alts = r.tp.slice(i + 1, j).split('|').map(function (s) { return s.split('').map(TONE).join(''); }).join('｜');
@@ -533,7 +532,7 @@ function buildShiPage() {
 
   const content = `<h1>诗格速查 — 五言七言律诗绝句平仄</h1>
 <p class="subtitle">五绝 20 字 · 七绝 28 字 · 五律 40 字 · 七律 56 字 · 共 8 种基本格式</p>
-<p class="intro">近体诗每句字数与句数固定，平仄遵循"一句之内交替、一联之内相对、联与联之间相粘"的规则。押平声韵（平水韵），二、四、六、八句押韵，首句可押可不押。<b style="color:#b3543c">红字为韵脚</b>；「中」表示可平可仄；括号内为可平可仄的句式变体。</p>
+<p class="intro">近体诗每句字数与句数固定，平仄遵循"一句之内交替、一联之内相对、联与联之间相粘"的规则。押平声韵（平水韵），二、四、六、八句押韵，首句可押可不押。<b style="color:#b3543c">红字为韵脚</b>；「中」表示该字可平可仄。</p>
 <div class="cards">${cards}</div>`;
   return page({ title: '诗格速查 — 五绝·七绝·五律·七律平仄格式', desc: '近体诗八种基本格式速查：五绝、七绝、五律、七律的平起/仄起句式与首句入韵变体，附平仄模板与韵脚位置。', activeTab: '/ref/shi.html', content });
 }
