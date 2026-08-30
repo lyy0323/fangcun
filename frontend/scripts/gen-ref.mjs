@@ -948,6 +948,22 @@ function buildCharPage() {
     var timer = null;
     function enc(s) { return encodeURIComponent(s); }
     function toneColor(t) { return t === 'P' ? '#559977' : '#557799'; }
+    // 平水/词林韵部配色（与韵书页一致；多个韵部取首个）
+    var PS_COLORS = ${JSON.stringify(PINGSHUI_COLORS)};
+    var CL_COLORS = ${JSON.stringify(CILIN_COLORS)};
+    function itemColor(b, cats) {
+      if (!cats.length) return '#8a8178';
+      var first = cats[0];
+      if (b.key === 'Pingshuiyun') {
+        var c = PS_COLORS[first.name];
+        if (c) return 'hsl(' + c[0] + ',' + c[1] + '%,' + c[2] + '%)';
+      }
+      if (b.key === 'Cilinzhengyun') {
+        var c2 = CL_COLORS[first.name];
+        if (c2) return 'hsl(' + c2.h + ',' + c2.s + '%,' + c2.l + '%)';
+      }
+      return toneColor(first.tone_type);
+    }
     async function query() {
       var text = input.value.trim();
       var m = text.match(/[\\u3400-\\u9fff]/);
@@ -992,14 +1008,14 @@ function buildCharPage() {
         var data = res[bi];
         var cats = (data && data.rhyme_categories) || [];
         var href = BOOK_PAGE[b.key] + '?q=' + enc(char);
-        var dotColor = cats.length ? toneColor(cats[0].tone_type) : '#8a8178';
+        var dotColor = itemColor(b, cats);
         html += '<div class="tl-item"><span class="tl-dot" style="background:' + dotColor + '"></span>';
         html += '<div class="tl-head">' + b.label + '</div><div class="tl-body">';
         if (!cats.length) {
           html += '<span class="empty" style="padding:2px 0">未收录</span>';
         } else {
           cats.forEach(function (c) {
-            var col = toneColor(c.tone_type);
+            var col = (b.key === 'Pingshuiyun' || b.key === 'Cilinzhengyun') ? itemColor(b, cats) : toneColor(c.tone_type);
             if (b.key === 'Shangguyun' && c.readings && c.readings.length) {
               c.readings.forEach(function (r) {
                 html += '<div class="sg-line"><a class="chip" style="color:' + col + ';border-color:' + col + '40;background:' + col + '10" href="' + href + '">' + c.name + '</a>' +
