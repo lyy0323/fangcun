@@ -403,10 +403,19 @@ function buildRhymePage(bookKey, { navLabel, seoTitle, seoDesc, subtitle, legend
       if (!input) return;
       input.addEventListener('input', function () {
         var q = input.value.trim();
-        document.querySelectorAll('details.cat').forEach(function (d) {
-          var name = d.getAttribute('data-name');
+        // 按 wrapper（带 data-name/data-chars）过滤韵部卡片
+        document.querySelectorAll('[data-name]').forEach(function (d) {
+          var name = d.getAttribute('data-name') || '';
           var chars = d.getAttribute('data-chars') || '';
           d.style.display = (!q || name.indexOf(q) !== -1 || chars.indexOf(q) !== -1) ? '' : 'none';
+        });
+        // 全部隐藏的声调组连标题一起收起
+        document.querySelectorAll('.tone-group').forEach(function (g) {
+          var any = false;
+          g.querySelectorAll('[data-name]').forEach(function (d) {
+            if (d.style.display !== 'none') any = true;
+          });
+          g.style.display = any ? '' : 'none';
         });
       });
     })();
