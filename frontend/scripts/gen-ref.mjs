@@ -318,6 +318,9 @@ const SHARED_CSS = `
   .badge-qin { background: #eef2f8; color: #4a6d94; border: 1px solid #c9d8e8; }
   .badge-long { background: #f7eef2; color: #8a4a63; border: 1px solid #e3c9d6; }
   .badge-other { background: #f4f1ec; color: #8a8178; border: 1px solid #e0d8cc; }
+  .lg-capsule { display: inline-flex; align-items: center; padding: 2px 12px; border-radius: 999px; font-size: 12px; font-weight: 600; }
+  .lg-long { background: #f7eef2; color: #8a4a63; border: 1px solid #e3c9d6; }
+  .lg-qin { background: #eef2f8; color: #4a6d94; border: 1px solid #c9d8e8; }
   .write-btn { float: right; display: inline-block; padding: 1px 14px; border-radius: 999px; font-size: 12.5px; border: 1px solid #557799; color: #557799; background: #fff; cursor: pointer; text-decoration: none; margin-left: 8px; }
   .write-btn:hover { background: #557799; color: #fff; text-decoration: none; }
   /* 查字页空闲态：常用字玻璃卡片墙（两行、反向滚动、可拖拽、随机浅彩底） */
@@ -830,7 +833,7 @@ function buildCipaiPage() {
 
   const content = `<h1>词谱格律对照</h1>
 <p class="subtitle">${ciRules.length} 个词牌变体（钦谱/龙谱等）· ${new Set(ciRules.map((r) => r.cipai)).size} 个词牌 · 可搜索、按字数筛选，点开查看平仄与韵脚</p>
-<div class="legend" style="margin-top:6px"><span><span class="sw" style="background:#559977"></span>平</span><span><span class="sw" style="background:#557799"></span>仄</span><span><span class="sw" style="background:#d97706"></span>叶</span></div>
+<div class="legend" style="margin-top:6px"><span class="lg-capsule lg-long">龙谱 = 龙榆生词谱</span><span class="lg-capsule lg-qin">钦谱 = 钦定词谱</span><span><span class="sw" style="background:#559977"></span>平</span><span><span class="sw" style="background:#557799"></span>仄</span><span><span class="sw" style="background:#d97706"></span>叶</span></div>
 <div class="tabs2">
   <button class="tab2 active" data-tab="famous">常用词牌</button>
   <button class="tab2" data-tab="search">搜索</button>
