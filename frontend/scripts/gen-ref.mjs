@@ -236,6 +236,12 @@ const SHARED_CSS = `
   .chars .cat-ring span { font-size: 80px; font-weight: 400; color: var(--rc-w); font-family: "ml", "Noto Serif SC", serif; line-height: 1; letter-spacing: 0; }
   .sw { display: inline-block; width: 12px; height: 12px; border-radius: 4px; vertical-align: -1px; margin: 0 3px; }
   .chars { padding: 4px 16px 14px; display: flex; flex-wrap: wrap; gap: 2px 10px; position: relative; z-index: 1; }
+  .credit { font-size: 12.5px; color: #a09890; margin: 0 0 18px; }
+  .sub-group { flex: 1 1 100%; margin: 4px 0 10px; }
+  .sub-name { font-size: 12.5px; color: #557799; font-weight: 600; margin-bottom: 3px; }
+  .sub-name .cnt { color: #a09890; font-weight: 400; }
+  .sub-chars { display: flex; flex-wrap: wrap; gap: 2px 10px; }
+  .sub-chars span { font-size: 14.5px; color: #4c443c; letter-spacing: 1px; }
   .chars span { font-size: 15px; color: #4c443c; letter-spacing: 1px; }
   .chars .dim { color: #c4bcb2; }
   .search { width: 100%; max-width: 380px; padding: 9px 14px; border-radius: 9px; border: 1px solid #e0dad2; font-size: 14px; background: #fff; color: #5C534A; margin-bottom: 18px; }
@@ -332,8 +338,19 @@ ${content}
 
 /* ------------------------------- 韵书页面 -------------------------------- */
 
-/** 上古韵页首介绍——由用户提供（暂留占位） */
-const SHANGGUYUN_INTRO = '（上古韵介绍文字——待补充）';
+/** 上古韵页首介绍（用户提供） */
+const SHANGGUYUN_INTRO = '采用 nulll 拟音方案，对标王力上古韵体系设计邻韵通押，适合爱好者使用。';
+const SHANGGUYUN_CREDIT = 'Contributor：上海交通大学国学社·「南洋小学」音韵学兴趣小组——@nulll @知母tr @lyy0323';
+
+/** 上古韵小韵排序：平/上/去/入/次入，同调按小韵名 */
+const SG_TONE_RANK = { 平: 0, 上: 1, 去: 2, 入: 3, 次入: 4 };
+function sgSubKey(sub) {
+  let tone = SG_TONE_RANK[sub.slice(-1)] ?? 5;
+  let base = sub;
+  if (sub.endsWith('次入')) { tone = 4; base = sub.slice(0, -2); }
+  else if (SG_TONE_RANK[base.slice(-1)] !== undefined) base = base.slice(0, -1);
+  return [tone, base];
+}
 
 /** 平水韵 106 韵配色（与「平水韵诗词上色器」一致：平声亮 / 上声暗 / 去声暗 / 入声浊） */
 const PINGSHUI_COLORS = {"一东":[192,80,80],"二冬":[204,80,80],"三江":[36,80,80],"四支":[216,80,80],"五微":[228,80,80],"六鱼":[60,80,80],"七虞":[72,80,80],"八齐":[240,80,80],"九佳":[252,80,80],"十灰":[264,80,80],"十一真":[84,80,80],"十二文":[96,80,80],"十三元":[108,80,80],"十四寒":[120,80,80],"十五删":[132,80,80],"一先":[144,80,80],"二萧":[324,80,80],"三肴":[336,80,80],"四豪":[348,80,80],"五歌":[0,80,80],"六麻":[12,80,80],"七阳":[24,80,80],"八庚":[156,80,80],"九青":[168,80,80],"十蒸":[180,80,80],"十一尤":[48,80,80],"十二侵":[312,80,80],"十三覃":[300,80,80],"十四盐":[288,80,80],"十五咸":[276,80,80],"一董":[192,80,20],"二肿":[204,80,20],"三讲":[36,80,20],"四纸":[216,80,20],"五尾":[228,80,20],"六语":[60,80,20],"七麌":[72,80,20],"八荠":[240,80,20],"九蟹":[252,80,20],"十贿":[264,80,20],"十一轸":[84,80,20],"十二吻":[96,80,20],"十三阮":[108,80,20],"十四旱":[120,80,20],"十五潸":[132,80,20],"十六铣":[144,80,20],"十七筱":[324,80,20],"十八巧":[336,80,20],"十九皓":[348,80,20],"二十哿":[0,80,20],"二十一马":[12,80,20],"二十二养":[24,80,20],"二十三梗":[156,80,20],"二十四迥":[180,80,20],"二十五有":[48,80,20],"二十六寝":[312,80,20],"二十七感":[300,80,20],"二十八俭":[288,80,20],"二十九豏":[276,80,20],"一送":[192,80,30],"二宋":[204,80,30],"三绛":[36,80,30],"四寘":[216,80,30],"五未":[228,80,30],"六御":[60,80,30],"七遇":[72,80,30],"八霁":[240,80,30],"九泰":[252,80,30],"十卦":[264,80,30],"十一队":[84,80,30],"十二震":[96,80,30],"十三问":[108,80,30],"十四愿":[120,80,30],"十五翰":[132,80,30],"十六谏":[144,80,30],"十七霰":[324,80,30],"十八啸":[336,80,30],"十九效":[348,80,30],"二十号":[0,80,30],"二十一个":[12,80,30],"二十二祃":[24,80,30],"二十三漾":[156,80,30],"二十四敬":[168,80,30],"二十五径":[180,80,30],"二十六宥":[48,80,30],"二十七沁":[312,80,30],"二十八勘":[300,80,30],"二十九艳":[288,80,30],"三十陷":[276,80,30],"一屋":[192,30,20],"二沃":[204,30,20],"三觉":[36,30,20],"四质":[84,30,20],"五物":[96,30,20],"六月":[108,30,20],"七曷":[120,30,20],"八黠":[132,30,20],"九屑":[144,30,20],"十药":[24,30,20],"十一陌":[156,30,20],"十二锡":[168,30,20],"十三职":[180,30,20],"十四缉":[312,30,20],"十五合":[300,30,20],"十六叶":[288,30,20],"十七洽":[276,30,20]};
@@ -375,7 +392,7 @@ function catDetails(cat, color) {
   return `<details class="cat"${color ? ` style="--rc:${hsl}"` : ''}><summary>${dot}<span class="name">${esc(cat.name)}</span><span class="cnt">${cat.characters?.length ?? 0} 字</span></summary><div class="chars">${chars || '<span class="dim">（无数据）</span>'}${ring}</div></details>`;
 }
 
-function buildRhymePage(bookKey, { navLabel, seoTitle, seoDesc, subtitle, legendColor, groups, colorOf, extraHead }) {
+function buildRhymePage(bookKey, { navLabel, seoTitle, seoDesc, subtitle, legendColor, credit, groups, colorOf, catRenderer, extraHead }) {
   const book = rhymeBooks[bookKey];
   const cats = book.categories;
   const nav = BOOK_NAV.map((b) => `<a class="${b.key === bookKey ? 'active' : ''}" href="${b.href}">${b.label} ${b.desc}</a>`).join('');
@@ -396,6 +413,7 @@ function buildRhymePage(bookKey, { navLabel, seoTitle, seoDesc, subtitle, legend
   </script>`;
   let body = `<h1>${seoTitle}</h1>
 <p class="subtitle">${subtitle}</p>
+${credit ? `<p class="credit">${credit}</p>` : ''}
 <div class="book-nav">${nav}</div>
 <input id="cat-search" class="search" type="search" placeholder="搜索韵部名或韵字…" />
 <div class="legend">${legendColor || ''}<span>点击展开查看韵字</span></div>`;
@@ -404,7 +422,7 @@ function buildRhymePage(bookKey, { navLabel, seoTitle, seoDesc, subtitle, legend
     for (const n of names) {
       const cat = cats[n];
       if (!cat) continue;
-      html += `<div data-name="${esc(cat.name)}" data-chars="${esc((cat.characters || []).join(''))}">${catDetails(cat, colorOf?.(cat.name))}</div>`;
+      html += `<div data-name="${esc(cat.name)}" data-chars="${esc((cat.characters || []).join(''))}">${catRenderer ? catRenderer(cat) : catDetails(cat, colorOf?.(cat.name))}</div>`;
     }
     if (html) body += `<div class="tone-group"><div class="tone-group-title">${gName}<span class="cnt">${names.length} 韵</span></div>${html}</div>`;
   }
@@ -443,14 +461,44 @@ function buildCilinPage() {
 
 function buildShangguyunPage() {
   const cats = rhymeBooks.Shangguyun.categories;
+  // 从 char_dict 读音建立 部 → 小韵 → 字 映射（字序保持韵书频率序，同小韵去重）
+  const charDict = JSON.parse(readFileSync(join(CFG, 'char_dict.json'), 'utf8'));
+  const subMap = {};
+  for (const [catName, cat] of Object.entries(cats)) {
+    const m = new Map();
+    for (const ch of cat.characters) {
+      for (const r of charDict[ch]?.shangguyun || []) {
+        if (r.cat !== catName) continue;
+        if (!m.has(r.sub)) m.set(r.sub, new Set());
+        m.get(r.sub).add(ch);
+      }
+    }
+    subMap[catName] = m;
+  }
+  const catRenderer = (cat) => {
+    const m = subMap[cat.name];
+    const subs = [...m.entries()].sort((a, b) => {
+      const ka = sgSubKey(a[0]);
+      const kb = sgSubKey(b[0]);
+      return ka[0] - kb[0] || (ka[1] < kb[1] ? -1 : ka[1] > kb[1] ? 1 : 0);
+    });
+    const inner = subs
+      .map(([subName, set]) =>
+        `<div class="sub-group"><div class="sub-name">${esc(subName)}<span class="cnt"> ${set.size} 字</span></div><div class="sub-chars">${[...set].map((c) => `<span>${esc(c)}</span>`).join('')}</div></div>`
+      )
+      .join('');
+    return `<details class="cat"><summary><span class="name">${esc(cat.name)}</span><span class="cnt">${cat.characters.length} 字 · ${subs.length} 小韵</span></summary><div class="chars">${inner}</div></details>`;
+  };
   const names = Object.keys(cats);
-  const groups = [['上古韵 23 部（先秦音系）', names]];
+  const groups = [['上古韵 23 部（按小韵细分）', names]];
   return buildRhymePage('Shangguyun', {
     navLabel: '上古韵',
     seoTitle: '上古韵 23 韵部总览 — 《诗经》《楚辞》押韵查询',
     seoDesc: '上古音系 23 韵部完整对照（鱼铎、之职、幽觉、脂质至等），依据先秦音系归纳，《诗经》《楚辞》用韵查询，适合拟古体与仿先秦之作。',
     subtitle: SHANGGUYUN_INTRO,
+    credit: SHANGGUYUN_CREDIT,
     groups,
+    catRenderer,
   });
 }
 
