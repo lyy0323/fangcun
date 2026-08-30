@@ -307,9 +307,7 @@ const SHARED_CSS = `
   .ch-chip:hover { border-color: #557799; color: #557799; }
   .example-chips { margin: 4px 0 18px; }
   .char-hero { display: flex; align-items: center; gap: 14px; margin: 8px 0 22px; }
-  .char-hero .big { font-size: 54px; font-weight: 700; line-height: 1.2; color: #4c443c; }
-  .char-hero .tones { display: flex; gap: 6px; }
-  .tone-chip { padding: 2px 12px; border-radius: 999px; font-size: 12.5px; border: 1px solid #e0dad2; color: #6b6360; }
+  .char-hero .big { font-size: 54px; font-weight: 400; line-height: 1.2; color: #4c443c; font-family: "ml", "Noto Serif SC", serif; }
   .def-reading { margin: 10px 0; }
   .def-py { font-size: 13px; color: #557799; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; margin-bottom: 4px; }
   .def-item { font-size: 14px; margin: 3px 0; color: #4c443c; }
@@ -914,14 +912,7 @@ function buildCharPage() {
     }
     function render(char, res) {
       var defs = (res[4] && res[4].definitions) || [];
-      var tones = (res[0] && res[0].tones) || [];
-      var html = '<div class="char-hero"><span class="big">' + char + '</span>';
-      if (tones.length) {
-        html += '<div class="tones">' + tones.map(function (t) {
-          return '<span class="tone-chip">' + t + '</span>';
-        }).join('') + '</div>';
-      }
-      html += '</div>';
+      var html = '<div class="char-hero"><span class="big">' + char + '</span></div>';
       // 释义
       html += '<h2>释义</h2><div class="card">';
       if (!defs.length) {
@@ -981,6 +972,7 @@ ${appJs}`;
     title: '单字查询 — 释义与四部韵书音韵地位',
     desc: '输入一个汉字，同屏查看释义（拼音、说文引文）与平水韵、词林正韵、上古韵（小韵、拟音）、中华通韵下的音韵地位。',
     activeTab: '/ref/char.html',
+    extraHead: '<link rel="stylesheet" href="/fonts/ml/result.css" />',
     content,
   });
 }
