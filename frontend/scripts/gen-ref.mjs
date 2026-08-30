@@ -843,9 +843,7 @@ function buildShiPage() {
     }
   }
   const cards = formats.map((f) => {
-    const base = f.rules.find((r) => !r.name.includes('首句入韵')) || f.rules[0];
-    const ruYun = f.rules.find((r) => r.name.includes('首句入韵'));
-    const lineLen = Math.round((base.char_count || 0) / SHI_LINES[f.cipai]);
+    const lineLen = Math.round(((f.rules[0] || {}).char_count || 0) / SHI_LINES[f.cipai]);
     const render = (r) => {
       const rhymes = collectRhymePositions(r.rhyme_rule);
       const tp = renderShiPattern(r.tone_pattern || [], rhymes, lineLen, buildRhymeColorMap(r.tone_pattern, r.rhyme_rule));
@@ -854,13 +852,21 @@ function buildShiPage() {
       return `<div class="tp">${tp}</div><div style="font-size:12.5px;color:#a09890">${r.char_count} 字 · ${rhymeNote} · 韵脚 ${rhymes.size} 处</div>`;
     };
     const writeHref = (r) => `/?ciyun=1&genre=Shi&rule=${encodeURIComponent(r.name)}&chars=${r.char_count}&title=${encodeURIComponent(r.name)}`;
-    const baseBlock = `<details open><summary><span class="sum-label">标准句式</span><a class="write-btn" href="${writeHref(base)}" title="新建画板并跳转创作区">写</a></summary>${render(base)}</details>`;
-    const ruBlock = ruYun ? `<details><summary><span class="sum-label">首句入韵变体</span><a class="write-btn" href="${writeHref(ruYun)}" title="新建画板并跳转创作区">写</a></summary>${render(ruYun)}</details>` : '';
+    const isWu = f.cipai.startsWith('Wu');
+    const base = f.rules.find((r) => !r.name.includes('首句入韵')) || f.rules[0];
+    const ruYun = f.rules.find((r) => r.name.includes('首句入韵'));
+    // 五言首句不入韵优先、七言首句入韵优先
+    const first = isWu ? base : (ruYun || base);
+    const second = isWu ? ruYun : base;
+    const firstLabel = isWu ? '首句不入韵' : '首句入韵';
+    const secondLabel = isWu ? '首句入韵' : '首句不入韵';
+    const firstBlock = `<details open><summary><span class="sum-label">${firstLabel}</span><a class="write-btn" href="${writeHref(first)}" title="新建画板并跳转创作区">写</a></summary>${render(first)}</details>`;
+    const secondBlock = second !== first ? `<details><summary><span class="sum-label">${secondLabel}</span><a class="write-btn" href="${writeHref(second)}" title="新建画板并跳转创作区">写</a></summary>${render(second)}</details>` : '';
     return `<div class="card">
       <h3>${SHI_LABEL[f.cipai]} · ${f.qi}</h3>
       <div class="meta">${base.char_count} 字 · ${SHI_LINES[f.cipai]} 句 · 每句 ${lineLen} 字 · 平水韵押平声韵</div>
-      ${baseBlock}
-      ${ruBlock}
+      ${firstBlock}
+      ${secondBlock}
     </div>`;
   }).join('');
 
