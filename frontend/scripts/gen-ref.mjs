@@ -181,6 +181,7 @@ const ciyun = (genre, rule, chars, title) =>
 
 const TABS = [
   { href: '/ref/index.html', label: '韵书总览' },
+  { href: '/ref/char.html', label: '查字' },
   { href: '/ref/cipai.html', label: '词谱格律' },
   { href: '/ref/shi.html', label: '诗格速查' },
   { href: '/ref/tutorial.html', label: '教程' },
@@ -300,6 +301,22 @@ const SHARED_CSS = `
   .badge-qin { background: #eef2f8; color: #4a6d94; border: 1px solid #c9d8e8; }
   .badge-long { background: #f7eef2; color: #8a4a63; border: 1px solid #e3c9d6; }
   .badge-other { background: #f4f1ec; color: #8a8178; border: 1px solid #e0d8cc; }
+  .ch-chip { padding: 4px 14px; border-radius: 18px; border: 1px solid #e0dad2; background: #fff; font-size: 13px; color: #6b6360; cursor: pointer; font-family: inherit; margin: 0 6px 6px 0; }
+  .ch-chip:hover { border-color: #557799; color: #557799; }
+  .example-chips { margin: 4px 0 18px; }
+  .char-hero { display: flex; align-items: center; gap: 14px; margin: 8px 0 22px; }
+  .char-hero .big { font-size: 54px; font-weight: 700; line-height: 1.2; color: #4c443c; }
+  .char-hero .tones { display: flex; gap: 6px; }
+  .tone-chip { padding: 2px 12px; border-radius: 999px; font-size: 12.5px; border: 1px solid #e0dad2; color: #6b6360; }
+  .def-reading { margin: 10px 0; }
+  .def-py { font-size: 13px; color: #557799; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; margin-bottom: 4px; }
+  .def-item { font-size: 14px; margin: 3px 0; color: #4c443c; }
+  .def-no { color: #a09890; margin-right: 4px; font-size: 12px; }
+  .def-c { font-size: 11.5px; color: #a09890; padding-left: 18px; margin-top: 2px; line-height: 1.6; }
+  .chip { display: inline-block; padding: 2px 10px; border-radius: 999px; font-size: 12.5px; border: 1px solid; margin: 2px 4px 2px 0; }
+  .sg-line { margin: 3px 0; }
+  .sg-reading { font-size: 12.5px; color: #6b6360; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+  .loading { text-align: center; padding: 30px 0; color: #a09890; }
   .more-btn { display: block; margin: 14px auto; padding: 8px 22px; border-radius: 9px; border: 1px solid #e0dad2; background: #fff; font-size: 13.5px; color: #6b6360; cursor: pointer; font-family: inherit; }
   .more-btn:hover { border-color: #557799; color: #557799; }
   .empty { color: #a09890; font-size: 14px; text-align: center; padding: 30px 0; }
@@ -791,6 +808,123 @@ function buildShiPage() {
   return page({ title: '诗格速查 — 五绝·七绝·五律·七律平仄格式', desc: '近体诗八种基本格式速查：五绝、七绝、五律、七律的平起/仄起句式与首句入韵变体，附平仄模板、韵脚位置与拗救（孤平自救、特拗句、对句相救）讲解。', activeTab: '/ref/shi.html', content });
 }
 
+/* ------------------------------- 查字页面 -------------------------------- */
+
+const CHAR_EXAMPLES = ['中', '白', '月', '山', '风'];
+
+function buildCharPage() {
+  const examples = CHAR_EXAMPLES.map((c) => `<button class="ch-chip" data-ch="${esc(c)}">${c}</button>`).join('');
+  const appJs = `
+  <script>
+  (function () {
+    // Android 端与 SPA 一致：checker 走远程（本地 5050 仅服务 shiva 释义/字典）
+    var IS_ANDROID = /FangcunAndroid/.test(navigator.userAgent);
+    var CHECKER = IS_ANDROID ? 'https://checker.sjtuguoxue.space/api' : '/api';
+    var BOOKS = [
+      { key: 'Pingshuiyun', label: '平水韵' },
+      { key: 'Cilinzhengyun', label: '词林正韵' },
+      { key: 'Shangguyun', label: '上古韵' },
+      { key: 'Zhonghua_Tongyun', label: '中华通韵' }
+    ];
+    var input = document.getElementById('ch-input');
+    var resultEl = document.getElementById('ch-result');
+    var timer = null;
+    function enc(s) { return encodeURIComponent(s); }
+    function toneColor(t) { return t === 'P' ? '#559977' : '#557799'; }
+    async function query() {
+      var text = input.value.trim();
+      var m = text.match(/[\\u3400-\\u9fff]/);
+      if (!m) { resultEl.innerHTML = '<div class="empty">请输入一个汉字</div>'; return; }
+      var char = m[0];
+      resultEl.innerHTML = '<div class="loading">查询中…</div>';
+      try {
+        var jobs = BOOKS.map(function (b) {
+          return fetch(CHECKER + '/char/lookup?char=' + enc(char) + '&book=' + enc(b.key))
+            .then(function (r) { return r.ok ? r.json() : null; })
+            .catch(function () { return null; });
+        });
+        jobs.push(fetch('/api/char/definitions?char=' + enc(char))
+          .then(function (r) { return r.ok ? r.json() : null; })
+          .catch(function () { return null; }));
+        var res = await Promise.all(jobs);
+        render(char, res);
+      } catch (e) {
+        resultEl.innerHTML = '<div class="empty">查询失败，请检查网络后重试</div>';
+      }
+    }
+    function render(char, res) {
+      var defs = (res[4] && res[4].definitions) || [];
+      var tones = (res[0] && res[0].tones) || [];
+      var html = '<div class="char-hero"><span class="big">' + char + '</span>';
+      if (tones.length) {
+        html += '<div class="tones">' + tones.map(function (t) {
+          return '<span class="tone-chip">' + t + '</span>';
+        }).join('') + '</div>';
+      }
+      html += '</div>';
+      // 释义
+      html += '<h2>释义</h2><div class="card">';
+      if (!defs.length) {
+        html += '<p class="empty" style="padding:8px 0">未收录释义</p>';
+      } else {
+        defs.forEach(function (rd) {
+          html += '<div class="def-reading"><div class="def-py">' + (rd.py || '') + '</div>';
+          rd.defs.forEach(function (d, di) {
+            html += '<div class="def-item"><span class="def-no">' + '①②③④⑤⑥⑦⑧⑨⑩'[di] + '</span><span>' + d.d + '</span>';
+            if (d.c) html += '<div class="def-c">' + d.c + '</div>';
+            html += '</div>';
+          });
+          html += '</div>';
+        });
+      }
+      html += '</div>';
+      // 四部音韵地位
+      html += '<h2>四部韵书音韵地位</h2><div class="cards">';
+      BOOKS.forEach(function (b, bi) {
+        var data = res[bi];
+        var cats = (data && data.rhyme_categories) || [];
+        html += '<div class="card"><h3>' + b.label + '</h3>';
+        if (!cats.length) {
+          html += '<p class="empty" style="padding:6px 0">未收录</p>';
+        } else {
+          cats.forEach(function (c) {
+            var col = toneColor(c.tone_type);
+            if (b.key === 'Shangguyun' && c.readings && c.readings.length) {
+              c.readings.forEach(function (r) {
+                html += '<div class="sg-line"><span class="chip" style="color:' + col + ';border-color:' + col + '40;background:' + col + '10">' + c.name + '</span>' +
+                  '<span class="sg-reading">' + r.sub + ' · ' + r.py + (r.rpy ? '（' + r.rpy + '）' : '') + '</span></div>';
+              });
+            } else {
+              html += '<span class="chip" style="color:' + col + ';border-color:' + col + '40;background:' + col + '10">' + c.name + '</span>';
+            }
+          });
+        }
+        html += '</div>';
+      });
+      html += '</div>';
+      resultEl.innerHTML = html;
+    }
+    input.addEventListener('input', function () { clearTimeout(timer); timer = setTimeout(query, 250); });
+    input.addEventListener('keydown', function (e) { if (e.key === 'Enter') { clearTimeout(timer); query(); } });
+    document.querySelectorAll('.ch-chip').forEach(function (b) {
+      b.addEventListener('click', function () { input.value = b.getAttribute('data-ch'); query(); });
+    });
+  })();
+  </script>`;
+  const content = `<h1>单字查询 — 释义 · 四部韵书音韵地位</h1>
+<p class="subtitle">输入一个汉字，同屏查看其释义，以及它在平水韵、词林正韵、上古韵、中华通韵下的韵部与声调（上古韵含小韵与拟音）。</p>
+<input id="ch-input" class="search" type="search" placeholder="输入单字，如：中 / 白 / 月 / 山 / 风…" autofocus />
+<div class="example-chips">${examples}</div>
+<div id="ch-result"></div>
+${appJs}`;
+  return page({
+    title: '单字查询 — 释义与四部韵书音韵地位',
+    desc: '输入一个汉字，同屏查看释义（拼音、说文引文）与平水韵、词林正韵、上古韵（小韵、拟音）、中华通韵下的音韵地位。',
+    activeTab: '/ref/char.html',
+    content,
+  });
+}
+
 /* ------------------------------- 教程页面 -------------------------------- */
 
 function buildTutorialPage() {
@@ -898,6 +1032,7 @@ const files = {
   'cilinzhengyun.html': buildCilinPage(),
   'shangguyun.html': buildShangguyunPage(),
   'zhonghua.html': buildZhonghuaPage(),
+  'char.html': buildCharPage(),
   'cipai.html': buildCipaiPage(),
   'cipai-data.js': `/* 自动生成：词牌全量数据（精简字段） */\nwindow.CIPAI_DATA=${JSON.stringify(compactAll)};\n`,
   'shi.html': buildShiPage(),
