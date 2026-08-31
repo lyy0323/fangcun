@@ -261,6 +261,10 @@ def stats_summary():
 
     for r in rows:
         route, count, source = r["route"], r["call_count"], r["source"]
+        # checker 透传端点统一视为 api 来源（后端调用），
+        # 与前端事件埋点分离、不重复计入其他来源桶
+        if route in CHECKER_PROXY_ROUTES:
+            source = "api"
         sources[source] = sources.get(source, 0) + count
 
         if route.startswith("_event:"):
@@ -312,6 +316,13 @@ def dashboard():
 # 透传路由走 track_api_call 统计（/api/* 且非 /api/_，状态 < 400）。
 
 CHECKER_URL = os.environ.get("CHECKER_URL", "https://checker.sjtuguoxue.space")
+
+# checker 透传端点：统计归一为 api 来源（后端调用），不计入前端事件/其他来源桶
+CHECKER_PROXY_ROUTES = {
+    "/api/validate_meter", "/api/free_rhyme",
+    "/api/rhyme/lookup", "/api/rhyme/list",
+    "/api/rules/list", "/api/char/lookup",
+}
 
 
 def _checker_proxy_ssl():

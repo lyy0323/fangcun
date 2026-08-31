@@ -628,6 +628,14 @@ const EVENT_LABELS = {
   toggle_immersive: '沉浸模式',
 };
 
+// checker 透传端点：统计归一为 api 来源（后端调用），与前端事件埋点分离
+const CHECKER_ROUTES = new Set([
+  '/api/validate_meter', '/api/free_rhyme',
+  '/api/rhyme/lookup', '/api/rhyme/list',
+  '/api/rules/list', '/api/char/lookup',
+]);
+const normSource = (row) => CHECKER_ROUTES.has(row.route) ? 'api' : row.source;
+
 function render() {
   const today = todayUTC8();
   const filtered = getFilteredStats();
@@ -682,9 +690,9 @@ function render() {
     routeEntries.length ? routeEntries[0][1] : 1, 0
   );
 
-  // Source distribution
+  // Source distribution（checker 透传端点并入 api）
   const sourceMap = {};
-  filtered.forEach(s => { sourceMap[s.source] = (sourceMap[s.source] || 0) + s.call_count; });
+  filtered.forEach(s => { const src = normSource(s); sourceMap[src] = (sourceMap[src] || 0) + s.call_count; });
   const sourceEntries = Object.entries(sourceMap).sort((a, b) => b[1] - a[1]);
   document.getElementById('sourceChart').innerHTML = barChart(sourceEntries, sourceEntries.length ? sourceEntries[0][1] : 1, 2);
 
@@ -748,8 +756,10 @@ function render() {
   } else {
     const grouped = {};
     filtered.forEach(s => {
-      const key = `${s.route}||${s.source}`;
-      if (!grouped[key]) grouped[key] = { route: s.route, source: s.source, call_count: 0, last_called_at: '' };
+      // checker 透传端点按路由合并各来源，统一显示为 api
+      const src = normSource(s);
+      const key = `${s.route}||${src}`;
+      if (!grouped[key]) grouped[key] = { route: s.route, source: src, call_count: 0, last_called_at: '' };
       grouped[key].call_count += s.call_count;
       if (s.last_called_at > (grouped[key].last_called_at || '')) grouped[key].last_called_at = s.last_called_at;
     });
