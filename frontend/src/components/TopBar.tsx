@@ -1,9 +1,10 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useBoardContext, useActiveBoard } from '../context/BoardContext';
-import { PLACEHOLDER, resolveAuthor } from '../lib/types';
+import { PLACEHOLDER } from '../lib/types';
 import { Layers, Plus, ClipboardType, Check, Upload, Sun, Moon, Settings, ChevronRight, ChevronDown, X, BookOpen, Library, Lightbulb, SendHorizontal, ExternalLink, Download, FolderUp, ImageDown, ScrollText, FolderPlus, Pencil, FolderInput, ChevronUp, ArrowUpDown, ArrowDown, ArrowUp, ArrowDownAZ, Undo2, Redo2, FileText } from 'lucide-react';
 import type { Board, SortMode } from '../lib/types';
 import { track } from '../lib/api';
+import { buildBoardMarkdown } from '../lib/markdownRoundTrip';
 import { ExportPreview } from './ExportPreview';
 import { MetadataPopover } from './MetadataPopover';
 import { UploadModal } from './UploadModal';
@@ -739,94 +740,6 @@ export function TopBar() {
     return parts.join('\n');
   };
 
-  const buildBoardMarkdown = (b: Board, opts: { author: 'off' | 'override' | 'all'; date: boolean }) => {
-    const meta = b.metadata || {};
-    const author = opts.author === 'off' ? ''
-      : opts.author === 'override' ? (meta.author ?? '')
-      : resolveAuthor(meta);
-    const heading = author ? `### ${b.title} / ${author}` : `### ${b.title}`;
-    const bq = (text: string) => text.split('\n').map(l => `> ${l}`);
-    const lines: string[] = [heading, ''];
-
-    // Board preface
-    if (meta.preface) { lines.push(...bq(meta.preface), ''); }
-
-    const multiSection = b.sections.length > 1;
-
-    b.sections.forEach((sec, idx) => {
-      // Section heading (组诗)
-      if (multiSection) {
-        if (sec.title) lines.push(`#### ${sec.title}`, '');
-        else if (idx > 0) lines.push(`#### `, '');
-      }
-
-      // Section preface
-      if (sec.sectionPreface) lines.push(...bq(sec.sectionPreface), '');
-
-      // Body text
-      if (b.genre === 'Free') {
-        const sLines = (sec.lines ?? []).filter(l => l.trim());
-        lines.push(...sLines, '');
-      } else {
-        const validation = state.validations[idx] ?? null;
-        const chars = sec.poemChars;
-        const rhymeSet = new Set(validation?.rhyme_positions ?? []);
-        const sentenceLen = b.genre === 'Shi' ? (sec.charCount % 7 === 0 ? 7 : 5) : 0;
-
-        const getPunct = (gi: number): string => {
-          if (sec.punctOverrides && gi in sec.punctOverrides) return sec.punctOverrides[gi];
-          if (b.genre === 'Shi') {
-            const posInCouplet = gi % (sentenceLen * 2);
-            const isSentenceEnd = posInCouplet === sentenceLen - 1 || posInCouplet === sentenceLen * 2 - 1;
-            if (!isSentenceEnd) return '';
-            return rhymeSet.has(gi) ? '。' : '，';
-          }
-          if (!validation?.display_segments) return '';
-          for (const seg of validation.display_segments) {
-            const offset = gi - seg.start_index;
-            if (offset >= 0 && offset < seg.rule_items.length) {
-              const comment = seg.rule_items[offset].comment;
-              if (rhymeSet.has(gi)) return '。';
-              if (comment === '叶' || comment === '换叶') return '。';
-              if (comment === '句') return '，';
-              if (comment === '读') return '、';
-              return '';
-            }
-          }
-          return '';
-        };
-
-        const OPENING = new Set(['「', '《', '“', '‘']);
-        let text = '';
-        for (let i = 0; i < chars.length; i++) {
-          const am = sec.auxMarks?.[i];
-          if (am) { for (const m of am) { if (OPENING.has(m)) text += m; } }
-          text += chars[i] === PLACEHOLDER ? '□' : chars[i];
-          if (am) { for (const m of am) { if (!OPENING.has(m)) text += m; } }
-          const punct = getPunct(i);
-          if (punct) text += punct;
-          if (b.genre === 'Shi' && sentenceLen > 0) {
-            const posInCouplet = i % (sentenceLen * 2);
-            if (posInCouplet === sentenceLen * 2 - 1 && i < chars.length - 1) text += '\n';
-          }
-        }
-        if (text.length > 0 && !/[，。、；：？！]$/.test(text)) text += '。';
-        lines.push(text, '');
-      }
-
-      // Section footnote/date
-      if (sec.sectionFootnote) lines.push(...bq(sec.sectionFootnote));
-      if (opts.date && sec.sectionDate && !sec.sectionDateHidden) lines.push(`> ${sec.sectionDate}`);
-      if (sec.sectionFootnote || (opts.date && sec.sectionDate && !sec.sectionDateHidden)) lines.push('');
-    });
-
-    // Board footnote/date
-    if (meta.footnote) lines.push(...bq(meta.footnote));
-    if (opts.date && meta.date && !meta.dateHidden) lines.push(`> ${meta.date}`);
-
-    return lines.join('\n').replace(/\n{3,}/g, '\n\n').trimEnd();
-  };
-
   const buildAllMarkdown = (opts: { author: 'off' | 'override' | 'all'; date: boolean }) => {
     const parts: string[] = [];
 
@@ -847,7 +760,7 @@ export function TopBar() {
         renderLevel(f.id);
       }
       for (const b of boards) {
-        parts.push(buildBoardMarkdown(b, opts), '', '---', '');
+        parts.push(buildBoardMarkdown(b, opts, state.validations), '', '---', '');
       }
     };
 
@@ -860,8 +773,9 @@ export function TopBar() {
     const format = localStorage.getItem('fangcun_export_format') || 'plain';
     const text = format === 'markdown'
       ? buildBoardMarkdown(board, {
-          author: (localStorage.getItem('fangcun_export_author') || 'all') as 'off' | 'override' | 'all',          date: localStorage.getItem('fangcun_export_date') !== '0',
-        })
+          author: (localStorage.getItem('fangcun_export_author') || 'all') as 'off' | 'override' | 'all',
+          date: localStorage.getItem('fangcun_export_date') !== '0',
+        }, state.validations)
       : `${board.title}\n${buildText()}`;
     navigator.clipboard.writeText(text).then(() => {
       setCopied(true);

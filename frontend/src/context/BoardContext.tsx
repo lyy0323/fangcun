@@ -1,23 +1,10 @@
 import React, { createContext, useContext, useReducer, useEffect, type Dispatch } from 'react';
 import type { Board, Folder, SortMode, ValidationResult, BoardMetadata, PoemSection, FreeRhymeResult } from '../lib/types';
 import { PLACEHOLDER } from '../lib/types';
+import { applyMarkdownImport } from '../lib/markdownRoundTrip';
 
-export interface MarkdownPasteSection {
-  title?: string;
-  preface?: string;
-  footnote?: string;
-  date?: string;
-  lines: string[];
-}
-
-export interface MarkdownPasteResult {
-  title?: string;
-  author?: string;
-  boardPreface?: string;
-  boardFootnote?: string;
-  boardDate?: string;
-  sections: MarkdownPasteSection[];
-}
+export type { MarkdownPasteSection, MarkdownPasteResult } from '../lib/markdownRoundTrip';
+import type { MarkdownPasteResult } from '../lib/markdownRoundTrip';
 import { loadBoards, saveBoards, loadActiveBoardId, saveActiveBoardId, loadFolders, saveFolders, loadUndoStacks, saveUndoStacks } from '../lib/storage';
 
 // ============================================================================
@@ -576,73 +563,9 @@ function reducer(state: AppState, action: Action): AppState {
       return { ...state, boards };
     }
     case 'IMPORT_MARKDOWN': {
-      const { payload } = action;
-      const boards = state.boards.map(b => {
-        if (b.id !== state.activeBoardId) return b;
-        let updated = { ...b, updatedAt: Date.now() };
-
-        if (payload.title) updated.title = payload.title;
-
-        const meta: Partial<BoardMetadata> = {};
-        if (payload.author) meta.author = payload.author;
-        if (payload.boardPreface) meta.preface = payload.boardPreface;
-        if (payload.boardFootnote) meta.footnote = payload.boardFootnote;
-        if (payload.boardDate) meta.date = payload.boardDate;
-
-        const pSections = payload.sections;
-        if (pSections.length === 0) return updated;
-
-        // Expand sections to match parsed count
-        let sections = [...updated.sections];
-        while (sections.length < pSections.length) {
-          const ref = sections[0];
-          sections.push({
-            id: crypto.randomUUID(),
-            title: '',
-            ruleName: ref.ruleName,
-            charCount: ref.charCount,
-            poemChars: Array(ref.charCount).fill(PLACEHOLDER),
-            candidatesMap: {},
-          });
-        }
-
-        // Fill each section
-        const singleSection = pSections.length === 1;
-        for (let i = 0; i < pSections.length; i++) {
-          const ps = pSections[i];
-          const sec = { ...sections[i] };
-          if (ps.title) sec.title = ps.title;
-
-          if (singleSection) {
-            // Single section: promote metadata to board level
-            if (ps.preface && !meta.preface) meta.preface = ps.preface;
-            if (ps.footnote && !meta.footnote) meta.footnote = ps.footnote;
-            if (ps.date && !meta.date) meta.date = ps.date;
-          } else {
-            if (ps.preface) sec.sectionPreface = ps.preface;
-            if (ps.footnote) sec.sectionFootnote = ps.footnote;
-            if (ps.date) sec.sectionDate = ps.date;
-          }
-
-          if (b.genre === 'Free') {
-            sec.lines = ps.lines;
-          } else {
-            // Fill poemChars from text lines (strip punctuation)
-            const allText = ps.lines.join('');
-            const chars = [...allText].filter(c => /[一-鿿㐀-䶿]/.test(c));
-            const poemChars = [...sec.poemChars];
-            for (let j = 0; j < Math.min(chars.length, poemChars.length); j++) {
-              poemChars[j] = chars[j];
-            }
-            sec.poemChars = poemChars;
-          }
-          sections[i] = sec;
-        }
-
-        updated.sections = sections;
-        if (Object.keys(meta).length > 0) updated.metadata = { ...updated.metadata, ...meta };
-        return updated;
-      });
+      const boards = state.boards.map(b =>
+        b.id === state.activeBoardId ? applyMarkdownImport(b, action.payload) : b,
+      );
       return { ...state, boards };
     }
     default:

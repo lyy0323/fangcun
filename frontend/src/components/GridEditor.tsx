@@ -576,6 +576,9 @@ export function GridEditor() {
         dispatch({ type: 'UPDATE_CHAR', index: cur, char: ch });
         lastCharIdx = cur;
         cur = Math.min(cur + 1, charCount - 1);
+      } else if (ch === '□' && cur < charCount) {
+        // 导出文本中的空位占位符：跳过不写入，保持后续字位不错位
+        cur = Math.min(cur + 1, charCount - 1);
       } else if (/[，。、；：？！]/.test(ch) && lastCharIdx >= 0) {
         dispatch({ type: 'SET_PUNCT_OVERRIDE', index: lastCharIdx, punct: ch });
       }
