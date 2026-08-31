@@ -45,7 +45,7 @@
 - **此前：无任何测试**。frontend 无测试框架（package.json 无 test 脚本，无 vitest/jest 依赖），`markdownParse.ts` / reducer 的 IMPORT_MARKDOWN 均为不可测的闭包/内联逻辑。
 - **本次：**
   - 把导出（`buildBoardMarkdown`）与导入（`applyMarkdownImport`）抽为 `markdownRoundTrip.ts` 纯函数，reducer/组件仅调用。
-  - 新增回归脚本 `frontend/scripts/check-markdown-roundtrip.mjs`（`npm run check:md`）：用 esbuild 在内存打包**真实生产代码**，执行 40 条「导出→解析→导入→再导出」断言，覆盖元数据状态、组诗有无/标题有无、半成品、词牌、自由诗分节、多块文件等。当前 **40 passed / 0 failed / 2 known-limitation**。
+  - 新增回归脚本 `frontend/scripts/check-markdown-roundtrip.mjs`（`npm run check:md`）：用 esbuild 在内存打包**真实生产代码**，执行 52 条「导出→解析→导入→再导出」断言（含标点覆盖/引号往返 S22–S27），覆盖元数据状态、组诗有无/标题有无、半成品、词牌、自由诗分节、多块文件等。当前 **52 passed / 0 failed / 3 known-limitation**。
   - 未引入测试框架（保持零依赖，脚本仅用已有 devDependency esbuild）。
 
 ## 4. 已修复缺陷（复制→粘贴→不符合预期）
@@ -58,6 +58,7 @@
 | D | 农历日期（甲辰年三月初一） | 被识别为脚注 → **日期丢失**、注被污染 | 解析器识别农历日期（干支/数字年 + 月 + 日）；导入时若含农历日期，画板 `dateFormat` 自动置 `Lunar` |
 | E | 组诗首节带小序（首节无标题） | 首节小序与画板序同处文首无法区分 → 上浮为画板序（结构错位） | 导出侧组诗首节也输出 `#### `，小节序稳定落回小节 |
 | F | 组诗带画板级注/日期 | 画板注/日期与末节注/日期全部并入末节引用块 → **末节自身日期/注被覆盖** | 导出侧画板块前输出 `---`；解析器引入「画板引用模式」，末节块与画板块分开；`boardFootnote/boardDate` 死字段启用 |
+| G | 标点覆盖 / 引号不往返 | 导入只保留汉字，手动标点覆盖与「」《》“”‘’ 引号标记全部丢弃（标点退回校验默认、引号消失） | 导入侧逐字扫描正文，按字索引重建 `punctOverrides` / `auxMarks`（与导出侧对称），见 `docs/markdown标点引号往返用例.md` |
 
 另：自由诗分节空行此前被导出过滤 + 导入折叠 → 分节结构丢失，本次导出保留空行、导入保留单空行（律诗/词不受影响，空行不参与填字）。
 
@@ -68,7 +69,7 @@
 3. **隐藏日期（dateHidden）不导出**：粘贴回来日期整体缺失（符合「导出时隐藏」意图，但注意是删除而非仅隐藏）。
 4. **多块导出文件（导出全部画板）不可整文件粘贴**：粘贴会被当作单画板处理，所有诗合并为组诗、标题取最后一块。粘贴导入按「单画板」设计，多块文件请勿整贴。
 5. **多余节不截断**：把 2 节组诗粘入 3 节画板，第 3 节旧内容保留（避免静默删数据）。如需「粘贴即整板替换」，可后续在 `applyMarkdownImport` 增加截断。
-6. **标点/引号覆盖（punctOverrides、auxMarks）不导出结构**：导入后标点由格律校验重新推导（标准诗基本一致），手动改过的标点、「」引号会回到默认。
+6. **抑制标点（覆盖为空串）不往返**：导出文本无对应标点可还原，粘贴后恢复校验默认。引号仅支持「」《》“”‘’（UI 8 个标记），`『』` 等不在支持集。
 7. **sectionLegacyId（编号）不参与往返**：仅导出全部 JSON 保留。
 
 ## 6. 待确认 / 建议
@@ -80,7 +81,7 @@
 ## 7. Debug / 复现指南
 
 ```bash
-# 回归脚本（40 断言，打包真实生产代码，不依赖服务）
+# 回归脚本（52 断言 + 3 已知限制，打包真实生产代码，不依赖服务）
 cd frontend && npm run check:md
 
 # 手工复现：Node 里跑任意往返
@@ -108,10 +109,11 @@ import('esbuild').then(async ({build}) => {
 
 ## 8. 变更文件（dev 分支，未推送）
 
-- `frontend/src/lib/markdownRoundTrip.ts`（新增：导出/导入纯函数 + 类型）
+- `frontend/src/lib/markdownRoundTrip.ts`（新增：导出/导入纯函数 + 类型；导入侧重建标点覆盖/引号标记）
 - `frontend/src/lib/markdownParse.ts`（裸 `####`、农历日期、画板引用块、空行保留）
 - `frontend/src/context/BoardContext.tsx`（reducer 改用 `applyMarkdownImport`；类型转出）
 - `frontend/src/components/TopBar.tsx`（改用 `buildBoardMarkdown`，删内联实现）
 - `frontend/src/components/GridEditor.tsx`（纯文本粘贴 `□` 前进不写入）
-- `frontend/scripts/check-markdown-roundtrip.mjs`（新增回归脚本）
+- `frontend/scripts/check-markdown-roundtrip.mjs`（新增回归脚本，52 断言 + 3 已知限制）
 - `frontend/package.json`（`check:md` 脚本）
+- `docs/markdown标点引号往返用例.md`（标点/引号往返用例文档）

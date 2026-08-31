@@ -207,20 +207,50 @@ export function applyMarkdownImport(board: Board, payload: MarkdownPasteResult):
     if (board.genre === 'Free') {
       sec.lines = ps.lines;
     } else {
-      // 按字序填入：□（导出空位占位）还原为占位符，保持位置不位移；
-      // 超出粘贴内容的尾部清空，避免残留旧内容。
+      // 逐字扫描正文，同步重建 3 个字段（与导出侧对称）：
+      //   1) 汉字 / □（空位）→ poemChars 按字序填入，位置不位移
+      //   2) 开引号（「《“‘）挂起 → 写入下一字 auxMarks 开头；
+      //      关引号（」》”’）→ 追加到当前字 auxMarks（数组顺序=开前闭后）
+      //   3) 标点（，。、；：？！）→ 记到当前字 punctOverrides
+      // 换行（律诗联间）等其余字符跳过；超出字格的文本截断。
+      const OPENING_MARKS = new Set(['「', '《', '“', '‘']);
+      const CLOSING_MARKS = new Set(['」', '》', '”', '’']);
+      const PUNCT_CHARS = new Set(['，', '。', '、', '；', '：', '？', '！']);
       const allText = ps.lines.join('');
-      const chars = [...allText].filter(c => /[一-鿿㐀-䶿□]/.test(c));
       const poemChars = [...sec.poemChars];
-      for (let j = 0; j < poemChars.length; j++) {
-        if (j < chars.length) {
-          const c = chars[j];
-          poemChars[j] = c === '□' ? PLACEHOLDER : c;
+      const punctOverrides: Record<number, string> = {};
+      const auxMarks: Record<number, string[]> = {};
+      let pendingOpens: string[] = [];
+      let j = 0;
+      for (const ch of allText) {
+        if (/[一-鿿㐀-䶿]/.test(ch) || ch === '□') {
+          if (j < poemChars.length) {
+            poemChars[j] = ch === '□' ? PLACEHOLDER : ch;
+            if (pendingOpens.length > 0) {
+              auxMarks[j] = [...pendingOpens];
+              pendingOpens = [];
+            }
+          } else {
+            pendingOpens = [];
+          }
+          j++;
+        } else if (OPENING_MARKS.has(ch)) {
+          pendingOpens.push(ch);
         } else {
-          poemChars[j] = PLACEHOLDER;
+          const idx = j - 1; // 当前字（最后一个已见汉字/□）
+          if (idx < 0 || idx >= poemChars.length) continue;
+          if (CLOSING_MARKS.has(ch)) {
+            auxMarks[idx] = [...(auxMarks[idx] ?? []), ch];
+          } else if (PUNCT_CHARS.has(ch)) {
+            punctOverrides[idx] = ch;
+          }
         }
       }
+      // 超出粘贴内容的尾部清空，避免残留旧内容
+      for (let k = j; k < poemChars.length; k++) poemChars[k] = PLACEHOLDER;
       sec.poemChars = poemChars;
+      sec.punctOverrides = Object.keys(punctOverrides).length > 0 ? punctOverrides : undefined;
+      sec.auxMarks = Object.keys(auxMarks).length > 0 ? auxMarks : undefined;
     }
     sections[i] = sec;
   }

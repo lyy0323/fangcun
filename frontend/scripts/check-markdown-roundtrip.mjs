@@ -237,6 +237,61 @@ const P2 = '白日依山尽黄河入海流欲穷千里目更上一层楼';
   check('S21 板1注落首节（组诗化）', p.sections[0]?.footnote === '板1注', JSON.stringify(p.sections[0]?.footnote));
 }
 
+// ── 标点覆盖 / 引号往返 ────────────────────────────────────────────────────
+// S22 手动标点覆盖往返（韵脚处改逗号，与校验推导不同）
+{
+  const b = mk({ sections: [{ id: 's1', title: '', ruleName: '五绝', charCount: 20, poemChars: [...P1], candidatesMap: {}, punctOverrides: { 9: '，' } }] });
+  const md = buildBoardMarkdown(b, { author: 'off', date: false }, [SHI_VALIDATION]);
+  const i = applyMarkdownImport(mk(), parseMarkdownPaste(md));
+  check('S22 手动标点覆盖往返', i.sections[0].punctOverrides?.[9] === '，', JSON.stringify(i.sections[0].punctOverrides));
+  check('S22 正文不变', i.sections[0].poemChars.join('') === P1);
+}
+
+// S23 引号标记往返（含嵌套、跨联换行）
+{
+  // 「床前明月光，\n疑是地上霜」——开引号在字 0，关引号在字 9（跨联）
+  const b = mk({ sections: [{ id: 's1', title: '', ruleName: '五绝', charCount: 20, poemChars: [...P1], candidatesMap: {}, auxMarks: { 0: ['「'], 9: ['」'] } }] });
+  const md = buildBoardMarkdown(b, { author: 'off', date: false }, [SHI_VALIDATION]);
+  const i = applyMarkdownImport(mk(), parseMarkdownPaste(md));
+  check('S23 开引号落首字', JSON.stringify(i.sections[0].auxMarks?.[0]) === JSON.stringify(['「']), JSON.stringify(i.sections[0].auxMarks));
+  check('S23 关引号落末字', JSON.stringify(i.sections[0].auxMarks?.[9]) === JSON.stringify(['」']), JSON.stringify(i.sections[0].auxMarks));
+  check('S23 正文不变', i.sections[0].poemChars.join('') === P1);
+
+  // 嵌套「“X”」（外层「」内层“”，均为受支持标记）
+  const b2 = mk({ sections: [{ id: 's1', title: '', ruleName: '五绝', charCount: 20, poemChars: [...'床前明月光'.padEnd(20, '□')].map(c => c === '□' ? PLACEHOLDER : c), candidatesMap: {}, auxMarks: { 0: ['「', '“'], 4: ['”', '」'] } }] });
+  const md2 = buildBoardMarkdown(b2, { author: 'off', date: false }, [SHI_VALIDATION]);
+  const i2 = applyMarkdownImport(mk(), parseMarkdownPaste(md2));
+  check('S23 嵌套引号顺序', JSON.stringify(i2.sections[0].auxMarks?.[0]) === JSON.stringify(['「', '“']) && JSON.stringify(i2.sections[0].auxMarks?.[4]) === JSON.stringify(['”', '」']), JSON.stringify(i2.sections[0].auxMarks));
+}
+
+// S24 □ 空位 + 标点 + 引号 混合落位
+{
+  const chars = [...'床前明月光', ...Array(10).fill(PLACEHOLDER), ...'举头望明月'];
+  const b = mk({ sections: [{ id: 's1', title: '', ruleName: '五绝', charCount: 20, poemChars: chars, candidatesMap: {}, punctOverrides: { 4: '，', 9: '。' }, auxMarks: { 3: ['《'], 4: ['》'] } }] });
+  const md = buildBoardMarkdown(b, { author: 'off', date: false }, [SHI_VALIDATION]);
+  const i = applyMarkdownImport(mk(), parseMarkdownPaste(md));
+  check('S24 □ 位置保留', i.sections[0].poemChars.join('') === chars.join(''), JSON.stringify(i.sections[0].poemChars.join('')));
+  check('S24 标点落位', i.sections[0].punctOverrides?.[4] === '，' && i.sections[0].punctOverrides?.[9] === '。', JSON.stringify(i.sections[0].punctOverrides));
+  check('S24 引号落位', JSON.stringify(i.sections[0].auxMarks?.[3]) === JSON.stringify(['《']) && JSON.stringify(i.sections[0].auxMarks?.[4]) === JSON.stringify(['》']), JSON.stringify(i.sections[0].auxMarks));
+}
+
+// S25 粘贴无标点文本 → 旧覆盖被清空（内容替换语义）
+{
+  const b = mk({ sections: [{ id: 's1', title: '', ruleName: '五绝', charCount: 20, poemChars: [...P1], candidatesMap: {}, punctOverrides: { 4: '！' }, auxMarks: { 0: ['「'] } }] });
+  const i = applyMarkdownImport(b, parseMarkdownPaste('### 新题\n\n床前明月光疑是地上霜\n'));
+  check('S25 旧标点覆盖清空', i.sections[0].punctOverrides === undefined, JSON.stringify(i.sections[0].punctOverrides));
+  check('S25 旧引号清空', i.sections[0].auxMarks === undefined, JSON.stringify(i.sections[0].auxMarks));
+}
+
+// S27 全量对称：导出 → 导入 → 再导出 文本一致
+{
+  const b = mk({ metadata: { author: '李白' }, sections: [{ id: 's1', title: '', ruleName: '五绝', charCount: 20, poemChars: [...P1], candidatesMap: {}, punctOverrides: { 4: '！', 9: '，' }, auxMarks: { 0: ['「'], 9: ['」'] } }] });
+  const md1 = buildBoardMarkdown(b, { author: 'all', date: false }, [SHI_VALIDATION]);
+  const i = applyMarkdownImport(mk(), parseMarkdownPaste(md1));
+  const md2 = buildBoardMarkdown(i, { author: 'all', date: false }, [SHI_VALIDATION]);
+  check('S27 再导出与首次导出一致', md1 === md2, `\n--- md1 ---\n${md1}\n--- md2 ---\n${md2}`);
+}
+
 // ── 已知限制（语义无法无损，标记 KNOWN）───────────────────────────────────
 {
   const b = mk({ title: '春 / 秋' });
@@ -258,6 +313,17 @@ const P2 = '白日依山尽黄河入海流欲穷千里目更上一层楼';
     knownLim('S20 单节双元数据（本首+画板注/日期）合并为画板级（文本全保留，层级展平）');
   } else {
     check('S20 单节双元数据', false, JSON.stringify([m.date, m.footnote]));
+  }
+}
+{
+  // 覆盖为空串（抑制标点）→ 文本无标点可还原，往返后抑制丢失
+  const b = mk({ sections: [{ id: 's1', title: '', ruleName: '五绝', charCount: 20, poemChars: [...P1], candidatesMap: {}, punctOverrides: { 9: '' } }] });
+  const md = buildBoardMarkdown(b, { author: 'off', date: false }, [SHI_VALIDATION]);
+  const i = applyMarkdownImport(mk(), parseMarkdownPaste(md));
+  if (i.sections[0].punctOverrides?.[9] === '') {
+    check('S26 空串覆盖（抑制标点）往返', true);
+  } else {
+    knownLim('S26 覆盖为空串（抑制标点）不往返：导出无标点可还原，导入后恢复默认标点');
   }
 }
 
