@@ -2,7 +2,16 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<script>
+  /* Android 端禁用双指缩放（参考站与 SPA 一致）：gesture 事件（旧内核）+ touch-action（Chromium 85+） */
+  (function () {
+    if (!/FangcunAndroid/i.test(navigator.userAgent)) return;
+    document.addEventListener('gesturestart', function (e) { e.preventDefault(); });
+    document.addEventListener('gesturechange', function (e) { e.preventDefault(); });
+    document.documentElement.style.touchAction = 'pan-x pan-y';
+  })();
+</script>
 <title>单字查询：释义与四部韵书音韵地位 | 方寸</title>
 <meta name="description" content="输入一个汉字，同屏查看释义（拼音、说文引文）与平水韵、词林正韵、上古韵（小韵、拟音）、中华通韵下的音韵地位。" />
 <link rel="canonical" href="https://write.sjtuguoxue.space/ref/char" />

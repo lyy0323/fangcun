@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <script>
+    /* Android 端禁用双指缩放：gesture 事件（旧内核）+ touch-action（Chromium 85+） */
+    (function () {
+      if (!/FangcunAndroid/i.test(navigator.userAgent)) return;
+      document.addEventListener('gesturestart', function (e) { e.preventDefault(); });
+      document.addEventListener('gesturechange', function (e) { e.preventDefault(); });
+      document.documentElement.style.touchAction = 'pan-x pan-y';
+    })();
+  </script>
+  <title>方寸 · 诗词创作画布 — 在线格律校验与诗词出图工具</title>
+  <meta name="description" content="方寸是一款免费在线诗词创作工具，支持五七言律绝、词牌格律实时校验，平仄检测、韵脚提示、典故检索，23款主题一键生成精美诗词卡片。搜韵·诗词吾爱之外的创作新选择。" />
+  <meta name="keywords" content="诗词创作,格律校验,平仄,押韵,律诗,绝句,词牌,填词,平水韵,词林正韵,搜韵,诗词吾爱,诗词出图,小红书诗词,古诗创作工具,诗词编辑器" />
+  <meta property="og:title" content="方寸 · 诗词创作画布" />
+  <meta property="og:description" content="实时格律校验、韵脚提示、典故检索，23款主题出图分享" />
+  <meta property="og:image" content="https://write.sjtuguoxue.space/og-image.png" />
+  <meta property="og:url" content="https://write.sjtuguoxue.space/about" />
+  <meta property="og:type" content="website" />
+  <link rel="icon" type="image/svg+xml" href="/logo.svg" />
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+      background: #FAF8F5;
+      color: #5C534A;
+      line-height: 1.7;
+    }
+    a { color: #557799; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    /* Hero */
+    .hero {
+      text-align: center;
+      padding: 80px 24px 60px;
+      max-width: 720px;
+      margin: 0 auto;
+    }
+    .hero-logo {
+      width: 100px;
+      height: 100px;
+      margin-bottom: 24px;
+    }
+    .hero h1 {
+      font-size: 36px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      margin-bottom: 16px;
+    }
+    .hero .tagline {
+      font-size: 18px;
+      color: #8a8078;
+      margin-bottom: 32px;
+    }
+    .cta-btn {
+      display: inline-block;
+      background: #559977;
+      color: #fff;
+      padding: 14px 40px;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 500;
+      transition: background 0.2s;
+    }
+    .cta-btn:hover { background: #448866; text-decoration: none; }
+
+    /* Features */
+    .features {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 40px 24px 60px;
+    }
+    .features h2 {
+      text-align: center;
+      font-size: 24px;
+      margin-bottom: 40px;
+      font-weight: 600;
+    }
+    .feature-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 24px;
+    }
+    .feature-card {
+      background: #fff;
+      border-radius: 12px;
+      padding: 28px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+    }
+    .feature-card .icon {
+      font-size: 28px;
+      margin-bottom: 12px;
+    }
+    .feature-card h3 {
+      font-size: 17px;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+    .feature-card p {
+      font-size: 14px;
+      color: #8a8078;
+      line-height: 1.6;
+    }
+
+    /* Screenshots */
+    .screenshots {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 40px 24px 60px;
+      text-align: center;
+    }
+    .screenshots h2 {
+      font-size: 24px;
+      margin-bottom: 40px;
+      font-weight: 600;
+    }
+    .screenshot-row {
+      display: flex;
+      gap: 24px;
+      justify-content: center;
+      align-items: flex-start;
+      flex-wrap: wrap;
+    }
+    .screenshot-row img {
+      border-radius: 12px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.1);
+      max-width: 100%;
+    }
+    .screenshot-row .desktop { width: 520px; }
+    .screenshot-row .mobile { width: 200px; }
+    .screenshot-row .export-img { width: 200px; }
+    .screenshot-caption {
+      font-size: 13px;
+      color: #8a8078;
+      margin-top: 8px;
+    }
+
+    /* Download */
+    .download {
+      text-align: center;
+      padding: 60px 24px;
+      background: #f3f0ec;
+    }
+    .download h2 {
+      font-size: 24px;
+      margin-bottom: 12px;
+      font-weight: 600;
+    }
+    .download p {
+      color: #8a8078;
+      margin-bottom: 32px;
+    }
+    .download-btns {
+      display: flex;
+      gap: 16px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+    .dl-btn {
+      display: inline-block;
+      padding: 12px 32px;
+      border-radius: 8px;
+      font-size: 15px;
+      font-weight: 500;
+      transition: opacity 0.2s;
+    }
+    .dl-btn:hover { opacity: 0.85; text-decoration: none; }
+    .dl-btn.primary { background: #559977; color: #fff; }
+    .dl-btn.secondary { background: #557799; color: #fff; }
+
+    /* Comparison link */
+    .compare-link {
+      text-align: center;
+      padding: 40px 24px;
+    }
+    .compare-link a {
+      font-size: 15px;
+      color: #995577;
+    }
+
+    /* Footer */
+    footer {
+      text-align: center;
+      padding: 32px 24px;
+      font-size: 13px;
+      color: #a09890;
+      border-top: 1px solid #e8e4e0;
+    }
+
+    @media (max-width: 640px) {
+      .hero { padding: 60px 20px 40px; }
+      .hero h1 { font-size: 28px; }
+      .hero .tagline { font-size: 16px; }
+      .screenshot-row .desktop { width: 100%; }
+      .screenshot-row .mobile,
+      .screenshot-row .export-img { width: 140px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Hero -->
+  <section class="hero">
+    <img src="/logo.svg" alt="方寸 Logo" class="hero-logo" />
+    <h1>方 寸</h1>
+    <p class="tagline">诗词创作画布 — 边写边校验，写完即出图</p>
+    <a href="/" class="cta-btn">开始创作</a>
+  </section>
+
+  <!-- Features -->
+  <section class="features">
+    <h2>核心功能</h2>
+    <div class="feature-grid">
+      <div class="feature-card">
+        <div class="icon" style="color:#559977">平</div>
+        <h3>实时格律校验</h3>
+        <p>五七言律诗绝句、词牌格律逐字实时校验。平仄、押韵、对仗一目了然，每敲一个字即时反馈。</p>
+      </div>
+      <div class="feature-card">
+        <div class="icon" style="color:#557799">韵</div>
+        <h3>双韵书查询</h3>
+        <p>内置平水韵（6,196字）和词林正韵，韵部浏览、韵字查询、词首词末对语联想，创作时随查随用。</p>
+      </div>
+      <div class="feature-card">
+        <div class="icon" style="color:#995577">典</div>
+        <h3>典故检索</h3>
+        <p>13,000+ 典形词数据库，输入单字即可检索相关典故。点击典形词查看释义、典源、例句，点击即入诗。</p>
+      </div>
+      <div class="feature-card">
+        <div class="icon" style="color:#559977">图</div>
+        <h3>23款主题出图</h3>
+        <p>写完一键生成精美诗词卡片，23款配色主题可选——渐变、等高线、纹理、极简。适合分享到小红书、朋友圈。</p>
+      </div>
+      <div class="feature-card">
+        <div class="icon" style="color:#557799">组</div>
+        <h3>组诗与自由诗</h3>
+        <p>支持组诗（多首合集）和自由诗/古体诗创作。不限于格律诗，新诗、歌词也能用。</p>
+      </div>
+      <div class="feature-card">
+        <div class="icon" style="color:#995577">API</div>
+        <h3>开放 API</h3>
+        <p>提供格律校验、韵书查询等 RESTful API，支持外部开发者和 AI Agent 调用。<a href="/docs">查看文档</a></p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Screenshots -->
+  <section class="screenshots">
+    <h2>产品截图</h2>
+    <div class="screenshot-row">
+      <div>
+        <img src="/slides/desktop-demo.png" alt="方寸桌面端截图" class="desktop" />
+        <p class="screenshot-caption">桌面端创作界面</p>
+      </div>
+      <div>
+        <img src="/slides/mobile-demo.png" alt="方寸移动端截图" class="mobile" />
+        <p class="screenshot-caption">移动端适配</p>
+      </div>
+      <div>
+        <img src="/slides/export-demo.png" alt="方寸导出图片效果" class="export-img" />
+        <p class="screenshot-caption">导出诗词卡片</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Download -->
+  <section class="download">
+    <h2>开始使用</h2>
+    <p>免费，无需注册</p>
+    <div class="download-btns">
+      <a href="/" class="dl-btn primary">网页版 · 即开即用</a>
+      <a href="/download/android" class="dl-btn secondary">Android 下载</a>
+    </div>
+  </section>
+
+  <!-- Compare -->
+  <section class="compare-link">
+    <p>想了解方寸和搜韵、诗词吾爱等工具的区别？</p>
+    <a href="/ref/poetry-tools">查看 2026 诗词创作工具对比 →</a>
+  </section>
+
+  <footer>
+    <p>上海交通大学国学社 · 方寸工作室</p>
+  </footer>
+
+</body>
+</html>

@@ -2,7 +2,16 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<script>
+  /* Android 端禁用双指缩放（参考站与 SPA 一致）：gesture 事件（旧内核）+ touch-action（Chromium 85+） */
+  (function () {
+    if (!/FangcunAndroid/i.test(navigator.userAgent)) return;
+    document.addEventListener('gesturestart', function (e) { e.preventDefault(); });
+    document.addEventListener('gesturechange', function (e) { e.preventDefault(); });
+    document.documentElement.style.touchAction = 'pan-x pan-y';
+  })();
+</script>
 <title>词林正韵 19 部韵字总览：填词押韵查询 | 方寸</title>
 <meta name="description" content="词林正韵 19 部完整对照，含平声、仄声、入声分部韵字。填词押韵标准韵书，平上去三声同部、入声独立。" />
 <link rel="canonical" href="https://write.sjtuguoxue.space/ref/cilinzhengyun" />

@@ -2,7 +2,16 @@
 <html lang="zh">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <script>
+    /* Android 端禁用双指缩放：gesture 事件（旧内核）+ touch-action（Chromium 85+） */
+    (function () {
+      if (!/FangcunAndroid/i.test(navigator.userAgent)) return;
+      document.addEventListener('gesturestart', function (e) { e.preventDefault(); });
+      document.addEventListener('gesturechange', function (e) { e.preventDefault(); });
+      document.documentElement.style.touchAction = 'pan-x pan-y';
+    })();
+  </script>
   <title>2026 诗词创作工具推荐 — 格律校验·韵书查询·诗词出图 | 方寸</title>
   <meta name="description" content="盘点 2026 年主流诗词创作工具：方寸、搜韵、诗词吾爱、中华诗词网。从格律校验、韵书数据、典故检索、出图分享、API 等维度全面对比，帮你选择最合适的诗词辅助工具。" />
   <meta name="keywords" content="诗词创作工具,格律校验工具,搜韵,诗词吾爱,方寸,平仄校验,韵书查询,诗词出图,小红书诗词,在线填词,诗词编辑器对比,一言,纯纯写作" />

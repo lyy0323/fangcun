@@ -399,7 +399,16 @@ function page({ title, desc, activeTab, content, extraHead = '', canonicalPath, 
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<script>
+  /* Android 端禁用双指缩放（参考站与 SPA 一致）：gesture 事件（旧内核）+ touch-action（Chromium 85+） */
+  (function () {
+    if (!/FangcunAndroid/i.test(navigator.userAgent)) return;
+    document.addEventListener('gesturestart', function (e) { e.preventDefault(); });
+    document.addEventListener('gesturechange', function (e) { e.preventDefault(); });
+    document.documentElement.style.touchAction = 'pan-x pan-y';
+  })();
+</script>
 <title>${esc(title)} | 方寸</title>
 <meta name="description" content="${esc(desc)}" />
 <link rel="canonical" href="${canonical}" />

@@ -2,7 +2,16 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<script>
+  /* Android 端禁用双指缩放（参考站与 SPA 一致）：gesture 事件（旧内核）+ touch-action（Chromium 85+） */
+  (function () {
+    if (!/FangcunAndroid/i.test(navigator.userAgent)) return;
+    document.addEventListener('gesturestart', function (e) { e.preventDefault(); });
+    document.addEventListener('gesturechange', function (e) { e.preventDefault(); });
+    document.documentElement.style.touchAction = 'pan-x pan-y';
+  })();
+</script>
 <title>上古韵 23 韵部总览：《诗经》《楚辞》押韵查询 | 方寸</title>
 <meta name="description" content="上古音系 23 韵部完整对照（鱼铎、之职、幽觉、脂质至等），依据先秦音系归纳，《诗经》《楚辞》用韵查询，适合拟古体与仿先秦之作。" />
 <link rel="canonical" href="https://write.sjtuguoxue.space/ref/shangguyun" />
