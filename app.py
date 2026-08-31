@@ -210,6 +210,7 @@ VALID_EVENTS = {
     'save_image', 'long_press_image', 'switch_theme',
     'fill_date', 'switch_date_format', 'fill_preface', 'fill_footnote', 'fill_author',
     'upload_poem',
+    'onboarding_show', 'onboarding_done', 'onboarding_skip',
 }
 
 @app.route("/api/_ping", methods=["POST"])

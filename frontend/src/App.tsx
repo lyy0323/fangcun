@@ -5,6 +5,7 @@ import { GridEditor } from './components/GridEditor';
 import { FreeEditor } from './components/FreeEditor';
 import { RhymePanel } from './components/RhymePanel';
 import { GenreSelector } from './components/GenreSelector';
+import { Onboarding } from './components/Onboarding';
 import { InspirationBoard } from './components/InspirationBoard';
 import { Dictionary } from './components/Dictionary';
 import { useBoardContext, useActiveBoard, createBoard } from './context/BoardContext';
@@ -131,6 +132,8 @@ function Layout() {
   return (
     <div className="h-screen flex flex-col overflow-hidden">
       <TopBar />
+      {/* 新手引导：仅 0 作品且未看过时展示，可跳过 */}
+      <Onboarding />
       {state.showGenreSelector && <GenreSelector />}
       {board && (
         <div className="flex flex-1 min-h-0 relative">
