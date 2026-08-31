@@ -199,22 +199,33 @@ export interface SubmitResult {
   error?: string;
 }
 
-export async function submitPoem(data: SubmitData, apiKey: string): Promise<SubmitResult> {
-  let res: Response;
+export async function submitPoem(data: SubmitData, apiKey: string, timeoutMs = 20000): Promise<SubmitResult> {
+  // 网络波动时请求可能挂起：超时即中止，避免上传流程卡死无法重试
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
-    res = await fetch(SUBMIT_URL, {
+    const res = await fetch(SUBMIT_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
       body: JSON.stringify(data),
+      signal: controller.signal,
     });
+    try {
+      const json = await res.json();
+      if (!res.ok && !json.error) json.error = `HTTP ${res.status}`;
+      return json;
+    } catch (e) {
+      if (e instanceof DOMException && e.name === 'AbortError') {
+        return { ok: false, error: '网络超时，请检查网络后重试' };
+      }
+      return { ok: false, error: `HTTP ${res.status}: ${res.statusText}` };
+    }
   } catch (e) {
+    if (e instanceof DOMException && e.name === 'AbortError') {
+      return { ok: false, error: '网络超时，请检查网络后重试' };
+    }
     return { ok: false, error: `网络错误：${e instanceof Error ? e.message : String(e)}` };
-  }
-  try {
-    const json = await res.json();
-    if (!res.ok && !json.error) json.error = `HTTP ${res.status}`;
-    return json;
-  } catch {
-    return { ok: false, error: `HTTP ${res.status}: ${res.statusText}` };
+  } finally {
+    clearTimeout(timer);
   }
 }

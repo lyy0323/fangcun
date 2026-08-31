@@ -7,6 +7,7 @@
     "dev": "vite",
     "gen:ref": "node scripts/gen-ref.mjs",
     "check:md": "node scripts/check-markdown-roundtrip.mjs",
+    "check:upload": "node scripts/check-upload-sequence.mjs",
     "build": "node scripts/gen-ref.mjs && tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview"

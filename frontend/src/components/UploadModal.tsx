@@ -4,6 +4,7 @@ import { PLACEHOLDER, resolveAuthor } from '../lib/types';
 import { ensureGregorianDate } from '../lib/dateConvert';
 import { submitPoem, track } from '../lib/api';
 import type { SubmitResult, SubmitData } from '../lib/api';
+import { runUploadSequence } from '../lib/uploadSequence';
 import type { ValidationResult } from '../lib/types';
 import { X, Loader, Check, AlertCircle } from 'lucide-react';
 
@@ -135,42 +136,30 @@ export function UploadModal({ onClose }: { onClose: () => void }) {
     if (!apiKey.trim()) return;
     localStorage.setItem('fangcun_sk', apiKey.trim());
     setUploading(true);
-    const newResults: (SubmitResult | null)[] = [...results];
-    let prevUuid: string | undefined;
-
-    for (let i = 0; i < items.length; i++) {
-      if (newResults[i]?.ok) { prevUuid = newResults[i]!.uuid; continue; }
-      const item = items[i];
-      const data: SubmitData = {
-        author: item.author,
-        title: item.title,
-        content: item.content,
-        date: item.date,
-        type: item.type,
-        genre: item.genre,
-        preface: item.preface,
-        footnote: item.footnote,
-        legacy_id: item.legacyId || undefined,
-      };
-      if (items.length > 1 && prevUuid && i > 0) {
-        data.relations = [{ id: prevUuid, type: 'sequence' }];
-      }
-      try {
-        const res = await submitPoem(data, apiKey.trim());
-        newResults[i] = res;
-        if (res.ok && res.uuid) prevUuid = res.uuid;
-      } catch (e) {
-        newResults[i] = { ok: false, error: String(e) };
-      }
-      setResults([...newResults]);
-    }
+    // 组诗各首的序列链（relations.sequence）由 runner 按上传顺序自动补，
+    // 基础数据在此组装（不含 relations）。
+    const dataItems: SubmitData[] = items.map(it => ({
+      author: it.author,
+      title: it.title,
+      content: it.content,
+      date: it.date,
+      type: it.type,
+      genre: it.genre,
+      preface: it.preface,
+      footnote: it.footnote,
+      legacy_id: it.legacyId || undefined,
+    }));
+    // 一首失败立即停止；已成功的跳过 → 再次点击即从断点继续
+    const outcome = await runUploadSequence(dataItems, apiKey.trim(), submitPoem, results, setResults);
     setUploading(false);
-    if (newResults.every(r => r?.ok)) setDone(true);
+    if (!outcome.stopped && outcome.results.every(r => r?.ok)) setDone(true);
     track('upload_poem', { count: items.length, genre: board.genre });
   };
 
   const hasKey = apiKey.trim().length > 0;
   const hasAuthor = items.every(it => it.author.trim().length > 0);
+  const remaining = items.filter((_, i) => !results[i]?.ok).length;
+  const failedIdx = results.findIndex(r => r && !r.ok);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center" onClick={onClose}>
@@ -247,6 +236,11 @@ export function UploadModal({ onClose }: { onClose: () => void }) {
 
         {/* Footer */}
         <div className="px-5 py-3 border-t border-[var(--border)] space-y-2">
+          {!uploading && !done && failedIdx >= 0 && (
+            <div className="text-[10px] text-amber-600">
+              已停止于「{items[failedIdx]?.title}」：失败后不再上传后续，可修改后继续上传。
+            </div>
+          )}
           {!hasAuthor && (
             <div className="flex gap-1.5 items-center">
               <span className="text-[10px] text-red-500 shrink-0">署名</span>
@@ -271,6 +265,7 @@ export function UploadModal({ onClose }: { onClose: () => void }) {
           >
             {uploading ? <Loader size={16} className="animate-spin mx-auto" /> :
               done ? '✓ 上传成功' :
+              remaining > 0 && remaining < items.length ? `继续上传 ${remaining} 首` :
               `上传 ${items.length} 首`}
           </button>
         </div>
