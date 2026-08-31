@@ -969,9 +969,9 @@ function buildCharPage() {
   const appJs = `
   <script>
   (function () {
-    // Android 端与 SPA 一致：checker 走远程（本地 5050 仅服务 shiva 释义/字典）
-    var IS_ANDROID = /FangcunAndroid/.test(navigator.userAgent);
-    var CHECKER = IS_ANDROID ? 'https://checker.sjtuguoxue.space/api' : '/api';
+    // checker 端点统一经本服务 /api 透传（Web→Vercel Flask 代理，Android→本地 5050 Flask 代理），
+    // 与 SPA 一致，使 checker 调用计入后端调用量统计
+    var CHECKER = '/api';
     var BOOKS = [
       { key: 'Shangguyun', label: '上古韵' },
       { key: 'Pingshuiyun', label: '平水韵' },

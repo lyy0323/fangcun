@@ -3,9 +3,9 @@ import type { ValidationResult, RhymeLookupResult, RuleListItem, PoemSearchResul
 const BASE = '/api';
 
 const IS_ANDROID = navigator.userAgent.includes('FangcunAndroid');
-const CHECKER_BASE = IS_ANDROID
-  ? 'https://checker.sjtuguoxue.space/api'
-  : '/api';
+// checker 端点统一经本服务（/api）透传：Web 走 Vercel 上的 Flask 代理，
+// Android 走本地 Flask（5050）代理，使 checker 调用计入后端调用量统计。
+const CHECKER_BASE = '/api';
 
 // checker 暂不计入 CJK 扩展 A；用占位符保留词谱位置，画板原文不变。
 const normalizePoemTextForChecker = (poemText: string) =>

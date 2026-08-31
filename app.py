@@ -305,6 +305,93 @@ def stats_keys():
 def dashboard():
     return app.send_static_file("dashboard.html")
 
+# ---------- 音韵检测代理（→ checker 服务）----------
+# 前端对 checker 端点的调用统一经本服务透传，使调用量计入后端统计：
+#   - 生产 Web（Vercel）不再于边缘直接转发到 checker（见 vercel.json）
+#   - Android 经本地 Flask 透传（原本直连远程 checker，调用量丢失）
+# 透传路由走 track_api_call 统计（/api/* 且非 /api/_，状态 < 400）。
+
+CHECKER_URL = os.environ.get("CHECKER_URL", "https://checker.sjtuguoxue.space")
+
+
+def _checker_proxy_ssl():
+    """Android/部分环境需要 certifi 根证书；不可用时退回系统默认。"""
+    try:
+        import ssl
+        import certifi
+        return ssl.create_default_context(cafile=certifi.where())
+    except Exception:
+        return None
+
+
+def _proxy_checker(path: str):
+    import urllib.request, urllib.error
+    from urllib.parse import quote
+    url = f"{CHECKER_URL}{path}"
+    if request.query_string:
+        # 入站 query 可能含未转义的非 ASCII（浏览器已转义，但 curl/CLI 可能直传中文），
+        # 统一百分号编码；safe 保留 = & 与已存在的 %XX 序列（避免二次编码）。
+        url += "?" + quote(request.query_string.decode(), safe="=&%")
+    body = request.get_data() if request.method in ("POST", "PUT", "PATCH") else None
+    req = urllib.request.Request(
+        url,
+        data=body,
+        headers={"Content-Type": request.headers.get("Content-Type", "application/json")},
+        method=request.method,
+    )
+    ctx = _checker_proxy_ssl()
+    try:
+        opener = urllib.request.urlopen(req, timeout=30, context=ctx) if ctx else urllib.request.urlopen(req, timeout=30)
+        with opener as resp:
+            return app.response_class(
+                resp.read(), status=resp.status,
+                mimetype=resp.headers.get("Content-Type", "application/json"),
+            )
+    except urllib.error.HTTPError as e:
+        return app.response_class(
+            e.read(), status=e.code,
+            mimetype=e.headers.get("Content-Type", "application/json"),
+        )
+    except Exception as e:
+        return jsonify({"error": f"checker 请求失败: {e}"}), 502
+
+
+@app.route("/api/validate_meter", methods=["POST"])
+@limiter.exempt
+def proxy_validate_meter():
+    return _proxy_checker("/api/validate_meter")
+
+
+@app.route("/api/free_rhyme", methods=["POST"])
+@limiter.exempt
+def proxy_free_rhyme():
+    return _proxy_checker("/api/free_rhyme")
+
+
+@app.route("/api/rhyme/lookup")
+@limiter.exempt
+def proxy_rhyme_lookup():
+    return _proxy_checker("/api/rhyme/lookup")
+
+
+@app.route("/api/rhyme/list")
+@limiter.exempt
+def proxy_rhyme_list():
+    return _proxy_checker("/api/rhyme/list")
+
+
+@app.route("/api/rules/list")
+@limiter.exempt
+def proxy_rules_list():
+    return _proxy_checker("/api/rules/list")
+
+
+@app.route("/api/char/lookup")
+@limiter.exempt
+def proxy_char_lookup():
+    return _proxy_checker("/api/char/lookup")
+
+
 # ---------- 上传代理（绕过 CORS）----------
 
 @app.route("/api/_proxy/submit", methods=["POST"])
