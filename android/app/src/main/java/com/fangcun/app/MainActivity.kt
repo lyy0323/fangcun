@@ -156,11 +156,11 @@ class MainActivity : Activity() {
                 override fun shouldOverrideUrlLoading(
                     view: WebView?, request: WebResourceRequest?
                 ): Boolean {
-                    val url = request?.url?.toString() ?: return false
-                    // 只允许本地 Flask 服务的请求
-                    if (url.startsWith("http://127.0.0.1:5050")) return false
-                    // 外部链接用系统浏览器打开
-                    startActivity(android.content.Intent(android.content.Intent.ACTION_VIEW, request.url))
+                    val url = request?.url ?: return false
+                    // 只允许本地 Flask 服务的请求（含同站相对链接解析出的 127.0.0.1:5050）
+                    if (url.toString().startsWith("http://127.0.0.1:5050")) return false
+                    // 其余（外部链接 / mailto: 等）一律交系统浏览器，WebView 不跳出
+                    openInSystemBrowser(url)
                     return true
                 }
             }
@@ -168,7 +168,29 @@ class MainActivity : Activity() {
                 override fun onCreateWindow(
                     view: WebView?, isDialog: Boolean,
                     isUserGesture: Boolean, resultMsg: android.os.Message?
-                ): Boolean = false
+                ): Boolean {
+                    // target="_blank" / window.open：不创建内嵌窗口，
+                    // 用隐藏 WebView 截获首个导航并转交系统浏览器
+                    val transport = resultMsg?.obj as? WebView.WebViewTransport ?: return false
+                    val newWebView = WebView(applicationContext)
+                    transport.webView = newWebView
+                    newWebView.webViewClient = object : WebViewClient() {
+                        override fun shouldOverrideUrlLoading(
+                            view: WebView?, request: WebResourceRequest?
+                        ): Boolean {
+                            val url = request?.url ?: return false
+                            openInSystemBrowser(url)
+                            return true
+                        }
+
+                        @Suppress("DEPRECATION")
+                        override fun shouldOverrideUrlLoading(view: WebView?, url: String?): Boolean {
+                            url?.let { openInSystemBrowser(android.net.Uri.parse(it)) }
+                            return true
+                        }
+                    }
+                    return true
+                }
 
                 override fun onShowFileChooser(
                     webView: WebView?,
@@ -280,6 +302,15 @@ class MainActivity : Activity() {
     private fun showWebView() {
         splashView.visibility = View.GONE
         webView.visibility = View.VISIBLE
+    }
+
+    /** 外部 URL 统一交系统浏览器打开（WebView 内不跳出）；无可用应用时兜底不崩溃 */
+    private fun openInSystemBrowser(url: android.net.Uri) {
+        try {
+            startActivity(android.content.Intent(android.content.Intent.ACTION_VIEW, url))
+        } catch (e: Exception) {
+            android.util.Log.w("Fangcun", "openInSystemBrowser failed: $url", e)
+        }
     }
 
     // ---- JS 桥接：保存图片到相册/下载 ----
