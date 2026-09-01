@@ -512,7 +512,8 @@ const SG_COLORS = {};
     for (const [k, n] of cnt) { if (!best || n > best[1]) best = [k, n]; }
     const [v, tail] = best ? best[0].split('|') : ['', ''];
     const h = v === 'ü' ? 280 : (SG_VOWEL_HUE[v] ?? 150);
-    SG_COLORS[catName] = { h, s: 62, l: SG_TAIL_L[tail] ?? 84, ring: catName.slice(-1) };
+    // 圆环氛围字取韵部名称第 1 字（如 鱼铎→鱼、月祭→月）
+    SG_COLORS[catName] = { h, s: 62, l: SG_TAIL_L[tail] ?? 84, ring: catName[0] };
   }
 }
 const ZT_COLORS = {};
