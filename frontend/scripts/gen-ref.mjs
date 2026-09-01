@@ -24,6 +24,7 @@ const CFG = join(ROOT, 'static', 'config');
 const OUT = join(ROOT, 'frontend', 'public', 'ref');
 
 const rhymeBooks = JSON.parse(readFileSync(join(CFG, 'rhyme_books.json'), 'utf8'));
+const charDict = JSON.parse(readFileSync(join(CFG, 'char_dict.json'), 'utf8'));
 const ciRules = JSON.parse(readFileSync(join(CFG, 'ci_rules.json'), 'utf8'));
 const shiRules = JSON.parse(readFileSync(join(CFG, 'shi_rules.json'), 'utf8'));
 
@@ -480,6 +481,45 @@ function sgSubKey(sub, meta, tailFirst) {
   return tailFirst ? [vRank, tRank, tone, sub] : [vRank, tone, tRank, sub];
 }
 
+// ============================================================================
+// 上古韵 / 中华通韵 音韵特征配色（方案B·去重）：主元音→色相，具体韵尾→明度
+// ============================================================================
+const SG_VOWEL_HUE = { a: 12, e: 95, o: 48, u: 262, y: 150, i: 198 }; // ü→280
+// 明度档差 5-6：阴声亮（∅84 r78 j72 w66 i61 o56 u51）→ 阳声中（n45 ng40 m35）→ 入声暗（p29 t24 s19 k14）
+const SG_TAIL_L = { '': 84, r: 78, j: 72, w: 66, i: 61, o: 56, u: 51, n: 45, ng: 40, m: 35, p: 29, t: 24, s: 19, k: 14 };
+// 中华通韵 16 韵名 → [主元音, 韵尾]
+const ZT_FINAL = {
+  '一啊': ['a', ''], '二喔': ['o', ''], '三鹅': ['e', ''], '四衣': ['i', ''], '五乌': ['u', ''], '六迂': ['ü', ''],
+  '七哀': ['a', 'i'], '八欸': ['e', 'i'], '九熬': ['a', 'o'], '十欧': ['o', 'u'],
+  '十一安': ['a', 'n'], '十二恩': ['e', 'n'], '十三昂': ['a', 'ng'], '十四英': ['e', 'ng'], '十五雍': ['o', 'ng'], '十六儿': ['e', 'r'],
+};
+
+/** 上古韵 部 → 主导(主元音, 韵尾) → 色；环内代表字取部名末字 */
+const SG_COLORS = {};
+{
+  const cats = rhymeBooks.Shangguyun.categories;
+  for (const [catName, cat] of Object.entries(cats)) {
+    const cnt = new Map();
+    for (const ch of cat.characters) {
+      for (const r of charDict[ch]?.shangguyun || []) {
+        if (r.cat !== catName) continue;
+        const rpy = r.rpy || '';
+        const k = (rpy[0] || '') + '|' + sgTailOf(rpy);
+        cnt.set(k, (cnt.get(k) || 0) + 1);
+      }
+    }
+    let best = null;
+    for (const [k, n] of cnt) { if (!best || n > best[1]) best = [k, n]; }
+    const [v, tail] = best ? best[0].split('|') : ['', ''];
+    const h = v === 'ü' ? 280 : (SG_VOWEL_HUE[v] ?? 150);
+    SG_COLORS[catName] = { h, s: 62, l: SG_TAIL_L[tail] ?? 84, ring: catName.slice(-1) };
+  }
+}
+const ZT_COLORS = {};
+for (const [name, [v, tail]] of Object.entries(ZT_FINAL)) {
+  ZT_COLORS[name] = { h: v === 'ü' ? 280 : SG_VOWEL_HUE[v], s: 62, l: SG_TAIL_L[tail] ?? 84, ring: name.slice(-1) };
+}
+
 /** 平水韵 106 韵配色（与「平水韵诗词上色器」一致：平声亮 / 上声暗 / 去声暗 / 入声浊） */
 const PINGSHUI_COLORS = {"一东":[192,80,80],"二冬":[204,80,80],"三江":[36,80,80],"四支":[216,80,80],"五微":[228,80,80],"六鱼":[60,80,80],"七虞":[72,80,80],"八齐":[240,80,80],"九佳":[252,80,80],"十灰":[264,80,80],"十一真":[84,80,80],"十二文":[96,80,80],"十三元":[108,80,80],"十四寒":[120,80,80],"十五删":[132,80,80],"一先":[144,80,80],"二萧":[324,80,80],"三肴":[336,80,80],"四豪":[348,80,80],"五歌":[0,80,80],"六麻":[12,80,80],"七阳":[24,80,80],"八庚":[156,80,80],"九青":[168,80,80],"十蒸":[180,80,80],"十一尤":[48,80,80],"十二侵":[312,80,80],"十三覃":[300,80,80],"十四盐":[288,80,80],"十五咸":[276,80,80],"一董":[192,80,20],"二肿":[204,80,20],"三讲":[36,80,20],"四纸":[216,80,20],"五尾":[228,80,20],"六语":[60,80,20],"七麌":[72,80,20],"八荠":[240,80,20],"九蟹":[252,80,20],"十贿":[264,80,20],"十一轸":[84,80,20],"十二吻":[96,80,20],"十三阮":[108,80,20],"十四旱":[120,80,20],"十五潸":[132,80,20],"十六铣":[144,80,20],"十七筱":[324,80,20],"十八巧":[336,80,20],"十九皓":[348,80,20],"二十哿":[0,80,20],"二十一马":[12,80,20],"二十二养":[24,80,20],"二十三梗":[156,80,20],"二十四迥":[180,80,20],"二十五有":[48,80,20],"二十六寝":[312,80,20],"二十七感":[300,80,20],"二十八俭":[288,80,20],"二十九豏":[276,80,20],"一送":[192,80,30],"二宋":[204,80,30],"三绛":[36,80,30],"四寘":[216,80,30],"五未":[228,80,30],"六御":[60,80,30],"七遇":[72,80,30],"八霁":[240,80,30],"九泰":[252,80,30],"十卦":[264,80,30],"十一队":[84,80,30],"十二震":[96,80,30],"十三问":[108,80,30],"十四愿":[120,80,30],"十五翰":[132,80,30],"十六谏":[144,80,30],"十七霰":[324,80,30],"十八啸":[336,80,30],"十九效":[348,80,30],"二十号":[0,80,30],"二十一个":[12,80,30],"二十二祃":[24,80,30],"二十三漾":[156,80,30],"二十四敬":[168,80,30],"二十五径":[180,80,30],"二十六宥":[48,80,30],"二十七沁":[312,80,30],"二十八勘":[300,80,30],"二十九艳":[288,80,30],"三十陷":[276,80,30],"一屋":[192,30,20],"二沃":[204,30,20],"三觉":[36,30,20],"四质":[84,30,20],"五物":[96,30,20],"六月":[108,30,20],"七曷":[120,30,20],"八黠":[132,30,20],"九屑":[144,30,20],"十药":[24,30,20],"十一陌":[156,30,20],"十二锡":[168,30,20],"十三职":[180,30,20],"十四缉":[312,30,20],"十五合":[300,30,20],"十六叶":[288,30,20],"十七洽":[276,30,20]};
 
@@ -661,7 +701,6 @@ function buildCilinPage() {
 function buildShangguyunPage() {
   const cats = rhymeBooks.Shangguyun.categories;
   // 从 char_dict 读音建立 部 → 小韵 → 字 映射（字序保持韵书频率序，同小韵去重）
-  const charDict = JSON.parse(readFileSync(join(CFG, 'char_dict.json'), 'utf8'));
   const subMap = {};
   const subMeta = {}; // sub -> { rpy 韵拼音, ipaf 韵母国际音标 }
   for (const [catName, cat] of Object.entries(cats)) {
@@ -711,7 +750,14 @@ function buildShangguyunPage() {
         return `<div class="sub-group"><div class="sub-name">${esc(subName)}${phon}<span class="cnt"> ${set.size} 字</span></div><div class="sub-chars">${[...set].map((c) => `<a href="/ref/char.html?q=${encodeURIComponent(c)}">${esc(c)}</a>`).join('')}</div></div>`;
       })
       .join('');
-    return `<details class="cat"><summary><span class="name">${esc(cat.name)}</span><span class="cnt">${cat.characters.length} 字 · ${subs.length} 小韵</span></summary><div class="chars">${inner}</div></details>`;
+    // 部配色：音韵特征（主元音→色相、韵尾→明度），色点 + 展开圆环
+    const color = SG_COLORS[cat.name];
+    const hsl = color ? `hsl(${color.h}, ${color.s}%, ${color.l}%)` : '';
+    const dot = color ? `<span class="cat-dot" style="background:${hsl}"></span>` : '';
+    const ring = color
+      ? `<div class="cat-ring" style="--rc-w:hsla(${color.h},${color.s}%,${color.l}%,0.25)"><span>${esc(color.ring || cat.name.slice(-1))}</span></div>`
+      : '';
+    return `<details class="cat"${color ? ` style="--rc:${hsl}"` : ''}><summary>${dot}<span class="name">${esc(cat.name)}</span><span class="cnt">${cat.characters.length} 字 · ${subs.length} 小韵</span></summary><div class="chars">${inner}${ring}</div></details>`;
   };
   const names = Object.keys(cats);
   const groups = [['上古韵 23 部（按小韵细分）', names]];
@@ -736,6 +782,7 @@ function buildZhonghuaPage() {
     navLabel: '中华通韵',
     seoTitle: '中华通韵 16 韵部总览：普通话押韵查询',
     seoDesc: '中华通韵 16 韵完整对照（一啊、二喔、三鹅…十六儿），按现代普通话归韵，无入声，适合现代语感创作与自由诗押韵。',
+    colorOf: (name) => ZT_COLORS[name.replace(/_[平仄]$/, '')],
     subtitle: `中华通韵是当代通行的新韵书，由中华诗词学会组织专家依据现代汉语普通话审音归韵编订，不设入声，便于以现代语感创作旧体诗词。`,
     groups,
   });
@@ -1051,9 +1098,20 @@ function buildCharPage() {
     // 平水/词林韵部配色（与韵书页一致；多个韵部取首个）
     var PS_COLORS = ${JSON.stringify(PINGSHUI_COLORS)};
     var CL_COLORS = ${JSON.stringify(CILIN_COLORS)};
+    // 上古韵/中华通韵 音韵特征配色（主元音→色相、韵尾→明度）
+    var SG_COLORS = ${JSON.stringify(SG_COLORS)};
+    var ZT_COLORS = ${JSON.stringify(ZT_COLORS)};
     function itemColor(b, cats) {
       if (!cats.length) return '#8a8178';
       var first = cats[0];
+      if (b.key === 'Shangguyun') {
+        var s = SG_COLORS[first.name];
+        if (s) return 'hsl(' + s.h + ',' + s.s + '%,' + s.l + '%)';
+      }
+      if (b.key === 'Zhonghua_Tongyun') {
+        var z = ZT_COLORS[first.name.replace(/_[平仄]$/, '')];
+        if (z) return 'hsl(' + z.h + ',' + z.s + '%,' + z.l + '%)';
+      }
       var isPing = first.tone_type === 'P'; // 平声亮色加深便于阅读，仄声不受影响
       if (b.key === 'Pingshuiyun') {
         var c = PS_COLORS[first.name];
@@ -1117,7 +1175,9 @@ function buildCharPage() {
         } else {
           cats.forEach(function (c) {
             // 色彩记号置于胶囊内部：胶囊本体中性（#4c443c 边框/文字），前置小色块承载颜色
-            var col = (b.key === 'Pingshuiyun' || b.key === 'Cilinzhengyun') ? itemColor(b, cats) : toneColor(c.tone_type);
+            var col = itemColor(b, cats);
+            if (b.key === 'Shangguyun') { var s = SG_COLORS[c.name]; if (s) col = 'hsl(' + s.h + ',' + s.s + '%,' + s.l + '%)'; }
+            else if (b.key === 'Zhonghua_Tongyun') { var z = ZT_COLORS[c.name.replace(/_[平仄]$/, '')]; if (z) col = 'hsl(' + z.h + ',' + z.s + '%,' + z.l + '%)'; }
             var chip = '<a class="chip" href="' + href + '"><i class="cl-mark" style="background:' + col + '"></i>' + c.name + '</a>';
             if (b.key === 'Shangguyun' && c.readings && c.readings.length) {
               c.readings.forEach(function (r) {
