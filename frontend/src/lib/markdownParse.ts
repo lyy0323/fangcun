@@ -123,7 +123,8 @@ export function parseMarkdownPaste(text: string): MarkdownPasteResult {
       boardQuoteMode = false;
       finishSection();
       currentSection = { lines: [] };
-      currentSection.title = trimmed.replace(/^####\s+/, '').trim() || undefined;
+      // \s* 兼容裸 `####`（trim 后无空格）：无题小节不得产生字面 "####" 标题
+      currentSection.title = trimmed.replace(/^####\s*/, '').trim() || undefined;
       phase = 'before';
       hasSection = true;
       continue;

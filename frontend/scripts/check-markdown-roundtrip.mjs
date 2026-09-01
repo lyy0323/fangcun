@@ -146,6 +146,16 @@ const P2 = '白日依山尽黄河入海流欲穷千里目更上一层楼';
   check('S3 第二首正确', i.sections[1]?.poemChars.join('') === P2, JSON.stringify(i.sections[1]?.poemChars.join('')));
 }
 
+// S28 无题小节标题不得变成字面 "####"（粘贴回填时抹掉 ####）
+{
+  const md = '### 组诗 / 作者\n\n第一首正文。\n\n#### \n\n第二首正文。\n';
+  const i = applyMarkdownImport(mk(), parseMarkdownPaste(md));
+  check('S28 裸 #### 不产生标题', i.sections.length === 2 && !i.sections[1]?.title,
+    `sections=${i.sections.length} 标题=${JSON.stringify(i.sections[1]?.title)}`);
+  const i2 = applyMarkdownImport(mk(), parseMarkdownPaste('### 题\n\n#### 其一\n\n床前明月光。\n'));
+  check('S28 有题小节标题正常', i2.sections[0]?.title === '其一', JSON.stringify(i2.sections[0]?.title));
+}
+
 // S4 有题组诗
 {
   const b = mk({ title: '组诗', sections: [

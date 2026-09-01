@@ -252,6 +252,8 @@ const SHARED_CSS = `
   .sub-group { flex: 1 1 100%; margin: 4px 0 10px; }
   .sub-name { font-size: 12.5px; color: #557799; font-weight: 600; margin-bottom: 3px; }
   .sub-name .cnt { color: #a09890; font-weight: 400; }
+  .sub-phon { font-size: 11px; color: #a09890; font-weight: 400; margin-left: 5px; font-family: 'Noto Sans', 'DejaVu Sans', 'Charis SIL', 'Segoe UI', sans-serif; }
+  .ipa { font-family: 'Noto Sans', 'DejaVu Sans', 'Charis SIL', 'Segoe UI', 'Noto Sans SC', sans-serif; }
   .sub-chars { display: flex; flex-wrap: wrap; gap: 2px 10px; }
   .sub-chars span, .sub-chars a { font-size: 14.5px; color: #4c443c; letter-spacing: 1px; }
   .sub-chars a { text-decoration: none; }
@@ -445,14 +447,27 @@ ${content}
 const SHANGGUYUN_INTRO = '采用 nulll 拟音方案，对标王力上古韵体系设计邻韵通押，适合爱好者使用。';
 const SHANGGUYUN_CREDIT = 'Contributor：上海交通大学国学社·「南洋小学」音韵学兴趣小组——@nulll @知母tr @lyy0323';
 
-/** 上古韵小韵排序：平/上/去/入/次入，同调按小韵名 */
-const SG_TONE_RANK = { 平: 0, 上: 1, 去: 2, 入: 3, 次入: 4 };
-function sgSubKey(sub) {
-  let tone = SG_TONE_RANK[sub.slice(-1)] ?? 5;
-  let base = sub;
-  if (sub.endsWith('次入')) { tone = 4; base = sub.slice(0, -2); }
-  else if (SG_TONE_RANK[base.slice(-1)] !== undefined) base = base.slice(0, -1);
-  return [tone, base];
+/** 上古韵小韵排序：
+ * 1) 主元音（rpy 首字母）聚组，顺序 a<e<o<u<y<i（按用户示例反推：物队部 u 组在 y 组前）
+ * 2) 声调：平<上<去<入，次入并入入（与入同为促声，按韵尾细分）
+ * 3) 韵尾（rpy 去首元音与尾调符 q/h）：r<n<ng<m<p<t<s<k<j<w，无尾最后
+ * 4) 小韵名兜底
+ */
+const SG_VOWEL_ORDER = { a: 0, e: 1, o: 2, u: 3, y: 4, i: 5 };
+const SG_TAIL_ORDER = { r: 0, n: 1, ng: 2, m: 3, p: 4, t: 5, s: 6, k: 7, j: 8, w: 9 };
+const SG_TONE_RANK = { 平: 0, 上: 1, 去: 2, 入: 3 };
+function sgTailOf(rpy) {
+  let tail = (rpy || '').slice(1).replace(/[qh]$/, '');
+  if (tail.endsWith('ng')) return 'ng';
+  return tail.slice(-1) || '';
+}
+function sgSubKey(sub, meta) {
+  const rpy = meta?.rpy || '';
+  const vRank = SG_VOWEL_ORDER[rpy[0] || ''] ?? 9;
+  let tone = SG_TONE_RANK[sub.slice(-1)] ?? 5; // 平0 上1 去2 入3；次入末字为「入」亦得 3
+  if (sub.endsWith('次入')) tone = 3;
+  const tRank = SG_TAIL_ORDER[sgTailOf(rpy)] ?? 10;
+  return [vRank, tone, tRank, sub];
 }
 
 /** 平水韵 106 韵配色（与「平水韵诗词上色器」一致：平声亮 / 上声暗 / 去声暗 / 入声浊） */
@@ -638,28 +653,42 @@ function buildShangguyunPage() {
   // 从 char_dict 读音建立 部 → 小韵 → 字 映射（字序保持韵书频率序，同小韵去重）
   const charDict = JSON.parse(readFileSync(join(CFG, 'char_dict.json'), 'utf8'));
   const subMap = {};
+  const subMeta = {}; // sub -> { rpy 韵拼音, ipaf 韵母国际音标 }
   for (const [catName, cat] of Object.entries(cats)) {
     const m = new Map();
     for (const ch of cat.characters) {
       for (const r of charDict[ch]?.shangguyun || []) {
         if (r.cat !== catName) continue;
-        if (!m.has(r.sub)) m.set(r.sub, new Set());
+        if (!m.has(r.sub)) {
+          m.set(r.sub, new Set());
+          subMeta[r.sub] = { rpy: r.rpy || '', ipaf: r.ipaf || '' };
+        }
         m.get(r.sub).add(ch);
       }
     }
     subMap[catName] = m;
   }
+  const cmpKey = (a, b) => {
+    const ka = sgSubKey(a[0], subMeta[a[0]]);
+    const kb = sgSubKey(b[0], subMeta[b[0]]);
+    for (let i = 0; i < ka.length; i++) {
+      if (ka[i] < kb[i]) return -1;
+      if (ka[i] > kb[i]) return 1;
+    }
+    return 0;
+  };
   const catRenderer = (cat) => {
     const m = subMap[cat.name];
-    const subs = [...m.entries()].sort((a, b) => {
-      const ka = sgSubKey(a[0]);
-      const kb = sgSubKey(b[0]);
-      return ka[0] - kb[0] || (ka[1] < kb[1] ? -1 : ka[1] > kb[1] ? 1 : 0);
-    });
+    const subs = [...m.entries()].sort(cmpKey);
     const inner = subs
-      .map(([subName, set]) =>
-        `<div class="sub-group"><div class="sub-name">${esc(subName)}<span class="cnt"> ${set.size} 字</span></div><div class="sub-chars">${[...set].map((c) => `<a href="/ref/char.html?q=${encodeURIComponent(c)}">${esc(c)}</a>`).join('')}</div></div>`
-      )
+      .map(([subName, set]) => {
+        const meta = subMeta[subName] || {};
+        // 小韵韵母注音：国际音标 + 拼音
+        const phon = meta.ipaf
+          ? `<span class="sub-phon">/${esc(meta.ipaf)}/ ${esc(meta.rpy || '')}</span>`
+          : '';
+        return `<div class="sub-group"><div class="sub-name">${esc(subName)}${phon}<span class="cnt"> ${set.size} 字</span></div><div class="sub-chars">${[...set].map((c) => `<a href="/ref/char.html?q=${encodeURIComponent(c)}">${esc(c)}</a>`).join('')}</div></div>`;
+      })
       .join('');
     return `<details class="cat"><summary><span class="name">${esc(cat.name)}</span><span class="cnt">${cat.characters.length} 字 · ${subs.length} 小韵</span></summary><div class="chars">${inner}</div></details>`;
   };
@@ -1069,8 +1098,9 @@ function buildCharPage() {
             var col = (b.key === 'Pingshuiyun' || b.key === 'Cilinzhengyun') ? itemColor(b, cats) : toneColor(c.tone_type);
             if (b.key === 'Shangguyun' && c.readings && c.readings.length) {
               c.readings.forEach(function (r) {
+                // 上古韵注音：小韵 · 国际音标 / 拼音（不再单独列韵拼音）
                 html += '<div class="sg-line"><a class="chip" style="color:' + col + ';border-color:' + col + '40;background:' + col + '10" href="' + href + '">' + c.name + '</a>' +
-                  '<span class="sg-reading">' + r.sub + ' · ' + r.py + (r.rpy ? '（' + r.rpy + '）' : '') + '</span></div>';
+                  '<span class="sg-reading">' + r.sub + ' · <span class="ipa">/' + (r.ipa || '') + '/</span> ' + (r.py || '') + '</span></div>';
               });
             } else {
               html += '<a class="chip" style="color:' + col + ';border-color:' + col + '40;background:' + col + '10" href="' + href + '">' + c.name + '</a>';
@@ -1109,6 +1139,8 @@ function buildCharPage() {
       rowEl.addEventListener('pointerdown', function (e) {
         dragging = true; rowEl.__moved = false; cancelAnimationFrame(raf);
         startX = e.clientX; startOffset = offset;
+        // 记录按下的卡片：setPointerCapture 后 click 的 target 会被重定向到行元素
+        rowEl.__pressed = e.target.closest ? e.target.closest('.char-card') : null;
         rowEl.setPointerCapture(e.pointerId);
         rowEl.style.cursor = 'grabbing';
       });
@@ -1148,7 +1180,7 @@ function buildCharPage() {
       document.querySelectorAll('.char-row').forEach(function (row) {
         row.addEventListener('click', function (e) {
           if (row.__moved) return; // 拖拽过则不触发查询
-          var card = e.target.closest ? e.target.closest('.char-card') : null;
+          var card = (e.target.closest ? e.target.closest('.char-card') : null) || row.__pressed;
           if (card) { input.value = card.getAttribute('data-ch'); query(); }
         });
       });

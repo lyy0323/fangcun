@@ -73,6 +73,8 @@
   .sub-group { flex: 1 1 100%; margin: 4px 0 10px; }
   .sub-name { font-size: 12.5px; color: #557799; font-weight: 600; margin-bottom: 3px; }
   .sub-name .cnt { color: #a09890; font-weight: 400; }
+  .sub-phon { font-size: 11px; color: #a09890; font-weight: 400; margin-left: 5px; font-family: 'Noto Sans', 'DejaVu Sans', 'Charis SIL', 'Segoe UI', sans-serif; }
+  .ipa { font-family: 'Noto Sans', 'DejaVu Sans', 'Charis SIL', 'Segoe UI', 'Noto Sans SC', sans-serif; }
   .sub-chars { display: flex; flex-wrap: wrap; gap: 2px 10px; }
   .sub-chars span, .sub-chars a { font-size: 14.5px; color: #4c443c; letter-spacing: 1px; }
   .sub-chars a { text-decoration: none; }
@@ -317,8 +319,9 @@
             var col = (b.key === 'Pingshuiyun' || b.key === 'Cilinzhengyun') ? itemColor(b, cats) : toneColor(c.tone_type);
             if (b.key === 'Shangguyun' && c.readings && c.readings.length) {
               c.readings.forEach(function (r) {
+                // 上古韵注音：小韵 · 国际音标 / 拼音（不再单独列韵拼音）
                 html += '<div class="sg-line"><a class="chip" style="color:' + col + ';border-color:' + col + '40;background:' + col + '10" href="' + href + '">' + c.name + '</a>' +
-                  '<span class="sg-reading">' + r.sub + ' · ' + r.py + (r.rpy ? '（' + r.rpy + '）' : '') + '</span></div>';
+                  '<span class="sg-reading">' + r.sub + ' · <span class="ipa">/' + (r.ipa || '') + '/</span> ' + (r.py || '') + '</span></div>';
               });
             } else {
               html += '<a class="chip" style="color:' + col + ';border-color:' + col + '40;background:' + col + '10" href="' + href + '">' + c.name + '</a>';
@@ -357,6 +360,8 @@
       rowEl.addEventListener('pointerdown', function (e) {
         dragging = true; rowEl.__moved = false; cancelAnimationFrame(raf);
         startX = e.clientX; startOffset = offset;
+        // 记录按下的卡片：setPointerCapture 后 click 的 target 会被重定向到行元素
+        rowEl.__pressed = e.target.closest ? e.target.closest('.char-card') : null;
         rowEl.setPointerCapture(e.pointerId);
         rowEl.style.cursor = 'grabbing';
       });
@@ -396,7 +401,7 @@
       document.querySelectorAll('.char-row').forEach(function (row) {
         row.addEventListener('click', function (e) {
           if (row.__moved) return; // 拖拽过则不触发查询
-          var card = e.target.closest ? e.target.closest('.char-card') : null;
+          var card = (e.target.closest ? e.target.closest('.char-card') : null) || row.__pressed;
           if (card) { input.value = card.getAttribute('data-ch'); query(); }
         });
       });
