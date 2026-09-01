@@ -685,7 +685,7 @@ function buildShangguyunPage() {
         const meta = subMeta[subName] || {};
         // 小韵韵母注音：国际音标 + 拼音
         const phon = meta.ipaf
-          ? `<span class="sub-phon">/${esc(meta.ipaf)}/ ${esc(meta.rpy || '')}</span>`
+          ? `<span class="sub-phon">[${esc(meta.ipaf)}] ${esc(meta.rpy || '')}</span>`
           : '';
         return `<div class="sub-group"><div class="sub-name">${esc(subName)}${phon}<span class="cnt"> ${set.size} 字</span></div><div class="sub-chars">${[...set].map((c) => `<a href="/ref/char.html?q=${encodeURIComponent(c)}">${esc(c)}</a>`).join('')}</div></div>`;
       })
@@ -1100,7 +1100,7 @@ function buildCharPage() {
               c.readings.forEach(function (r) {
                 // 上古韵注音：小韵 · 国际音标 / 拼音（不再单独列韵拼音）
                 html += '<div class="sg-line"><a class="chip" style="color:' + col + ';border-color:' + col + '40;background:' + col + '10" href="' + href + '">' + c.name + '</a>' +
-                  '<span class="sg-reading">' + r.sub + ' · <span class="ipa">/' + (r.ipa || '') + '/</span> ' + (r.py || '') + '</span></div>';
+                  '<span class="sg-reading">' + r.sub + ' · <span class="ipa">[' + (r.ipa || '') + ']</span> ' + (r.py || '') + '</span></div>';
               });
             } else {
               html += '<a class="chip" style="color:' + col + ';border-color:' + col + '40;background:' + col + '10" href="' + href + '">' + c.name + '</a>';
