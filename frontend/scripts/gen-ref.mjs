@@ -356,7 +356,10 @@ const SHARED_CSS = `
   .def-item { font-size: 13.5px; margin: 2px 0; color: #4c443c; }
   .def-no { color: #a09890; margin-right: 4px; font-size: 12px; }
   .def-c { font-size: 11.5px; color: #a09890; padding-left: 18px; margin-top: 2px; line-height: 1.6; }
-  .chip { display: inline-block; padding: 2px 10px; border-radius: 999px; font-size: 12.5px; border: 1px solid; margin: 2px 4px 2px 0; text-decoration: none; }
+  .chip { display: inline-block; padding: 2px 10px; border-radius: 999px; font-size: 12.5px; border: 1px solid; text-decoration: none; }
+  /* 色彩记号：胶囊外部小色块（胶囊本体中性，不直接上色） */
+  .cl-chip { display: inline-flex; align-items: center; gap: 5px; margin: 2px 4px 2px 0; }
+  .cl-mark { width: 10px; height: 10px; border-radius: 3px; display: inline-block; flex-shrink: 0; }
   .sg-line { margin: 3px 0; }
   .sg-reading { font-size: 12.5px; color: #6b6360; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
   .loading { text-align: center; padding: 30px 0; color: #a09890; }
@@ -1114,15 +1117,17 @@ function buildCharPage() {
           html += '<span class="empty" style="padding:2px 0">未收录</span>';
         } else {
           cats.forEach(function (c) {
+            // 色彩记号外置：胶囊本体中性（默认边框/文字），韵色/声调色用前置小色块表示
             var col = (b.key === 'Pingshuiyun' || b.key === 'Cilinzhengyun') ? itemColor(b, cats) : toneColor(c.tone_type);
+            var chip = '<span class="cl-chip"><i class="cl-mark" style="background:' + col + '"></i><a class="chip" href="' + href + '">' + c.name + '</a></span>';
             if (b.key === 'Shangguyun' && c.readings && c.readings.length) {
               c.readings.forEach(function (r) {
                 // 上古韵注音：小韵 · 国际音标 / 拼音（不再单独列韵拼音）
-                html += '<div class="sg-line"><a class="chip" style="color:' + col + ';border-color:' + col + '40;background:' + col + '10" href="' + href + '">' + c.name + '</a>' +
+                html += '<div class="sg-line">' + chip +
                   '<span class="sg-reading">' + r.sub + ' · <span class="ipa">[' + (r.ipa || '') + ']</span> ' + (r.py || '') + '</span></div>';
               });
             } else {
-              html += '<a class="chip" style="color:' + col + ';border-color:' + col + '40;background:' + col + '10" href="' + href + '">' + c.name + '</a>';
+              html += chip;
             }
           });
         }
