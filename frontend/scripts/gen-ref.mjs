@@ -449,7 +449,9 @@ const SHANGGUYUN_CREDIT = 'Contributor：上海交通大学国学社·「南洋�
 
 /** 上古韵小韵排序：
  * 1) 主元音（rpy 首字母）聚组，顺序 a<e<o<u<y<i（按用户示例反推：物队部 u 组在 y 组前）
- * 2) 声调：平<上<去<入，次入并入入（与入同为促声，按韵尾细分）
+ * 2) 同主元音组内：
+ *    - 若全部小韵同属一个部名（不带调基名，如 真n/真ng）→ 韵尾优先（n<ng）：真部 3×n（平上去）→ 2×ng（平去）
+ *    - 部名混杂（如 乾a/元a）→ 声调优先（平<上<去<入，次入并入入），韵尾作次级
  * 3) 韵尾（rpy 去首元音与尾调符 q/h）：r<n<ng<m<p<t<s<k<j<w，无尾最后
  * 4) 小韵名兜底
  */
@@ -461,13 +463,19 @@ function sgTailOf(rpy) {
   if (tail.endsWith('ng')) return 'ng';
   return tail.slice(-1) || '';
 }
-function sgSubKey(sub, meta) {
+/** 不带调基名：去声调（平/上/去/入/次入）与尾部字母（a…i/n/ng/t…），如 真n平→真、乾a平→乾 */
+function sgBase(sub) {
+  let b = sub.endsWith('次入') ? sub.slice(0, -2) : sub.slice(0, -1);
+  if (b.endsWith('ng')) return b.slice(0, -2);
+  return /[a-z]$/.test(b) ? b.slice(0, -1) : b;
+}
+function sgSubKey(sub, meta, tailFirst) {
   const rpy = meta?.rpy || '';
   const vRank = SG_VOWEL_ORDER[rpy[0] || ''] ?? 9;
   let tone = SG_TONE_RANK[sub.slice(-1)] ?? 5; // 平0 上1 去2 入3；次入末字为「入」亦得 3
   if (sub.endsWith('次入')) tone = 3;
   const tRank = SG_TAIL_ORDER[sgTailOf(rpy)] ?? 10;
-  return [vRank, tone, tRank, sub];
+  return tailFirst ? [vRank, tRank, tone, sub] : [vRank, tone, tRank, sub];
 }
 
 /** 平水韵 106 韵配色（与「平水韵诗词上色器」一致：平声亮 / 上声暗 / 去声暗 / 入声浊） */
@@ -668,18 +676,29 @@ function buildShangguyunPage() {
     }
     subMap[catName] = m;
   }
-  const cmpKey = (a, b) => {
-    const ka = sgSubKey(a[0], subMeta[a[0]]);
-    const kb = sgSubKey(b[0], subMeta[b[0]]);
-    for (let i = 0; i < ka.length; i++) {
-      if (ka[i] < kb[i]) return -1;
-      if (ka[i] > kb[i]) return 1;
-    }
-    return 0;
-  };
   const catRenderer = (cat) => {
     const m = subMap[cat.name];
-    const subs = [...m.entries()].sort(cmpKey);
+    const entries = [...m.entries()];
+    // 按主元音分组：同组内若全部小韵同属一个部名 → 韵尾优先；否则声调优先
+    const byVowel = new Map();
+    for (const e of entries) {
+      const v = (subMeta[e[0]]?.rpy || '')[0] || '';
+      if (!byVowel.has(v)) byVowel.set(v, []);
+      byVowel.get(v).push(e);
+    }
+    const subs = [...byVowel.entries()].sort((a, b) => (SG_VOWEL_ORDER[a[0]] ?? 9) - (SG_VOWEL_ORDER[b[0]] ?? 9))
+      .flatMap(([, group]) => {
+        const sameBase = new Set(group.map(([s]) => sgBase(s))).size === 1;
+        return group.sort((a, b) => {
+          const ka = sgSubKey(a[0], subMeta[a[0]], sameBase);
+          const kb = sgSubKey(b[0], subMeta[b[0]], sameBase);
+          for (let i = 0; i < ka.length; i++) {
+            if (ka[i] < kb[i]) return -1;
+            if (ka[i] > kb[i]) return 1;
+          }
+          return 0;
+        });
+      });
     const inner = subs
       .map(([subName, set]) => {
         const meta = subMeta[subName] || {};
