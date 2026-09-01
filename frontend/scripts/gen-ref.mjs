@@ -1106,6 +1106,7 @@ function buildCharPage() {
     var CL_COLORS = ${JSON.stringify(CILIN_COLORS)};
     // 上古韵（部色=字最多小韵色）/ 中华通韵（平仄双色）——方案A·平水韵映射
     var SG_COLORS = ${JSON.stringify(SG_CAT_COLORS)};
+    var SG_SUB = ${JSON.stringify(SG_SUB_COLORS)};
     var ZT_COLORS = ${JSON.stringify(ZT_COLORS)};
     function itemColor(b, cats) {
       if (!cats.length) return '#8a8178';
@@ -1198,10 +1199,12 @@ function buildCharPage() {
             }
             var chip = '<a class="chip" href="' + href + '"><i class="cl-mark" style="background:' + col + '"></i>' + c.name + '</a>';
             if (b.key === 'Shangguyun' && c.readings && c.readings.length) {
+              // 上古韵：直接显示小韵（非大韵部），胶囊色块取小韵色；注音 [IPA] 拼音
               c.readings.forEach(function (r) {
-                // 上古韵注音：小韵 · 国际音标 / 拼音（不再单独列韵拼音）
-                html += '<div class="sg-line">' + chip +
-                  '<span class="sg-reading">' + r.sub + ' · <span class="ipa">[' + (r.ipa || '') + ']</span> ' + (r.py || '') + '</span></div>';
+                var s = SG_SUB[r.sub];
+                var sc = s ? 'hsl(' + s.h + ',' + s.s + '%,' + Math.min(s.l, 55) + '%)' : '#8a8178';
+                html += '<div class="sg-line"><a class="chip" href="' + href + '"><i class="cl-mark" style="background:' + sc + '"></i>' + r.sub + '</a>' +
+                  '<span class="sg-reading"><span class="ipa">[' + (r.ipa || '') + ']</span> ' + (r.py || '') + '</span></div>';
               });
             } else {
               html += chip;
