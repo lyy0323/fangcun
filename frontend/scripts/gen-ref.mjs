@@ -1175,10 +1175,22 @@ function buildCharPage() {
           html += '<span class="empty" style="padding:2px 0">未收录</span>';
         } else {
           cats.forEach(function (c) {
-            // 色彩记号置于胶囊内部：胶囊本体中性（#4c443c 边框/文字），前置小色块承载颜色
+            // 色彩记号置于胶囊内部：胶囊本体中性（#4c443c 边框/文字），前置小色块承载颜色。
+            // 每枚胶囊按其自身韵部/韵取色（命中多个韵部时各显其色），非首韵部颜色。
             var col = itemColor(b, cats);
-            if (b.key === 'Shangguyun') { var s = SG_COLORS[c.name]; if (s) col = 'hsl(' + s.h + ',' + s.s + '%,' + s.l + '%)'; }
-            else if (b.key === 'Zhonghua_Tongyun') { var z = ZT_COLORS[c.name.replace(/_[平仄]$/, '')]; if (z) col = 'hsl(' + z.h + ',' + z.s + '%,' + z.l + '%)'; }
+            if (b.key === 'Pingshuiyun') {
+              var c0 = PS_COLORS[c.name];
+              if (c0) col = 'hsl(' + c0[0] + ',' + c0[1] + '%,' + (c.tone_type === 'P' ? Math.min(c0[2], 50) : c0[2]) + '%)';
+            } else if (b.key === 'Cilinzhengyun') {
+              var c1 = CL_COLORS[c.name];
+              if (c1) col = 'hsl(' + c1.h + ',' + c1.s + '%,' + (c.tone_type === 'P' ? Math.min(c1.l, 50) : c1.l) + '%)';
+            } else if (b.key === 'Shangguyun') {
+              var s = SG_COLORS[c.name];
+              if (s) col = 'hsl(' + s.h + ',' + s.s + '%,' + s.l + '%)';
+            } else if (b.key === 'Zhonghua_Tongyun') {
+              var z = ZT_COLORS[c.name.replace(/_[平仄]$/, '')];
+              if (z) col = 'hsl(' + z.h + ',' + z.s + '%,' + z.l + '%)';
+            }
             var chip = '<a class="chip" href="' + href + '"><i class="cl-mark" style="background:' + col + '"></i>' + c.name + '</a>';
             if (b.key === 'Shangguyun' && c.readings && c.readings.length) {
               c.readings.forEach(function (r) {
