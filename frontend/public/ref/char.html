@@ -324,6 +324,11 @@
         var cats = (data && data.rhyme_categories) || [];
         var href = BOOK_PAGE[b.key] + '?q=' + enc(char);
         var dotColor = itemColor(b, cats);
+        // 上古韵：时间线圆点填充取首个读音的小韵色（与首个胶囊一致）
+        if (b.key === 'Shangguyun') {
+          var s0 = cats[0]?.readings?.[0] ? SG_SUB[cats[0].readings[0].sub] : null;
+          if (s0) dotColor = 'hsl(' + s0.h + ',' + s0.s + '%,' + Math.min(s0.l, 55) + '%)';
+        }
         html += '<div class="tl-item"><span class="tl-dot" style="background:' + dotColor + '"></span>';
         html += '<div class="tl-head">' + b.label + '</div><div class="tl-body">';
         if (!cats.length) {
