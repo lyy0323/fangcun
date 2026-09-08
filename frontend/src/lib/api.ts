@@ -80,7 +80,16 @@ export function rulesList(genre: string): Promise<RuleListItem[]> {
 }
 
 // --- 单字查询：并发调用 checker(音韵) + 主项目(释义) ---
-export async function charLookup(char: string, book: string) {
+export interface CharLookupResult {
+  char: string;
+  tones: string[];
+  rhyme_categories: (RhymeCategory & { readings?: ShangguyunReading[] })[];
+  definitions: { py: string; defs: { d: string; c?: string }[] }[];
+  /** 上古释义（不区分诗经/楚辞，每字一份，义项列表，繁体原文） */
+  sg_definitions?: string[];
+}
+
+export async function charLookup(char: string, book: string): Promise<CharLookupResult> {
   const [rhyme, defs] = await Promise.all([
     get<{
       char: string;
@@ -90,9 +99,10 @@ export async function charLookup(char: string, book: string) {
     get<{
       char: string;
       definitions: { py: string; defs: { d: string; c?: string }[] }[];
+      sg_definitions?: string[];
     }>(`/char/definitions?char=${enc(char)}`),
   ]);
-  return { ...rhyme, definitions: defs.definitions };
+  return { ...rhyme, definitions: defs.definitions, sg_definitions: defs.sg_definitions };
 }
 
 // --- 字典搜索 (词首/词末/对语/同位) ---

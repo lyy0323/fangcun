@@ -64,6 +64,7 @@ export function Dictionary() {
       readings?: { sj: string[]; cc: string[]; py: string; ipa: string; ipaf: string; tone: string }[];
     }[];
     definitions: { py: string; defs: { d: string; c?: string }[] }[];
+    sgDefinitions?: string[];
   } | null>(null);
   const [phraseResult, setPhraseResult] = useState<[string, number][]>([]);
   const [allusionResult, setAllusionResult] = useState<AllusionEntry[]>([]);
@@ -108,7 +109,7 @@ export function Dictionary() {
     try {
       if (curTab === 'rhyme') {
         const r = await charLookup(q, bookName);
-        setRhymeResult({ tones: r.tones, categories: r.rhyme_categories, definitions: r.definitions ?? [] });
+        setRhymeResult({ tones: r.tones, categories: r.rhyme_categories, definitions: r.definitions ?? [], sgDefinitions: r.sg_definitions ?? [] });
         setPhraseResult([]);
         setAllusionResult([]);
       } else if (curTab === 'allusion') {
@@ -344,6 +345,21 @@ export function Dictionary() {
                         )}
                       </div>
                     ))}
+                  </div>
+                ))}
+              </div>
+            )}
+            {/* 上古释义（繁体原文，不区分诗经/楚辞） */}
+            {rhymeResult.sgDefinitions && rhymeResult.sgDefinitions.length > 0 && (
+              <div className="mt-2 pt-1.5 space-y-1.5">
+                <div className="flex items-center gap-1.5 mb-1">
+                  <span className="text-[10px] font-semibold tracking-wider text-[var(--text-secondary)]">上古释义</span>
+                  <span className="h-px flex-1 bg-[var(--border)]" />
+                </div>
+                {rhymeResult.sgDefinitions.map((d, di) => (
+                  <div key={di} className="text-xs leading-relaxed pl-1">
+                    <span className="text-[var(--text-muted)]">{di + 1}. </span>
+                    <span className="font-serif">{d}</span>
                   </div>
                 ))}
               </div>

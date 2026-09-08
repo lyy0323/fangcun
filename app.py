@@ -121,6 +121,15 @@ def _lookup_definitions(ch: str):
         return dict_db.lookup_definitions(simplified)
     return None
 
+def _lookup_sg_definitions(ch: str):
+    defs = dict_db.lookup_sg_definitions(ch)
+    if defs:
+        return defs
+    simplified = _t2s(ch)
+    if simplified != ch:
+        return dict_db.lookup_sg_definitions(simplified)
+    return None
+
 # ============================================================================
 # API 路由
 # ============================================================================
@@ -131,7 +140,12 @@ def _lookup_definitions(ch: str):
 def char_definitions():
     ch = request.args.get("char", "")
     defs = _lookup_definitions(ch)
-    return jsonify({"char": ch, "definitions": defs or []})
+    sg_defs = _lookup_sg_definitions(ch)
+    return jsonify({
+        "char": ch,
+        "definitions": defs or [],
+        "sg_definitions": sg_defs or [],
+    })
 
 # ---------- GET /api/dictionary/search ----------
 
