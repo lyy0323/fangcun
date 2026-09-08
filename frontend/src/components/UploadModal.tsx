@@ -5,7 +5,7 @@ import { ensureGregorianDate } from '../lib/dateConvert';
 import { submitPoem, track } from '../lib/api';
 import type { SubmitResult, SubmitData } from '../lib/api';
 import { runUploadSequence } from '../lib/uploadSequence';
-import { resolveUploadPreface } from '../lib/uploadPreface';
+import { resolveUploadPreface, resolveUploadFootnote } from '../lib/uploadPreface';
 import type { ValidationResult } from '../lib/types';
 import { X, Loader, Check, AlertCircle } from 'lucide-react';
 
@@ -109,12 +109,19 @@ export function UploadModal({ onClose }: { onClose: () => void }) {
         : board.title;
       // 序的上传映射：单首画板的序存于画板级 metadata.preface（组诗整组序同源，归入首首）；
       // 组诗各首另有本首小序 sectionPreface。两者并存时按 组序 → 本首序 顺序拼接。
+      // 脚注对称：整组注位于文末 → 归入末首；本首注在前、整组注在后。
       const isSingle = board.sections.length <= 1;
       const preface = resolveUploadPreface({
         boardPreface: metadata.preface,
         sectionPreface: sec.sectionPreface,
         isSingle,
         isFirstOfGroup: idx === 0,
+      });
+      const footnote = resolveUploadFootnote({
+        boardFootnote: metadata.footnote,
+        sectionFootnote: sec.sectionFootnote,
+        isSingle,
+        isLastOfGroup: idx === board.sections.length - 1,
       });
       return {
         title,
@@ -124,7 +131,7 @@ export function UploadModal({ onClose }: { onClose: () => void }) {
         date: sec.sectionDate ? toApiDate(sec.sectionDate, metadata.dateFormat, board.updatedAt) : date,
         author,
         preface,
-        footnote: sec.sectionFootnote || undefined,
+        footnote,
         legacyId: board.sections.length > 1
           ? (sec.sectionLegacyId || undefined)
           : (metadata.legacyId || undefined),

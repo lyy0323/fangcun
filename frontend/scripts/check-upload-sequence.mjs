@@ -18,7 +18,7 @@ const srcDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../sr
 const result = await build({
   stdin: {
     contents: `export { runUploadSequence } from '${srcDir}/lib/uploadSequence.ts';
-export { resolveUploadPreface } from '${srcDir}/lib/uploadPreface.ts';`,
+export { resolveUploadPreface, resolveUploadFootnote } from '${srcDir}/lib/uploadPreface.ts';`,
     resolveDir: srcDir,
     loader: 'ts',
   },
@@ -27,7 +27,7 @@ export { resolveUploadPreface } from '${srcDir}/lib/uploadPreface.ts';`,
   platform: 'node',
   write: false,
 });
-const { runUploadSequence, resolveUploadPreface } = await import(
+const { runUploadSequence, resolveUploadPreface, resolveUploadFootnote } = await import(
   'data:text/javascript;base64,' + Buffer.from(result.outputFiles[0].text).toString('base64')
 );
 
@@ -119,6 +119,22 @@ const mkItems = (n) => Array.from({ length: n }, (_, i) => ({
   const second = resolveUploadPreface({ boardPreface: '组序', sectionPreface: '其二小序', isSingle: false, isFirstOfGroup: false });
   check('T8 组诗次首仅本首序', second === '其二小序', String(second));
   check('T8 组诗无本首序为空', resolveUploadPreface({ isSingle: false, isFirstOfGroup: false }) === undefined);
+}
+
+// T9 脚注对称：单首画板注存于 metadata.footnote → 上传必须带上（回归：曾只取 sectionFootnote 丢失）
+{
+  check('T9 单首仅画板注', resolveUploadFootnote({ boardFootnote: '注一', isSingle: true, isLastOfGroup: true }) === '注一');
+  check('T9 单首本首注+画板注拼接', resolveUploadFootnote({ boardFootnote: '注一', sectionFootnote: '小注', isSingle: true, isLastOfGroup: true }) === '小注\n\n注一');
+  check('T9 单首无注', resolveUploadFootnote({ isSingle: true, isLastOfGroup: true }) === undefined);
+}
+
+// T10 组诗：整组注位于文末 → 归入末首（本首注在前、整组注在后）；其余各首只带本首注
+{
+  const last = resolveUploadFootnote({ boardFootnote: '组注', sectionFootnote: '末首小注', isSingle: false, isLastOfGroup: true });
+  check('T10 组诗末首本首注+整组注', last === '末首小注\n\n组注', String(last));
+  const mid = resolveUploadFootnote({ boardFootnote: '组注', sectionFootnote: '中首小注', isSingle: false, isLastOfGroup: false });
+  check('T10 组诗非末首仅本首注', mid === '中首小注', String(mid));
+  check('T10 组诗无本首注为空', resolveUploadFootnote({ isSingle: false, isLastOfGroup: false }) === undefined);
 }
 
 console.log(`\n==== ${pass} passed, ${fail} failed ====`);

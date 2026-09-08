@@ -30,3 +30,31 @@ export function resolveUploadPreface(input: UploadPrefaceInput): string | undefi
   if (isFirstOfGroup && bp) return join();
   return sp || undefined;
 }
+
+// ============================================================================
+// 脚注映射：与序对称，但整组注在文末 → 归入末首
+// （单首画板注存于 metadata.footnote；组诗各首注 sectionFootnote、
+//   整组注 metadata.footnote 导出时位于末尾，故并入最后一首，本首注在前）
+// ============================================================================
+
+export interface UploadFootnoteInput {
+  /** 画板级脚注（metadata.footnote，trim 后） */
+  boardFootnote?: string;
+  /** 本首脚注（section.sectionFootnote，trim 后） */
+  sectionFootnote?: string;
+  /** 是否单首画板 */
+  isSingle: boolean;
+  /** 组诗中是否为最后 1 首（idx === sections.length - 1） */
+  isLastOfGroup: boolean;
+}
+
+export function resolveUploadFootnote(input: UploadFootnoteInput): string | undefined {
+  const { boardFootnote, sectionFootnote, isSingle, isLastOfGroup } = input;
+  const bf = boardFootnote?.trim();
+  const sf = sectionFootnote?.trim();
+  // 末首：本首注在前，整组注在后（与导出 markdown「本首注 → 画板注」顺序一致）
+  const joinTail = () => (sf && bf ? `${sf}\n\n${bf}` : sf || bf || undefined);
+  if (isSingle) return joinTail();
+  if (isLastOfGroup && bf) return joinTail();
+  return sf || undefined;
+}
