@@ -431,12 +431,12 @@ export interface FontOption {
 }
 
 export const FONT_OPTIONS: FontOption[] = [
-  { key: 'NotoSerifSC', label: '思源宋体', cssDir: 'NotoSerifSC-Regular', boldDir: 'NotoSerifSC-Bold' },
-  { key: 'NotoSansSC', label: '思源黑体', cssDir: 'NotoSansSC-Regular' },
   { key: 'HuiwenMincho', label: '汇文明朝体', cssDir: '汇文明朝体' },
   { key: 'SongKeBenXiuKai', label: '宋刻本秀楷', cssDir: '方正宋刻本秀楷简体' },
   { key: 'LXGWWenKai', label: '霞鹜文楷', cssDir: 'LXGWWenKaiLite-Regular' },
   { key: 'ML', label: '沐瓴体', cssDir: 'ml' },
+  { key: 'NotoSerifSC', label: '思源宋体', cssDir: 'NotoSerifSC-Regular', boldDir: 'NotoSerifSC-Bold' },
+  { key: 'NotoSansSC', label: '思源黑体', cssDir: 'NotoSansSC-Regular' },
 ];
 
 export const DEFAULT_FONT: FontKey = 'NotoSerifSC';
