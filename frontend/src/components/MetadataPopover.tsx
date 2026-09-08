@@ -30,8 +30,19 @@ export function MetadataPopover({ onClose }: { onClose: () => void }) {
     } catch { return '甲辰年三月初一'; }
   })();
 
+  // 最后修改日期（UTC+8，取 board.updatedAt 当天）
+  const lastModUTC8 = new Date(board.updatedAt + 8 * 3600_000);
+  const lastModStr = lastModUTC8.toISOString().slice(0, 10);
+
   const update = (field: keyof BoardMetadata, value: string) => {
     dispatch({ type: 'UPDATE_METADATA', metadata: { [field]: value } });
+  };
+
+  // 画板级日期快捷填充；组诗时（sections>1）同步给每个 section 填入同一日期（原子 action）
+  const fillBoardDate = (value: string) => {
+    dispatch({ type: 'FILL_BOARD_DATE', date: value, sectionsToo: board.sections.length > 1 });
+    setDateError('');
+    if (!trackedRef.current.date) { trackedRef.current.date = true; track('fill_date', { format: dateFormat }); }
   };
 
   // ── 日期校验（增强版：校验月/日范围） ──
@@ -161,15 +172,23 @@ export function MetadataPopover({ onClose }: { onClose: () => void }) {
           <div className="flex items-center gap-1.5 mb-1">
             <label className="text-[10px] text-[var(--text-secondary)]">日期</label>
             {!metadata.date && (
+            <>
             <button
               className="text-[9px] text-[var(--text-muted)] hover:text-[var(--accent)] border border-[var(--border)] hover:border-[var(--accent)] rounded-full px-1.5 py-px transition-colors"
               onClick={() => {
                 const val = dateFormat === 'Gregorian' ? todayStr : todayLunar;
-                update('date', val);
-                setDateError('');
-                if (!trackedRef.current.date) { trackedRef.current.date = true; track('fill_date', { format: dateFormat }); }
+                fillBoardDate(val);
               }}
             >今天</button>
+            <button
+              className="text-[9px] text-[var(--text-muted)] hover:text-[var(--accent)] border border-[var(--border)] hover:border-[var(--accent)] rounded-full px-1.5 py-px transition-colors"
+              onClick={() => {
+                const val = dateFormat === 'Gregorian' ? lastModStr : convertGregorianToLunar(lastModStr);
+                fillBoardDate(val);
+              }}
+              title="按画板最后修改日期填入"
+            >最后修改</button>
+            </>
             )}
             <div className="relative">
               <button

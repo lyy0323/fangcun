@@ -78,6 +78,7 @@ export type Action =
   | { type: 'DELETE_INSPIRATION'; cardId: string }
   | { type: 'UPDATE_INSPIRATION'; cardId: string; content: string }
   | { type: 'UPDATE_METADATA'; metadata: Partial<BoardMetadata> }
+  | { type: 'FILL_BOARD_DATE'; date: string; sectionsToo?: boolean }
   | { type: 'IMPORT_BOARDS'; boards: Board[]; folders?: Folder[] }
   | { type: 'ADD_SECTION' }
   | { type: 'DELETE_SECTION'; sectionIndex: number }
@@ -115,7 +116,7 @@ const UNDOABLE_ACTIONS = new Set([
   'ADD_CANDIDATE', 'REMOVE_CANDIDATE', 'REPLACE_WITH_CANDIDATE',
   'ADD_SECTION', 'DELETE_SECTION', 'MOVE_SECTION',
   'SET_PUNCT_OVERRIDE', 'TOGGLE_AUX_MARK',
-  'UPDATE_METADATA', 'UPDATE_SECTION_META',
+  'UPDATE_METADATA', 'UPDATE_SECTION_META', 'FILL_BOARD_DATE',
   'ADD_INSPIRATION', 'DELETE_INSPIRATION', 'UPDATE_INSPIRATION',
   'TOGGLE_IMMERSIVE',
   'IMPORT_MARKDOWN',
@@ -342,6 +343,26 @@ function reducer(state: AppState, action: Action): AppState {
           updatedBoard.rhymeBookName = action.metadata.rhymeBook;
         }
 
+        return updatedBoard;
+      });
+      return { ...state, boards };
+    }
+    case 'FILL_BOARD_DATE': {
+      // 画板级「今天/最后修改」日期填充：写 metadata.date；
+      // 组诗时（sectionsToo）同步给每个 section 填入同一日期（原子，一次 undo/updatedAt）。
+      const boards = state.boards.map(b => {
+        if (b.id !== state.activeBoardId) return b;
+        let updatedBoard: Board = {
+          ...b,
+          metadata: { ...b.metadata, date: action.date },
+          updatedAt: Date.now(),
+        };
+        if (action.sectionsToo && b.sections.length > 1) {
+          updatedBoard = {
+            ...updatedBoard,
+            sections: b.sections.map(s => ({ ...s, sectionDate: action.date })),
+          };
+        }
         return updatedBoard;
       });
       return { ...state, boards };
