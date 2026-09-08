@@ -3,6 +3,7 @@ import { useBoardContext, useActiveBoard } from '../context/BoardContext';
 import { track } from '../lib/api';
 import { isMarkdownPaste, parseMarkdownPaste } from '../lib/markdownParse';
 import { useValidation } from '../hooks/useValidation';
+import { usePinEditorFocus } from '../lib/usePinEditorFocus';
 import { GridCell } from './GridCell';
 import { PLACEHOLDER } from '../lib/types';
 import { Solar } from 'lunar-javascript';
@@ -318,6 +319,8 @@ export function GridEditor() {
   const [confirmDeleteSection, setConfirmDeleteSection] = useState<number | null>(null);
   const [immersiveHint, setImmersiveHint] = useState<number | null>(null);
   const [inputFocused, setInputFocused] = useState(true);
+  // 点击创作区外可聚焦控件时不夺走隐藏输入的焦点（click 照常触发）
+  usePinEditorFocus(containerRef, inputRef, !!board);
   const hintTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
   const [punctPickerAt, setPunctPickerAt] = useState<number | null>(null);
   const [auxPickerAt, setAuxPickerAt] = useState<number | null>(null);
