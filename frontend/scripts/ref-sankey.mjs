@@ -205,11 +205,11 @@ export function buildSankey({ rhymeBooks, colors, orders }) {
     const c = colorOf(bi, id);
     return c ? `hsl(${c.h},${c.s}%,${Math.min(c.l, 88)}%)` : '#cfc8be';
   };
-  // 链路 = 左侧源结点色，压暗为细流
+  // 链路 = 左侧源结点色（fill 半透明；整体明暗靠 opacity 控制，便于悬停高亮对比）
   const linkFill = (bi, l) => {
     const c = colorOf(bi, l.s);
-    if (!c) return 'rgba(150,140,128,.30)';
-    return `hsla(${c.h},${c.s}%,${Math.min(c.l, 84)}%,.30)`;
+    if (!c) return 'rgba(150,140,128,.55)';
+    return `hsla(${c.h},${c.s}%,${Math.min(c.l, 84)}%,.55)`;
   };
   const fmt = (v) => {
     const r = Math.round(v * 10) / 10;
@@ -268,7 +268,7 @@ export function buildSankey({ rhymeBooks, colors, orders }) {
     heads += `<text class="sk-head-sub" x="${cx}" y="${M.top - 3}" text-anchor="middle">${activeCol[bi].length} 部</text>`;
   });
 
-  // 交互：悬停某结点，高亮它的入/出链路与对端结点
+  // 交互：悬停某结点，高亮它的入/出链路（提亮）与对端结点，其余压暗
   const script = `
   <script>
   (function () {
@@ -276,48 +276,44 @@ export function buildSankey({ rhymeBooks, colors, orders }) {
     if (!svg) return;
     var nodes = Array.prototype.slice.call(svg.querySelectorAll('.sk-n'));
     var links = Array.prototype.slice.call(svg.querySelectorAll('.sk-l'));
-    function reset() {
-      nodes.forEach(function (n) { n.classList.remove('hl'); });
-      links.forEach(function (l) { l.classList.remove('hl'); l.style.opacity = ''; });
+    var linkDefault = 0.34;   // 常态整图流带明度
+    var linkHl = 1;           // 悬停相连流带明度
+    var linkDim = 0.04;       // 悬停其余流带明度
+    function paint() {
+      links.forEach(function (l) { l.style.opacity = String(linkDefault); });
     }
-    function dim(ids) {
-      var has = {};
-      ids.forEach(function (id) { has[id] = 1; });
-      nodes.forEach(function (n) {
-        if (!has[n.getAttribute('data-id')]) n.classList.add('dim');
-      });
-      links.forEach(function (l) {
-        var a = l.getAttribute('data-s'), b = l.getAttribute('data-t');
-        if (has[a] || has[b]) l.classList.add('hl');
-        else l.style.opacity = '.06';
-      });
+    function reset() {
+      nodes.forEach(function (n) { n.classList.remove('hl', 'dim'); });
+      paint();
     }
     nodes.forEach(function (n) {
       n.addEventListener('mouseenter', function () {
         reset();
         var id = n.getAttribute('data-id');
-        var ids = [id];
+        var ids = { id: 1 };
         links.forEach(function (l) {
-          if (l.getAttribute('data-s') === id) ids.push(l.getAttribute('data-t'));
-          if (l.getAttribute('data-t') === id) ids.push(l.getAttribute('data-s'));
+          var a = l.getAttribute('data-s'), b = l.getAttribute('data-t');
+          if (a === id || b === id) {
+            l.style.opacity = String(linkHl);
+            ids[a] = ids[b] = 1;
+          } else {
+            l.style.opacity = String(linkDim);
+          }
         });
-        ids.forEach(function (i) {
-          nodes.forEach(function (m) { if (m.getAttribute('data-id') === i) m.classList.add('hl'); });
+        nodes.forEach(function (m) {
+          var mid = m.getAttribute('data-id');
+          if (ids[mid]) m.classList.add('hl');
+          else m.classList.add('dim');
         });
-        dim(ids);
       });
     });
-    svg.addEventListener('mouseleave', function () {
-      reset();
-      nodes.forEach(function (n) { n.classList.remove('dim'); });
-    });
+    svg.addEventListener('mouseleave', reset);
   })();
   </script>`;
 
   const svg = `<svg id="sk-svg" viewBox="0 0 ${width} ${height}" width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="五部韵书全库韵部流变桑基图">
 <style>
-.sk-l { opacity: 1; transition: opacity .1s; }
-.sk-l.hl { opacity: 1; }
+.sk-l { transition: opacity .12s; }
 .sk-n { cursor: default; }
 .sk-n rect { transition: opacity .12s; }
 .sk-n.hl rect { stroke: rgba(0,0,0,.35); stroke-width: 1.2; filter: saturate(1.25); }
