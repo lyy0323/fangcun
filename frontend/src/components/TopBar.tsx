@@ -622,8 +622,8 @@ export function TopBar() {
           return (
             <div key={f.id}>
               <div
-                className="group flex items-center px-2 py-1 text-sm cursor-pointer hover:bg-[var(--accent-light)] transition-colors"
-                style={{ paddingLeft: `${8 + depth * 16}px` }}
+                className="group flex items-center px-2 py-1 text-sm cursor-pointer bg-[color-mix(in_srgb,var(--text)_3.5%,transparent)] hover:bg-[var(--accent-light)] transition-colors rounded-lg"
+                style={{ paddingLeft: `${12 + depth * 16}px`, marginLeft: 2, marginRight: 2 }}
                 onClick={() => dispatch({ type: 'TOGGLE_FOLDER', id: f.id })}
               >
                 {f.collapsed ? <ChevronRight size={12} className="shrink-0 text-[var(--text-muted)]" /> : <ChevronDown size={12} className="shrink-0 text-[var(--text-muted)]" />}
