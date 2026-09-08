@@ -1,23 +1,10 @@
 import React, { createContext, useContext, useReducer, useEffect, type Dispatch } from 'react';
 import type { Board, Folder, SortMode, ValidationResult, BoardMetadata, PoemSection, FreeRhymeResult } from '../lib/types';
 import { PLACEHOLDER } from '../lib/types';
+import { applyMarkdownImport } from '../lib/markdownRoundTrip';
 
-export interface MarkdownPasteSection {
-  title?: string;
-  preface?: string;
-  footnote?: string;
-  date?: string;
-  lines: string[];
-}
-
-export interface MarkdownPasteResult {
-  title?: string;
-  author?: string;
-  boardPreface?: string;
-  boardFootnote?: string;
-  boardDate?: string;
-  sections: MarkdownPasteSection[];
-}
+export type { MarkdownPasteSection, MarkdownPasteResult } from '../lib/markdownRoundTrip';
+import type { MarkdownPasteResult } from '../lib/markdownRoundTrip';
 import { loadBoards, saveBoards, loadActiveBoardId, saveActiveBoardId, loadFolders, saveFolders, loadUndoStacks, saveUndoStacks } from '../lib/storage';
 
 // ============================================================================
@@ -31,11 +18,12 @@ export interface AppState {
   activeSectionIndex: number;
   validations: (ValidationResult | null)[];
   showGenreSelector: boolean;
+  onboardingOpen: boolean;
   dictQuery: string | null;
   dictQueryCursor: number | null;
   insertCharFn: ((text: string, mode?: 'forward' | 'backward' | 'pair') => void) | null;
   rhymeOverride: string | null;
-  pairQuery: { text: string; insertAt: number } | null;
+  pairQuery: { text: string } | null;
   freeRhymeResult: FreeRhymeResult | null;
   rootSortMode: SortMode;
   undoStacks: Record<string, Board[]>;
@@ -50,6 +38,7 @@ const initialState: AppState = {
   activeSectionIndex: 0,
   validations: [],
   showGenreSelector: false,
+  onboardingOpen: false,
   dictQuery: null,
   dictQueryCursor: null,
   insertCharFn: null,
@@ -79,10 +68,11 @@ export type Action =
   | { type: 'UPDATE_CHAR'; index: number; char: string }
   | { type: 'SET_VALIDATION'; sectionIndex: number; result: ValidationResult | null }
   | { type: 'SHOW_GENRE_SELECTOR'; show: boolean }
+  | { type: 'SET_ONBOARDING'; open: boolean }
   | { type: 'SET_POEM_CHARS'; chars: string[] }
   | { type: 'SET_DICT_QUERY'; query: string | null; cursor?: number | null }
   | { type: 'SET_RHYME_OVERRIDE'; category: string | null }
-  | { type: 'SET_PAIR_QUERY'; payload: { text: string; insertAt: number } | null }
+  | { type: 'SET_PAIR_QUERY'; payload: { text: string } | null }
   | { type: 'SET_INSERT_FN'; fn: ((text: string, mode?: 'forward' | 'backward' | 'pair') => void) | null }
   | { type: 'ADD_CANDIDATE'; index: number; char: string }
   | { type: 'REMOVE_CANDIDATE'; index: number; char: string }
@@ -91,6 +81,7 @@ export type Action =
   | { type: 'DELETE_INSPIRATION'; cardId: string }
   | { type: 'UPDATE_INSPIRATION'; cardId: string; content: string }
   | { type: 'UPDATE_METADATA'; metadata: Partial<BoardMetadata> }
+  | { type: 'FILL_BOARD_DATE'; date: string; sectionsToo?: boolean }
   | { type: 'IMPORT_BOARDS'; boards: Board[]; folders?: Folder[] }
   | { type: 'ADD_SECTION' }
   | { type: 'DELETE_SECTION'; sectionIndex: number }
@@ -128,7 +119,7 @@ const UNDOABLE_ACTIONS = new Set([
   'ADD_CANDIDATE', 'REMOVE_CANDIDATE', 'REPLACE_WITH_CANDIDATE',
   'ADD_SECTION', 'DELETE_SECTION', 'MOVE_SECTION',
   'SET_PUNCT_OVERRIDE', 'TOGGLE_AUX_MARK',
-  'UPDATE_METADATA', 'UPDATE_SECTION_META',
+  'UPDATE_METADATA', 'UPDATE_SECTION_META', 'FILL_BOARD_DATE',
   'ADD_INSPIRATION', 'DELETE_INSPIRATION', 'UPDATE_INSPIRATION',
   'TOGGLE_IMMERSIVE',
   'IMPORT_MARKDOWN',
@@ -253,6 +244,8 @@ function reducer(state: AppState, action: Action): AppState {
     }
     case 'SHOW_GENRE_SELECTOR':
       return { ...state, showGenreSelector: action.show };
+    case 'SET_ONBOARDING':
+      return { ...state, onboardingOpen: action.open };
     case 'SET_DICT_QUERY':
       return { ...state, dictQuery: action.query, dictQueryCursor: action.cursor ?? null };
     case 'SET_RHYME_OVERRIDE':
@@ -355,6 +348,27 @@ function reducer(state: AppState, action: Action): AppState {
           updatedBoard.rhymeBookName = action.metadata.rhymeBook;
         }
 
+        return updatedBoard;
+      });
+      return { ...state, boards };
+    }
+    case 'FILL_BOARD_DATE': {
+      // 画板级「今天/最后修改」日期填充：写 metadata.date；
+      // 组诗时（sectionsToo）仅给 sectionDate 为空的 section 填入同一日期
+      // （已填日期的 section 不覆写；原子，一次 undo/updatedAt）。
+      const boards = state.boards.map(b => {
+        if (b.id !== state.activeBoardId) return b;
+        let updatedBoard: Board = {
+          ...b,
+          metadata: { ...b.metadata, date: action.date },
+          updatedAt: Date.now(),
+        };
+        if (action.sectionsToo && b.sections.length > 1) {
+          updatedBoard = {
+            ...updatedBoard,
+            sections: b.sections.map(s => s.sectionDate ? s : ({ ...s, sectionDate: action.date })),
+          };
+        }
         return updatedBoard;
       });
       return { ...state, boards };
@@ -576,73 +590,9 @@ function reducer(state: AppState, action: Action): AppState {
       return { ...state, boards };
     }
     case 'IMPORT_MARKDOWN': {
-      const { payload } = action;
-      const boards = state.boards.map(b => {
-        if (b.id !== state.activeBoardId) return b;
-        let updated = { ...b, updatedAt: Date.now() };
-
-        if (payload.title) updated.title = payload.title;
-
-        const meta: Partial<BoardMetadata> = {};
-        if (payload.author) meta.author = payload.author;
-        if (payload.boardPreface) meta.preface = payload.boardPreface;
-        if (payload.boardFootnote) meta.footnote = payload.boardFootnote;
-        if (payload.boardDate) meta.date = payload.boardDate;
-
-        const pSections = payload.sections;
-        if (pSections.length === 0) return updated;
-
-        // Expand sections to match parsed count
-        let sections = [...updated.sections];
-        while (sections.length < pSections.length) {
-          const ref = sections[0];
-          sections.push({
-            id: crypto.randomUUID(),
-            title: '',
-            ruleName: ref.ruleName,
-            charCount: ref.charCount,
-            poemChars: Array(ref.charCount).fill(PLACEHOLDER),
-            candidatesMap: {},
-          });
-        }
-
-        // Fill each section
-        const singleSection = pSections.length === 1;
-        for (let i = 0; i < pSections.length; i++) {
-          const ps = pSections[i];
-          const sec = { ...sections[i] };
-          if (ps.title) sec.title = ps.title;
-
-          if (singleSection) {
-            // Single section: promote metadata to board level
-            if (ps.preface && !meta.preface) meta.preface = ps.preface;
-            if (ps.footnote && !meta.footnote) meta.footnote = ps.footnote;
-            if (ps.date && !meta.date) meta.date = ps.date;
-          } else {
-            if (ps.preface) sec.sectionPreface = ps.preface;
-            if (ps.footnote) sec.sectionFootnote = ps.footnote;
-            if (ps.date) sec.sectionDate = ps.date;
-          }
-
-          if (b.genre === 'Free') {
-            sec.lines = ps.lines;
-          } else {
-            // Fill poemChars from text lines (strip punctuation)
-            const allText = ps.lines.join('');
-            const chars = [...allText].filter(c => /[一-鿿㐀-䶿]/.test(c));
-            const poemChars = [...sec.poemChars];
-            for (let j = 0; j < Math.min(chars.length, poemChars.length); j++) {
-              poemChars[j] = chars[j];
-            }
-            sec.poemChars = poemChars;
-          }
-          sections[i] = sec;
-        }
-
-        updated.sections = sections;
-        if (Object.keys(meta).length > 0) updated.metadata = { ...updated.metadata, ...meta };
-        return updated;
-      });
+      const boards = state.boards.map(b =>
+        b.id === state.activeBoardId ? applyMarkdownImport(b, action.payload) : b,
+      );
       return { ...state, boards };
     }
     default:

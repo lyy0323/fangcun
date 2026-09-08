@@ -159,6 +159,7 @@
     <a class="section-title">端点</a>
     <a href="#validate">校验格律</a>
     <a href="#char">查字</a>
+    <a href="#char-defs">释义查询</a>
     <a href="#rhyme-lookup">查韵部字表</a>
     <a href="#rhyme-list">韵部列表</a>
     <a href="#rules">格律规则列表</a>
@@ -210,7 +211,7 @@
   <tr><td>参数长度</td><td>所有查询参数上限 2000 字符</td></tr>
   <tr><td>请求体</td><td>上限 50 KB</td></tr>
   <tr><td><code>genre</code></td><td><code>Shi</code>（诗）或 <code>Ci</code>（词）</td></tr>
-  <tr><td><code>book</code></td><td><code>Pingshuiyun</code>（平水韵）、<code>Cilinzhengyun</code>（词林正韵）或 <code>Zhonghua_Tongyun</code>（中华通韵）</td></tr>
+  <tr><td><code>book</code></td><td><code>Pingshuiyun</code>（平水韵，106 韵）、<code>Cilinzhengyun</code>（词林正韵，19 部）、<code>Zhonghua_Tongyun</code>（中华通韵，16 韵）、<code>ShangguyunShijing</code>（上古诗经韵，51 部）、<code>ShangguyunChuci</code>（上古楚辞韵，36 部）</td></tr>
   <tr><td><code>mode</code></td><td><code>head</code>、<code>tail</code>、<code>pair</code>、<code>tongwei</code></td></tr>
   <tr><td><code>tone</code></td><td><code>P</code>（平）或 <code>Z</code>（仄）</td></tr>
 </table>
@@ -231,7 +232,7 @@
   <tr><th>字段</th><th>类型</th><th></th><th>说明</th></tr>
   <tr><td>poem_text</td><td>string</td><td><span class="badge badge-required">必填</span></td><td>诗词文本（标点自动忽略，只提取汉字）</td></tr>
   <tr><td>genre</td><td>string</td><td><span class="badge badge-optional">可选</span></td><td><code>Shi</code>（诗）或 <code>Ci</code>（词），默认 <code>Shi</code></td></tr>
-  <tr><td>rhyme_book_name</td><td>string</td><td><span class="badge badge-optional">可选</span></td><td>韵书名，默认 <code>Pingshuiyun</code>。可选：<code>Pingshuiyun</code>（平水韵）、<code>Cilinzhengyun</code>（词林正韵，词用旧韵时务必选此项）、<code>Zhonghua_Tongyun</code>（中华通韵）</td></tr>
+  <tr><td>rhyme_book_name</td><td>string</td><td><span class="badge badge-optional">可选</span></td><td>韵书名，默认 <code>Pingshuiyun</code>。可选：<code>Pingshuiyun</code>（平水韵）、<code>Cilinzhengyun</code>（词林正韵，词用旧韵时务必选此项）、<code>Zhonghua_Tongyun</code>（中华通韵）、<code>ShangguyunShijing</code>（上古诗经韵）、<code>ShangguyunChuci</code>（上古楚辞韵）</td></tr>
   <tr><td>rule_name</td><td>string</td><td><span class="badge badge-optional">可选</span></td><td>指定规则名（如 <code>沁园春_龙谱_格一</code>），不传则自动匹配</td></tr>
   <tr><td>ensure_longpu</td><td>bool</td><td><span class="badge badge-optional">可选</span></td><td>仅匹配龙谱规则，默认 <code>false</code></td></tr>
   <tr><td>warnings</td><td>string | string[]</td><td><span class="badge badge-optional">可选</span></td><td>重字检测模式，默认 <code>default</code>。可选值见下方</td></tr>
@@ -314,7 +315,7 @@
 <table>
   <tr><th>参数</th><th>类型</th><th></th><th>说明</th></tr>
   <tr><td>char</td><td>string</td><td><span class="badge badge-required">必填</span></td><td>单个汉字</td></tr>
-  <tr><td>book</td><td>string</td><td><span class="badge badge-optional">可选</span></td><td>韵书名。不传则返回所有韵书</td></tr>
+  <tr><td>book</td><td>string</td><td><span class="badge badge-optional">可选</span></td><td>韵书名，可选：<code>Pingshuiyun</code>（平水韵）、<code>Cilinzhengyun</code>（词林正韵）、<code>Zhonghua_Tongyun</code>（中华通韵）、<code>ShangguyunShijing</code>（上古诗经韵）、<code>ShangguyunChuci</code>（上古楚辞韵）。不传则返回全部五书</td></tr>
 </table>
 
 <h3>示例 — 指定韵书</h3>
@@ -328,17 +329,67 @@
   ]
 }</code></pre>
 
-<h3>示例 — 不指定韵书（返回所有）</h3>
+<h3>示例 — 不指定韵书（返回全部五书）</h3>
 <pre><code>{
   <span class="key">"char"</span>: <span class="string">"花"</span>,
   <span class="key">"tones"</span>: [<span class="string">"平"</span>, <span class="string">"上"</span>],
   <span class="key">"rhyme_categories"</span>: {
     <span class="key">"Pingshuiyun"</span>: [<span class="string">"六麻"</span>],
-    <span class="key">"Cilinzhengyun"</span>: [<span class="string">"第3部_仄"</span>, <span class="string">"第10部_平"</span>]
+    <span class="key">"Cilinzhengyun"</span>: [<span class="string">"第3部_仄"</span>, <span class="string">"第10部_平"</span>],
+    <span class="key">"Zhonghua_Tongyun"</span>: [<span class="string">"一啊_平"</span>],
+    <span class="key">"ShangguyunShijing"</span>: [<span class="string">"鱼a"</span>],
+    <span class="key">"ShangguyunChuci"</span>: [<span class="string">"鱼a"</span>]
   }
 }</code></pre>
 
-<div class="callout"><code>tones</code> 为原始声调（平、上、去、入），<code>rhyme_categories</code> 为韵书中的韵部归属。</div>
+<div class="callout"><code>tones</code> 为原始声调（平、上、去、入），<code>rhyme_categories</code> 为韵书中的韵部归属。不指定 <code>book</code> 时返回五部韵书各自的韵部归属（键为韵书 ID）。指定 <code>book</code> 为上古两书（<code>ShangguyunShijing</code> / <code>ShangguyunChuci</code>）时，每个韵部条目额外带 <code>readings</code>（拟音与上古声调注记）。</div>
+
+<hr>
+
+<!-- ==================== 释义查询 ==================== -->
+<h2 id="char-defs">释义查询</h2>
+<p>查询单个汉字的字典释义与上古释义（繁体原文）。本端点由方寸服务自身实现（非 checker 代理透传），与「查字」的声调/韵部查询互补；支持繁体自动转简体。</p>
+
+<div class="endpoint-line">
+  <span class="method method-get">GET</span>
+  <span class="endpoint">/api/char/definitions</span>
+</div>
+
+<table>
+  <tr><th>参数</th><th>类型</th><th></th><th>说明</th></tr>
+  <tr><td>char</td><td>string</td><td><span class="badge badge-required">必填</span></td><td>单个汉字（支持繁体）</td></tr>
+</table>
+
+<h3>示例</h3>
+<pre><code>curl <span class="string">"https://write.sjtuguoxue.space/api/char/definitions?char=明"</span> \
+</code></pre>
+<pre><code>{
+  <span class="key">"char"</span>: <span class="string">"明"</span>,
+  <span class="key">"definitions"</span>: [
+    {
+      <span class="key">"py"</span>: <span class="string">"míng"</span>,
+      <span class="key">"defs"</span>: [
+        { <span class="key">"d"</span>: <span class="string">"(会意。甲骨文以“日、月”发光表示明亮。小篆从月囧(jiǒng),从月,取月之光;从囧,取窗牖之明亮。本义:明亮,清晰明亮)。"</span> },
+        { <span class="key">"d"</span>: <span class="string">"同本义。与“昏暗”相对。"</span>, <span class="key">"c"</span>: <span class="string">"朙,照也。 —— 《说文》"</span> }
+        <span class="comment">/* ...更多义项... */</span>
+      ]
+    }
+  ],
+  <span class="key">"sg_definitions"</span>: [
+    <span class="string">"光明。《爾雅·釋言》：“明，朗也。”《說文》：「照也。从月从囧。」"</span>
+    <span class="comment">/* ...更多上古义项（繁体原文）... */</span>
+  ]
+}</code></pre>
+
+<h3>响应字段说明</h3>
+<table>
+  <tr><th>字段</th><th>类型</th><th>说明</th></tr>
+  <tr><td>char</td><td>string</td><td>查询的字（原样回显输入，不做繁→简改写）</td></tr>
+  <tr><td>definitions</td><td>array</td><td>字典释义，按读音分组。每项含 <code>py</code>（拼音）与 <code>defs</code>（义项数组）；义项每项 <code>d</code> 为释义文本、<code>c</code> 为书证/出处引文（可选）。无数据时为 <code>[]</code></td></tr>
+  <tr><td>sg_definitions</td><td>string[]</td><td>上古释义（v3.0 新增），繁体原文义项字符串数组（义项去重保序）。无数据时为 <code>[]</code></td></tr>
+</table>
+
+<div class="callout">本端点只返回释义文本；声调与韵部归属请用「查字」<code>/api/char/lookup</code>。</div>
 
 <hr>
 
@@ -353,7 +404,7 @@
 
 <table>
   <tr><th>参数</th><th>类型</th><th></th><th>说明</th></tr>
-  <tr><td>book</td><td>string</td><td><span class="badge badge-optional">可选</span></td><td>韵书名，默认 <code>Pingshuiyun</code></td></tr>
+  <tr><td>book</td><td>string</td><td><span class="badge badge-optional">可选</span></td><td>韵书名，默认 <code>Pingshuiyun</code>。可选：<code>Pingshuiyun</code>（平水韵）、<code>Cilinzhengyun</code>（词林正韵）、<code>Zhonghua_Tongyun</code>（中华通韵）、<code>ShangguyunShijing</code>（上古诗经韵）、<code>ShangguyunChuci</code>（上古楚辞韵）</td></tr>
   <tr><td>category</td><td>string</td><td><span class="badge badge-required">必填</span></td><td>韵部名，如 <code>一东</code></td></tr>
   <tr><td>include</td><td>string</td><td><span class="badge badge-optional">可选</span></td><td>包含关联韵部，逗号分隔（如 <code>neighbor</code>）</td></tr>
   <tr><td>limit</td><td>int</td><td><span class="badge badge-optional">可选</span></td><td>返回字数上限。不传则全量返回（行为不变），传入时 <code>total</code> 仍为完整数量</td></tr>
@@ -373,7 +424,7 @@
   }
 }</code></pre>
 
-<div class="callout">字表按词频降序排列（常用字在前）。<code>relations</code> 标注邻韵等关系。<br>传入 <code>include=neighbor</code> 时，响应变为 <code>{ "primary": {...}, "related": [...] }</code>，同时返回邻韵字表。</div>
+<div class="callout">字表按词频降序排列（常用字在前）。<code>relations</code> 标注邻韵等关系。<br>传入 <code>include=neighbor</code> 时，响应变为 <code>{ "primary": {...}, "related": [...] }</code>，同时返回邻韵字表。<br>上古两书（<code>ShangguyunShijing</code> / <code>ShangguyunChuci</code>）的韵部按上古拟音音系命名（如 <code>鱼a</code>、<code>铎ak</code>、<code>阳aŋ</code>），跨调通押、不分平仄，且响应附与 <code>characters</code> 对齐的 <code>details</code>（逐字拟音 <code>py</code>/<code>ipa</code>/<code>ipaf</code> 与上古声调 <code>tone</code>）。</div>
 
 <hr>
 
@@ -388,7 +439,7 @@
 
 <table>
   <tr><th>参数</th><th>类型</th><th></th><th>说明</th></tr>
-  <tr><td>book</td><td>string</td><td><span class="badge badge-optional">可选</span></td><td>韵书名，默认 <code>Pingshuiyun</code></td></tr>
+  <tr><td>book</td><td>string</td><td><span class="badge badge-optional">可选</span></td><td>韵书名，默认 <code>Pingshuiyun</code>。可选：<code>Pingshuiyun</code>（平水韵）、<code>Cilinzhengyun</code>（词林正韵）、<code>Zhonghua_Tongyun</code>（中华通韵）、<code>ShangguyunShijing</code>（上古诗经韵）、<code>ShangguyunChuci</code>（上古楚辞韵）</td></tr>
   <tr><td>tone</td><td>string</td><td><span class="badge badge-optional">可选</span></td><td>按声调过滤：<code>P</code>（平声韵）或 <code>Z</code>（仄声韵）</td></tr>
 </table>
 
@@ -413,7 +464,7 @@
   ]
 }</code></pre>
 
-<div class="callout"><code>preview</code> 为该韵部最高频的前 10 个字。</div>
+<div class="callout"><code>preview</code> 为该韵部最高频的前 10 个字。<br>上古两书（<code>ShangguyunShijing</code> / <code>ShangguyunChuci</code>）的韵部跨调通押、不区分平仄（<code>tone_type</code> 均为 <code>Z</code>），以 <code>tone=P</code> 过滤时 <code>categories</code> 为空。</div>
 
 <hr>
 
@@ -590,15 +641,17 @@
 <table>
   <tr><th>参数</th><th>类型</th><th></th><th>说明</th></tr>
   <tr><td>lines</td><td>string[]</td><td><span class="badge badge-required">必填</span></td><td>诗行数组，每行一个字符串</td></tr>
-  <tr><td>rhyme_book_name</td><td>string</td><td><span class="badge badge-optional">可选</span></td><td>韵书名，默认 <code>Zhonghua_Tongyun</code>（中华通韵），可选 <code>Pingshuiyun</code>（平水韵）、<code>Cilinzhengyun</code>（词林正韵）</td></tr>
+  <tr><td>rhyme_book_name</td><td>string</td><td><span class="badge badge-optional">可选</span></td><td>韵书名，默认 <code>Zhonghua_Tongyun</code>（中华通韵）。可选：<code>Pingshuiyun</code>（平水韵）、<code>Cilinzhengyun</code>（词林正韵）、<code>Zhonghua_Tongyun</code>（中华通韵）、<code>ShangguyunShijing</code>（上古诗经韵）、<code>ShangguyunChuci</code>（上古楚辞韵）</td></tr>
   <tr><td>merge_tones</td><td>boolean</td><td><span class="badge badge-optional">可选</span></td><td>是否合并平仄声调（同韵部的平声字和仄声字视为同韵）。默认 <code>false</code></td></tr>
+  <tr><td>strip_particles</td><td>boolean</td><td><span class="badge badge-optional">可选</span></td><td>是否剔除句末语气词并顺移至前一实字（仅上古两书 <code>ShangguyunShijing</code>/<code>ShangguyunChuci</code> 生效）。默认 <code>true</code></td></tr>
 </table>
 
 <div class="callout" style="border-left-color: var(--accent);">
   <strong>韵书选择建议：</strong><br>
   • <strong>古体诗、歌行体</strong>（如《卖炭翁》《长恨歌》）→ 指定 <code>Pingshuiyun</code>（平水韵）<br>
   • <strong>新诗、歌词、现代自由诗</strong> → 默认 <code>Zhonghua_Tongyun</code>（中华通韵），建议 <code>merge_tones: true</code>（现代诗词不讲究平仄分押）<br>
-  • <strong>词</strong> → 指定 <code>Cilinzhengyun</code>（词林正韵）
+  • <strong>词</strong> → 指定 <code>Cilinzhengyun</code>（词林正韵）<br>
+  • <strong>先秦诗文（《诗经》《楚辞》等）</strong> → 指定 <code>ShangguyunShijing</code>（上古诗经韵）或 <code>ShangguyunChuci</code>（上古楚辞韵）
 </div>
 
 <h3>示例 — 新诗（默认中华通韵）</h3>
@@ -607,10 +660,10 @@
   -d <span class="string">'{"lines": ["春眠不觉晓，", "处处闻啼鸟。", "夜来风雨声，", "花落知多少。"]}'</span></code></pre>
 <pre><code>{
   <span class="key">"candidates"</span>: [
-    { <span class="key">"line"</span>: <span class="number">0</span>, <span class="key">"pos"</span>: <span class="number">4</span>, <span class="key">"char"</span>: <span class="string">"晓"</span>, <span class="key">"categories"</span>: [<span class="string">"二巧"</span>] },
-    { <span class="key">"line"</span>: <span class="number">1</span>, <span class="key">"pos"</span>: <span class="number">4</span>, <span class="key">"char"</span>: <span class="string">"鸟"</span>, <span class="key">"categories"</span>: [<span class="string">"二巧"</span>] },
-    { <span class="key">"line"</span>: <span class="number">2</span>, <span class="key">"pos"</span>: <span class="number">4</span>, <span class="key">"char"</span>: <span class="string">"声"</span>, <span class="key">"categories"</span>: [<span class="string">"十一庚"</span>] },
-    { <span class="key">"line"</span>: <span class="number">3</span>, <span class="key">"pos"</span>: <span class="number">4</span>, <span class="key">"char"</span>: <span class="string">"少"</span>, <span class="key">"categories"</span>: [<span class="string">"二巧"</span>] }
+    { <span class="key">"line"</span>: <span class="number">0</span>, <span class="key">"pos"</span>: <span class="number">4</span>, <span class="key">"char"</span>: <span class="string">"晓"</span>, <span class="key">"categories"</span>: [<span class="string">"九熬_仄"</span>] },
+    { <span class="key">"line"</span>: <span class="number">1</span>, <span class="key">"pos"</span>: <span class="number">4</span>, <span class="key">"char"</span>: <span class="string">"鸟"</span>, <span class="key">"categories"</span>: [<span class="string">"九熬_仄"</span>] },
+    { <span class="key">"line"</span>: <span class="number">2</span>, <span class="key">"pos"</span>: <span class="number">4</span>, <span class="key">"char"</span>: <span class="string">"声"</span>, <span class="key">"categories"</span>: [<span class="string">"十四英_平"</span>] },
+    { <span class="key">"line"</span>: <span class="number">3</span>, <span class="key">"pos"</span>: <span class="number">4</span>, <span class="key">"char"</span>: <span class="string">"少"</span>, <span class="key">"categories"</span>: [<span class="string">"九熬_仄"</span>] }
   ],
   <span class="key">"groups"</span>: [
     { <span class="key">"positions"</span>: [
@@ -645,9 +698,12 @@
   <tr><th>字段</th><th>说明</th></tr>
   <tr><td>candidates[]</td><td>所有韵脚候选字（标点前或行末的 CJK 字符），含所属韵部</td></tr>
   <tr><td>groups[]</td><td>韵脚分组（≥2 个候选字共享韵部），用于同色着色</td></tr>
+  <tr><td>particles[]</td><td>被剔除的句末语气词（仅上古两书返回，见下方说明）。每项含 <code>char</code>/<code>line</code>/<code>pos</code>、剔除原因 <code>reason</code>（<code>known</code> 固定语气词 / <code>repeat</code> 句末重复）与顺移目标 <code>shifted_to</code>（回退无实字时为 <code>null</code>）</td></tr>
   <tr><td>positions[].line</td><td>所在行号（0-based）</td></tr>
   <tr><td>positions[].pos</td><td>行内字符位置（0-based）</td></tr>
 </table>
+
+<div class="callout">上古两书（<code>ShangguyunShijing</code> / <code>ShangguyunChuci</code>）下启用句末语气词启发式判定（<code>strip_particles</code>，默认开）：句末语气词（兮、乎、也、矣、焉、哉等）不作韵脚，自动顺移至前一实字（顺移后候选字带 <code>shifted_from</code> 字段）。其余三书行为不变。</div>
 
 <div class="callout">分组算法：前向贪心 — 取首个未分组字的韵部为锚集，向后扫描共享韵部的字拉入组，锚集不扩展。仅返回 ≥2 成员的组。</div>
 

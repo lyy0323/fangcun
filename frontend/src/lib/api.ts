@@ -1,11 +1,11 @@
-import type { ValidationResult, RhymeLookupResult, RuleListItem, PoemSearchResult, PoemFull, FreeRhymeResult } from './types';
+import type { ValidationResult, RhymeLookupResult, RuleListItem, PoemSearchResult, PoemFull, FreeRhymeResult, RhymeCategory, ShangguyunReading } from './types';
 
 const BASE = '/api';
 
 const IS_ANDROID = navigator.userAgent.includes('FangcunAndroid');
-const CHECKER_BASE = IS_ANDROID
-  ? 'https://checker.sjtuguoxue.space/api'
-  : '/api';
+// checker 端点统一经本服务（/api）透传：Web 走 Vercel 上的 Flask 代理，
+// Android 走本地 Flask（5050）代理，使 checker 调用计入后端调用量统计。
+const CHECKER_BASE = '/api';
 
 // checker 暂不计入 CJK 扩展 A；用占位符保留词谱位置，画板原文不变。
 const normalizePoemTextForChecker = (poemText: string) =>
@@ -80,19 +80,29 @@ export function rulesList(genre: string): Promise<RuleListItem[]> {
 }
 
 // --- 单字查询：并发调用 checker(音韵) + 主项目(释义) ---
-export async function charLookup(char: string, book: string) {
+export interface CharLookupResult {
+  char: string;
+  tones: string[];
+  rhyme_categories: (RhymeCategory & { readings?: ShangguyunReading[] })[];
+  definitions: { py: string; defs: { d: string; c?: string }[] }[];
+  /** 上古释义（不区分诗经/楚辞，每字一份，义项列表，繁体原文） */
+  sg_definitions?: string[];
+}
+
+export async function charLookup(char: string, book: string): Promise<CharLookupResult> {
   const [rhyme, defs] = await Promise.all([
     get<{
       char: string;
       tones: string[];
-      rhyme_categories: { name: string; tone_type: string }[];
+      rhyme_categories: (RhymeCategory & { readings?: ShangguyunReading[] })[];
     }>(`/char/lookup?char=${enc(char)}&book=${enc(book)}`, CHECKER_BASE),
     get<{
       char: string;
       definitions: { py: string; defs: { d: string; c?: string }[] }[];
+      sg_definitions?: string[];
     }>(`/char/definitions?char=${enc(char)}`),
   ]);
-  return { ...rhyme, definitions: defs.definitions };
+  return { ...rhyme, definitions: defs.definitions, sg_definitions: defs.sg_definitions };
 }
 
 // --- 字典搜索 (词首/词末/对语/同位) ---
@@ -199,22 +209,33 @@ export interface SubmitResult {
   error?: string;
 }
 
-export async function submitPoem(data: SubmitData, apiKey: string): Promise<SubmitResult> {
-  let res: Response;
+export async function submitPoem(data: SubmitData, apiKey: string, timeoutMs = 20000): Promise<SubmitResult> {
+  // 网络波动时请求可能挂起：超时即中止，避免上传流程卡死无法重试
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
-    res = await fetch(SUBMIT_URL, {
+    const res = await fetch(SUBMIT_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
       body: JSON.stringify(data),
+      signal: controller.signal,
     });
+    try {
+      const json = await res.json();
+      if (!res.ok && !json.error) json.error = `HTTP ${res.status}`;
+      return json;
+    } catch (e) {
+      if (e instanceof DOMException && e.name === 'AbortError') {
+        return { ok: false, error: '网络超时，请检查网络后重试' };
+      }
+      return { ok: false, error: `HTTP ${res.status}: ${res.statusText}` };
+    }
   } catch (e) {
+    if (e instanceof DOMException && e.name === 'AbortError') {
+      return { ok: false, error: '网络超时，请检查网络后重试' };
+    }
     return { ok: false, error: `网络错误：${e instanceof Error ? e.message : String(e)}` };
-  }
-  try {
-    const json = await res.json();
-    if (!res.ok && !json.error) json.error = `HTTP ${res.status}`;
-    return json;
-  } catch {
-    return { ok: false, error: `HTTP ${res.status}: ${res.statusText}` };
+  } finally {
+    clearTimeout(timer);
   }
 }

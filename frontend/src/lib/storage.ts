@@ -9,6 +9,8 @@ export function loadBoards(): Board[] {
     const raw = localStorage.getItem(BOARDS_KEY);
     const boards: Board[] = raw ? JSON.parse(raw) : [];
     for (const b of boards) {
+      // 上古韵已拆分为诗经/楚辞两套：历史画板存留的旧 key 归一到诗经韵
+      if (b.rhymeBookName === 'Shangguyun') b.rhymeBookName = 'ShangguyunShijing';
       if (!b.sections) {
         const legacy = b as Board & { ruleName?: string; charCount?: number; poemChars?: string[]; candidatesMap?: Record<number, string[]> };
         b.sections = [{

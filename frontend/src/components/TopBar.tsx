@@ -1,9 +1,10 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useBoardContext, useActiveBoard } from '../context/BoardContext';
-import { PLACEHOLDER, resolveAuthor } from '../lib/types';
-import { Layers, Plus, ClipboardType, Check, Upload, Sun, Moon, Settings, ChevronRight, ChevronDown, X, BookOpen, Lightbulb, SendHorizontal, ExternalLink, Download, FolderUp, ImageDown, ScrollText, FolderPlus, Pencil, FolderInput, ChevronUp, ArrowUpDown, ArrowDown, ArrowUp, ArrowDownAZ, Undo2, Redo2, FileText } from 'lucide-react';
+import { PLACEHOLDER } from '../lib/types';
+import { Layers, Plus, ClipboardType, Check, Upload, Sun, Moon, Settings, ChevronRight, ChevronDown, X, BookOpen, Library, Lightbulb, SendHorizontal, ExternalLink, Download, FolderUp, ImageDown, ScrollText, FolderPlus, Pencil, FolderInput, ChevronUp, ArrowUpDown, ArrowDown, ArrowUp, ArrowDownAZ, Undo2, Redo2, FileText, Compass } from 'lucide-react';
 import type { Board, SortMode } from '../lib/types';
 import { track } from '../lib/api';
+import { buildBoardMarkdown } from '../lib/markdownRoundTrip';
 import { ExportPreview } from './ExportPreview';
 import { MetadataPopover } from './MetadataPopover';
 import { UploadModal } from './UploadModal';
@@ -108,6 +109,21 @@ function SettingsModal({ onClose, onExportMarkdown }: { onClose: () => void; onE
       title: '教程',
       content: (
         <div className="text-sm text-[var(--text-secondary)] space-y-3 leading-relaxed">
+          {/* 新手引导入口：关闭设置后以聚光灯引导重播 */}
+          <div className="flex items-center justify-between gap-2 rounded-xl border border-[var(--accent)] bg-[var(--accent-light)] px-3 py-2.5">
+            <div className="min-w-0">
+              <p className="text-[13px] font-medium text-[var(--accent)] flex items-center gap-1.5">
+                <Compass size={14} /> 新手引导
+              </p>
+              <p className="text-[11px] text-[var(--text-muted)] mt-0.5">分步介绍顶部按钮、创作网格、字典与韵部面板</p>
+            </div>
+            <button
+              onClick={() => { dispatch({ type: 'SET_ONBOARDING', open: true }); onClose(); }}
+              className="shrink-0 text-xs px-3 py-1.5 rounded-lg bg-[var(--accent)] text-white font-medium hover:opacity-90 transition-opacity"
+            >
+              重新开始
+            </button>
+          </div>
           <div>
             <p className="font-medium text-[var(--text)] flex items-center gap-1.5">顶部按钮</p>
             <ul className="mt-1 space-y-1.5 pl-1">
@@ -271,6 +287,7 @@ function SettingsModal({ onClose, onExportMarkdown }: { onClose: () => void; onE
           </a>
           <p className="font-medium text-[var(--text)] pt-1">更新日志</p>
           <ul className="list-disc pl-4 space-y-1">
+            <li>v3.0 (09-09) — 上古韵检测分设「诗经韵 51 部 / 楚辞韵 36 部」两套韵书，支持上古创作与校验；字典与查字新增上古释义；新建「韵书总览」参考站（五部韵书·查字·词谱·诗格·教程）并在韵书首页加入全库韵部流变桑基图（Beta）；Markdown 粘贴导入可重建标点与引号；新手引导改为聚光灯式引导；导出默认字体改为汇文明朝体；修复上传丢失序/脚注、组诗断点续传等</li>
             <li>v2.4.4 (08-15) — 组诗导出图片支持拆分多图：每张图可选包含 n 首（最大 N/2，或全部），全局序在第 1 首之前、全局脚注+日期在最后 1 首之后，署名每张图都有，预览翻页常驻、一键下载全部；长图可滚动预览</li>
             <li>v2.4.1 (07-15) — 导出图片新增字体/背景/渲染加载提示，优化字体缓存与快速切换；修复标题、水印字体不一致、偶发缺字及加载窗口高度问题，无原生粗体的字体可稳定合成粗体</li>
             <li>v2.4 (06-16) — 撤销/重做，Markdown 导出与粘贴导入，画板集含文件夹导入导出，11 款图片背景主题（墨荷/红梅/巴山/天净沙/烟柳等），导出作者三档控制</li>
@@ -448,6 +465,9 @@ function SettingsModal({ onClose, onExportMarkdown }: { onClose: () => void; onE
   );
 }
 
+// 统一 topbar 图标按钮样式（画板选择/元数据/导出/其余图标按钮共用）
+const ICON_BTN_CLS = 'w-8 h-8 rounded-lg border border-[var(--border)] flex items-center justify-center text-[var(--text-muted)] hover:bg-[var(--accent-light)] hover:text-[var(--accent)] transition-colors';
+
 export function TopBar() {
   const { state, dispatch, canUndo, canRedo } = useBoardContext();
   const board = useActiveBoard();
@@ -463,6 +483,18 @@ export function TopBar() {
     }
     return false;
   });
+
+  // UX 统一：画板选择 / 元数据 / 导出菜单 三弹层共用同一交互——
+  // 单一全屏遮罩置于 header 首子元素（DOM 最前、低层），使其它 topbar
+  // 按钮始终可 hover/点击（点击自动收起当前弹层），不再各自用高 z 遮罩挡按钮。
+  const closeMenus = () => {
+    setDropOpen(false); setMetaOpen(false); setExportMenuOpen(false);
+    setMovingBoardId(null); setSortMenuFor(null); setSortMenuPos(null);
+  };
+  const toggleDrop = () => { setMetaOpen(false); setExportMenuOpen(false); setDropOpen(v => !v); };
+  const toggleMeta = () => { setDropOpen(false); setExportMenuOpen(false); setMetaOpen(v => !v); };
+  const toggleExport = () => { setDropOpen(false); setMetaOpen(false); setExportMenuOpen(v => !v); };
+  const anyMenuOpen = dropOpen || metaOpen || exportMenuOpen;
 
   useEffect(() => {
     document.documentElement.classList.toggle('dark', dark);
@@ -481,7 +513,8 @@ export function TopBar() {
   const renderBoardItem = useCallback((b: typeof state.boards[0], isCustomSort = false) => {
     const created = fmt(b.createdAt);
     const modified = fmt(b.updatedAt);
-    const timeLabel = created === modified ? `${created}创建` : `${modified}修改`;
+    // 体裁/格式标签：词（含组词）统一显示「词」，不展开完整词牌名
+    const typeLabel = b.genre === 'Ci' ? '词' : (b.sections[0]?.ruleName || '');
     return (
       <div key={b.id} className="relative group">
         <div
@@ -490,7 +523,7 @@ export function TopBar() {
         >
           <div className="truncate flex-1 mr-2">
             <div className="truncate text-[13px]">{b.title}</div>
-            <div className="text-[11px] text-[var(--text-muted)]">{b.sections.length > 1 ? `${b.sections.length}首·` : ''}{b.sections[0].ruleName} · {timeLabel}</div>
+            <div className="text-[11px] text-[var(--text-muted)]">{b.sections.length > 1 ? `${b.sections.length}首·` : ''}{typeLabel} · 建{created} 改{modified}</div>
           </div>
           <div className="flex items-center gap-0.5 shrink-0 opacity-0 group-hover:opacity-100 touch-show transition-opacity">
             {isCustomSort && (
@@ -620,8 +653,8 @@ export function TopBar() {
           return (
             <div key={f.id}>
               <div
-                className="group flex items-center px-2 py-1 text-sm cursor-pointer hover:bg-[var(--accent-light)] transition-colors"
-                style={{ paddingLeft: `${8 + depth * 16}px` }}
+                className="group flex items-center px-2 py-1 text-sm cursor-pointer bg-[color-mix(in_srgb,var(--text)_3.5%,transparent)] hover:bg-[var(--accent-light)] transition-colors rounded-lg"
+                style={{ paddingLeft: `${12 + depth * 16}px`, margin: 4 }}
                 onClick={() => dispatch({ type: 'TOGGLE_FOLDER', id: f.id })}
               >
                 {f.collapsed ? <ChevronRight size={12} className="shrink-0 text-[var(--text-muted)]" /> : <ChevronDown size={12} className="shrink-0 text-[var(--text-muted)]" />}
@@ -739,94 +772,6 @@ export function TopBar() {
     return parts.join('\n');
   };
 
-  const buildBoardMarkdown = (b: Board, opts: { author: 'off' | 'override' | 'all'; date: boolean }) => {
-    const meta = b.metadata || {};
-    const author = opts.author === 'off' ? ''
-      : opts.author === 'override' ? (meta.author ?? '')
-      : resolveAuthor(meta);
-    const heading = author ? `### ${b.title} / ${author}` : `### ${b.title}`;
-    const bq = (text: string) => text.split('\n').map(l => `> ${l}`);
-    const lines: string[] = [heading, ''];
-
-    // Board preface
-    if (meta.preface) { lines.push(...bq(meta.preface), ''); }
-
-    const multiSection = b.sections.length > 1;
-
-    b.sections.forEach((sec, idx) => {
-      // Section heading (组诗)
-      if (multiSection) {
-        if (sec.title) lines.push(`#### ${sec.title}`, '');
-        else if (idx > 0) lines.push(`#### `, '');
-      }
-
-      // Section preface
-      if (sec.sectionPreface) lines.push(...bq(sec.sectionPreface), '');
-
-      // Body text
-      if (b.genre === 'Free') {
-        const sLines = (sec.lines ?? []).filter(l => l.trim());
-        lines.push(...sLines, '');
-      } else {
-        const validation = state.validations[idx] ?? null;
-        const chars = sec.poemChars;
-        const rhymeSet = new Set(validation?.rhyme_positions ?? []);
-        const sentenceLen = b.genre === 'Shi' ? (sec.charCount % 7 === 0 ? 7 : 5) : 0;
-
-        const getPunct = (gi: number): string => {
-          if (sec.punctOverrides && gi in sec.punctOverrides) return sec.punctOverrides[gi];
-          if (b.genre === 'Shi') {
-            const posInCouplet = gi % (sentenceLen * 2);
-            const isSentenceEnd = posInCouplet === sentenceLen - 1 || posInCouplet === sentenceLen * 2 - 1;
-            if (!isSentenceEnd) return '';
-            return rhymeSet.has(gi) ? '。' : '，';
-          }
-          if (!validation?.display_segments) return '';
-          for (const seg of validation.display_segments) {
-            const offset = gi - seg.start_index;
-            if (offset >= 0 && offset < seg.rule_items.length) {
-              const comment = seg.rule_items[offset].comment;
-              if (rhymeSet.has(gi)) return '。';
-              if (comment === '叶' || comment === '换叶') return '。';
-              if (comment === '句') return '，';
-              if (comment === '读') return '、';
-              return '';
-            }
-          }
-          return '';
-        };
-
-        const OPENING = new Set(['「', '《', '“', '‘']);
-        let text = '';
-        for (let i = 0; i < chars.length; i++) {
-          const am = sec.auxMarks?.[i];
-          if (am) { for (const m of am) { if (OPENING.has(m)) text += m; } }
-          text += chars[i] === PLACEHOLDER ? '□' : chars[i];
-          if (am) { for (const m of am) { if (!OPENING.has(m)) text += m; } }
-          const punct = getPunct(i);
-          if (punct) text += punct;
-          if (b.genre === 'Shi' && sentenceLen > 0) {
-            const posInCouplet = i % (sentenceLen * 2);
-            if (posInCouplet === sentenceLen * 2 - 1 && i < chars.length - 1) text += '\n';
-          }
-        }
-        if (text.length > 0 && !/[，。、；：？！]$/.test(text)) text += '。';
-        lines.push(text, '');
-      }
-
-      // Section footnote/date
-      if (sec.sectionFootnote) lines.push(...bq(sec.sectionFootnote));
-      if (opts.date && sec.sectionDate && !sec.sectionDateHidden) lines.push(`> ${sec.sectionDate}`);
-      if (sec.sectionFootnote || (opts.date && sec.sectionDate && !sec.sectionDateHidden)) lines.push('');
-    });
-
-    // Board footnote/date
-    if (meta.footnote) lines.push(...bq(meta.footnote));
-    if (opts.date && meta.date && !meta.dateHidden) lines.push(`> ${meta.date}`);
-
-    return lines.join('\n').replace(/\n{3,}/g, '\n\n').trimEnd();
-  };
-
   const buildAllMarkdown = (opts: { author: 'off' | 'override' | 'all'; date: boolean }) => {
     const parts: string[] = [];
 
@@ -847,7 +792,7 @@ export function TopBar() {
         renderLevel(f.id);
       }
       for (const b of boards) {
-        parts.push(buildBoardMarkdown(b, opts), '', '---', '');
+        parts.push(buildBoardMarkdown(b, opts, state.validations), '', '---', '');
       }
     };
 
@@ -860,8 +805,9 @@ export function TopBar() {
     const format = localStorage.getItem('fangcun_export_format') || 'plain';
     const text = format === 'markdown'
       ? buildBoardMarkdown(board, {
-          author: (localStorage.getItem('fangcun_export_author') || 'all') as 'off' | 'override' | 'all',          date: localStorage.getItem('fangcun_export_date') !== '0',
-        })
+          author: (localStorage.getItem('fangcun_export_author') || 'all') as 'off' | 'override' | 'all',
+          date: localStorage.getItem('fangcun_export_date') !== '0',
+        }, state.validations)
       : `${board.title}\n${buildText()}`;
     navigator.clipboard.writeText(text).then(() => {
       setCopied(true);
@@ -913,18 +859,20 @@ export function TopBar() {
       className="h-12 border-b border-[var(--border)] bg-[var(--bg-card)] flex items-center px-3 gap-2 shrink-0 relative z-40"
       style={safeTop ? { height: 48 + safeTop, paddingTop: safeTop } : undefined}
     >
+      {/* 共享遮罩：三弹层统一。置于 header 首子元素（低层），其它按钮在其上仍可 hover/click */}
+      {anyMenuOpen && <div className="fixed inset-0" onClick={closeMenus} />}
+
       {/* 画板切换 */}
       <div className="relative">
         <button
-          onClick={() => setDropOpen(!dropOpen)}
-          className="w-8 h-8 rounded-lg border border-[var(--border)] flex items-center justify-center text-[var(--text-muted)] hover:bg-[var(--accent-light)] hover:text-[var(--accent)] transition-colors"
+          onClick={toggleDrop}
+          className={ICON_BTN_CLS}
           title="切换画板"
-        >
+         data-onb="onb-boards">
           <Layers size={16} />
         </button>
         {dropOpen && (
           <>
-            <div className="fixed inset-0" onClick={() => { setDropOpen(false); setMovingBoardId(null); setSortMenuFor(null); }} />
             {/* Sort dropdown (fixed to escape overflow) */}
             {sortMenuFor && sortMenuPos && (() => {
               const folderId = sortMenuFor === '__root__' ? null : sortMenuFor;
@@ -993,13 +941,13 @@ export function TopBar() {
       {board && (
         <div className="relative">
           <button
-            className={`w-8 h-8 rounded-lg border flex items-center justify-center transition-colors ${metaOpen ? 'border-[var(--accent)] text-[var(--accent)] bg-[var(--accent-light)]' : 'border-[var(--border)] text-[var(--text-muted)] hover:bg-[var(--accent-light)] hover:text-[var(--accent)]'}`}
-            onClick={() => setMetaOpen(v => !v)}
+            className={ICON_BTN_CLS}
+            onClick={toggleMeta}
             title="日期 / 序 / 脚注"
-          >
+           data-onb="onb-meta">
             <ScrollText size={15} />
           </button>
-          {metaOpen && <MetadataPopover onClose={() => setMetaOpen(false)} />}
+          {metaOpen && <MetadataPopover overlay={false} onClose={() => setMetaOpen(false)} />}
         </div>
       )}
 
@@ -1008,14 +956,14 @@ export function TopBar() {
         <>
           <button
             className={`w-8 h-8 rounded-lg border border-[var(--border)] flex items-center justify-center transition-colors ${canUndo ? 'text-[var(--text-muted)] hover:bg-[var(--accent-light)] hover:text-[var(--accent)]' : 'text-[var(--text-muted)] opacity-30 pointer-events-none'}`}
-            onClick={() => dispatch({ type: 'UNDO' })}
+            onClick={() => { closeMenus(); dispatch({ type: 'UNDO' }); }}
             title="撤销"
           >
             <Undo2 size={15} />
           </button>
           <button
             className={`w-8 h-8 rounded-lg border border-[var(--border)] flex items-center justify-center transition-colors ${canRedo ? 'text-[var(--text-muted)] hover:bg-[var(--accent-light)] hover:text-[var(--accent)]' : 'text-[var(--text-muted)] opacity-30 pointer-events-none'}`}
-            onClick={() => dispatch({ type: 'REDO' })}
+            onClick={() => { closeMenus(); dispatch({ type: 'REDO' }); }}
             title="重做"
           >
             <Redo2 size={15} />
@@ -1025,8 +973,8 @@ export function TopBar() {
 
       {/* 深色模式切换 */}
       <button
-        className="w-8 h-8 rounded-lg border border-[var(--border)] flex items-center justify-center text-[var(--text-muted)] hover:bg-[var(--accent-light)] hover:text-[var(--accent)] transition-colors"
-        onClick={() => setDark(d => !d)}
+        className={ICON_BTN_CLS}
+        onClick={() => { closeMenus(); setDark(d => !d); }}
         title={dark ? '切换浅色模式' : '切换深色模式'}
       >
         {dark ? <Sun size={15} /> : <Moon size={15} />}
@@ -1034,11 +982,22 @@ export function TopBar() {
 
       <div className="flex-1" />
 
+      {/* 格律参考（韵书/词谱/诗格/教程 静态页） */}
+      <button
+        className={ICON_BTN_CLS}
+        onClick={() => { closeMenus(); window.location.href = '/ref/index.html'; track('open_ref'); }}
+        title="格律参考"
+        data-onb="onb-ref"
+      >
+        <Library size={15} />
+      </button>
+
       {/* 设置 */}
       <button
-        className="w-8 h-8 rounded-lg border border-[var(--border)] flex items-center justify-center text-[var(--text-muted)] hover:bg-[var(--accent-light)] hover:text-[var(--accent)] transition-colors"
-        onClick={() => setSettingsOpen(true)}
+        className={ICON_BTN_CLS}
+        onClick={() => { closeMenus(); setSettingsOpen(true); }}
         title="设置"
+        data-onb="onb-settings"
       >
         <Settings size={15} />
       </button>
@@ -1047,16 +1006,14 @@ export function TopBar() {
       {board && (
         <div className="relative">
           <button
-            className="w-8 h-8 rounded-lg border border-[var(--border)] flex items-center justify-center text-[var(--text-muted)] hover:bg-[var(--accent-light)] hover:text-[var(--accent)] transition-colors"
-            onClick={() => setExportMenuOpen(v => !v)}
+            className={ICON_BTN_CLS}
+            onClick={toggleExport}
             title="导出"
-          >
+           data-onb="onb-export">
             <Download size={15} />
           </button>
           {exportMenuOpen && (
-            <>
-              <div className="fixed inset-0 z-40" onClick={() => setExportMenuOpen(false)} />
-              <div className="absolute right-0 top-10 z-50 w-40 border border-[var(--border)] rounded-lg overflow-hidden shadow-lg" style={{ backgroundColor: 'var(--bg-card)' }}>
+            <div className="absolute right-0 top-10 z-50 w-40 border border-[var(--border)] rounded-lg overflow-hidden shadow-lg" style={{ backgroundColor: 'var(--bg-card)' }}>
                 <button
                   className="w-full text-left px-3 py-2 text-sm flex items-center gap-2 hover:bg-[var(--accent-light)] transition-colors"
                   onClick={() => { handleCopy(); }}
@@ -1086,16 +1043,16 @@ export function TopBar() {
                   </>
                 )}
               </div>
-            </>
           )}
         </div>
       )}
 
       {/* 新建按钮 */}
       <button
-        className="w-8 h-8 rounded-lg border border-[var(--border)] flex items-center justify-center text-[var(--text-muted)] hover:bg-[var(--accent-light)] hover:text-[var(--accent)] transition-colors"
-        onClick={() => dispatch({ type: 'SHOW_GENRE_SELECTOR', show: true })}
+        className={ICON_BTN_CLS}
+        onClick={() => { closeMenus(); dispatch({ type: 'SHOW_GENRE_SELECTOR', show: true }); }}
         title="新建画板"
+        data-onb="onb-new"
       >
         <Plus size={18} />
       </button>

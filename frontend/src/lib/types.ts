@@ -143,12 +143,45 @@ export interface RhymeCategory {
   tone_type: 'P' | 'Z';
 }
 
+// [上古韵双套] 韵书 key 集合与判断
+export const SHANGGUYUN_BOOK_KEYS = ['ShangguyunShijing', 'ShangguyunChuci'] as const;
+export type ShangguyunBookKey = typeof SHANGGUYUN_BOOK_KEYS[number];
+export const isShangguyunBook = (book: string): boolean =>
+  book === 'ShangguyunShijing' || book === 'ShangguyunChuci';
+// 旧版单本「上古韵」key（已拆分为两套）→ 归一为诗经韵，兼容历史画板
+export const normalizeBookKey = (book: string): string =>
+  book === 'Shangguyun' ? 'ShangguyunShijing' : book;
+
+// [上古韵双套] 单字上古读音（char/lookup 的 rhyme_categories[i].readings）
+export interface ShangguyunReading {
+  sj: string[];       // 诗经韵部归属（并列通押展开，如 ['鱼a','铎ak']）
+  cc: string[];       // 楚辞韵部归属
+  py: string;         // 拟音：拼音列（全音节 ASCII，如 g'ang）
+  ipa: string;        // 诗经音国际音标（全音节，如 gˤaŋ）
+  ipaf: string;       // 韵母国际音标（如 aŋ）
+  tone: string;       // 平/上/去/入/次入
+  freq: number;       // 總出現次數（√→1，空→0）
+  ipa_cc?: string;    // 楚辞音异于诗经音时（-s→-h 类）附带的楚辞音
+  ipaf_cc?: string;
+}
+
+// [上古韵双套] rhyme/lookup 的逐字展示详情（与 characters 对齐）
+export interface RhymeLookupDetail {
+  char: string;
+  cat?: string;      // 所属韵部名
+  py?: string;
+  ipa?: string;
+  ipaf?: string;
+  tone?: string;
+}
+
 export interface RhymeLookupResult {
   category_name: string;
   tone_type: string;
   total: number;
   characters: string[];
   relations: Record<string, string[]>;
+  details?: RhymeLookupDetail[];
 }
 
 export interface RuleListItem {

@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<script>
+  /* Android 端禁用双指缩放（参考站与 SPA 一致）：gesture 事件（旧内核）+ touch-action（Chromium 85+） */
+  (function () {
+    if (!/FangcunAndroid/i.test(navigator.userAgent)) return;
+    document.addEventListener('gesturestart', function (e) { e.preventDefault(); });
+    document.addEventListener('gesturechange', function (e) { e.preventDefault(); });
+    document.documentElement.style.touchAction = 'pan-x pan-y';
+  })();
+</script>
+<title>诗格速查：五绝·七绝·五律·七律平仄格式 | 方寸</title>
+<meta name="description" content="近体诗八种基本格式速查：五绝、七绝、五律、七律的平起/仄起句式与首句入韵变体，附平仄模板、韵脚位置与拗救（孤平自救、特拗句、对句相救）讲解。" />
+<link rel="canonical" href="https://write.sjtuguoxue.space/ref/shi" />
+<meta property="og:title" content="诗格速查：五绝·七绝·五律·七律平仄格式" />
+<meta property="og:description" content="近体诗八种基本格式速查：五绝、七绝、五律、七律的平起/仄起句式与首句入韵变体，附平仄模板、韵脚位置与拗救（孤平自救、特拗句、对句相救）讲解。" />
+<meta property="og:type" content="website" />
+<meta property="og:url" content="https://write.sjtuguoxue.space/ref/shi" />
+<meta property="og:site_name" content="方寸" />
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"CollectionPage","name":"诗格速查：五绝·七绝·五律·七律平仄格式","description":"近体诗八种基本格式速查：五绝、七绝、五律、七律的平起/仄起句式与首句入韵变体，附平仄模板、韵脚位置与拗救（孤平自救、特拗句、对句相救）讲解。","url":"https://write.sjtuguoxue.space/ref/shi"}</script>
+<link rel="icon" type="image/svg+xml" href="/logo.svg" />
+<link rel="stylesheet" href="/fonts/ml/result.css" />
+
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Noto Serif SC", "Songti SC", system-ui, serif; background: #FAF8F5; color: #5C534A; line-height: 1.8; font-size: 15px; min-height: 100vh; display: flex; flex-direction: column; }
+  a { color: #557799; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  .topbar { position: sticky; top: 0; z-index: 20; background: #FAF8F5; border-bottom: 1px solid #e8e4e0; }
+  .topbar-inner { max-width: 880px; margin: 0 auto; padding: 10px 20px; display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+  .brand { font-size: 17px; font-weight: 700; color: #5C534A; letter-spacing: 2px; display: flex; align-items: center; gap: 7px; }
+  .brand-logo { width: 22px; height: 22px; border-radius: 6px; flex-shrink: 0; }
+  .brand:hover { text-decoration: none; }
+  .tabs { display: flex; gap: 4px; flex-wrap: wrap; }
+  .tab { padding: 5px 12px; border-radius: 8px; font-size: 14px; color: #8a8178; }
+  .tab:hover { background: #f0ece6; text-decoration: none; color: #5C534A; }
+  .tab.active { background: #557799; color: #fff; }
+  .back { margin-left: auto; font-size: 13px; color: #8a8178; white-space: nowrap; }
+  .back:hover { color: #557799; }
+  .back-short { display: none; }
+  .container { max-width: 880px; margin: 0 auto; padding: 36px 20px 80px; flex: 1; width: 100%; }
+  h1 { font-size: 26px; font-weight: 700; margin-bottom: 6px; line-height: 1.4; }
+  .subtitle { font-size: 14px; color: #a09890; margin-bottom: 8px; }
+  .intro { font-size: 14.5px; color: #6b6360; margin-bottom: 28px; }
+  h2 { font-size: 20px; font-weight: 600; margin: 40px 0 14px; padding-bottom: 6px; border-bottom: 2px solid #e8e4e0; }
+  h3 { font-size: 16.5px; font-weight: 600; margin: 24px 0 10px; }
+  p { margin: 10px 0; }
+  .book-nav { display: flex; gap: 8px; flex-wrap: wrap; margin: 18px 0 26px; }
+  .book-nav a { padding: 7px 14px; border-radius: 9px; border: 1px solid #e0dad2; font-size: 14px; color: #6b6360; background: #fff; }
+  .book-nav a.active { background: #557799; border-color: #557799; color: #fff; }
+  .book-nav a:hover { text-decoration: none; border-color: #557799; }
+  .tone-group { margin: 6px 0 22px; }
+  .tone-group-title { font-size: 15px; font-weight: 600; color: #7a7066; margin: 22px 0 8px; display: flex; align-items: baseline; gap: 8px; }
+  .tone-group-title .cnt { font-size: 12px; color: #a09890; font-weight: 400; }
+  details.cat { background: #fff; border: 1px solid #ece7e1; border-radius: 10px; margin-bottom: 8px; overflow: hidden; position: relative; }
+  details.cat > summary { cursor: pointer; padding: 9px 14px; font-size: 14.5px; display: flex; align-items: center; gap: 10px; list-style: none; user-select: none; border-radius: 10px; }
+  details.cat > summary::-webkit-details-marker { display: none; }
+  details.cat > summary::before { content: "▸"; color: #b9b0a6; font-size: 12px; transition: transform .15s; }
+  details.cat[open] > summary::before { transform: rotate(90deg); }
+  details.cat > summary:hover { background: #faf7f3; }
+  details.cat > summary .name { font-weight: 600; }
+  details.cat > summary .cnt { font-size: 12px; color: #a09890; margin-left: auto; }
+  .cat-dot { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; display: inline-block; box-shadow: 0 0 0 1px rgba(0,0,0,0.06); }
+  .cat-ring { display: none; position: absolute; right: -46px; bottom: -46px; width: 172px; height: 172px; border-radius: 50%; border: 26px solid var(--rc-w); pointer-events: none; z-index: -1; align-items: center; justify-content: center; }
+  details.cat[open] .cat-ring { display: flex; }
+  .chars .cat-ring span { font-size: 80px; font-weight: 400; color: var(--rc-w); font-family: "ml", "Noto Serif SC", serif; line-height: 1; letter-spacing: 0; }
+  .sw { display: inline-block; width: 12px; height: 12px; border-radius: 4px; vertical-align: -1px; margin: 0 3px; }
+  .chars { padding: 4px 16px 14px; display: flex; flex-wrap: wrap; gap: 2px 10px; position: relative; z-index: 1; }
+  .credit { font-size: 12.5px; color: #a09890; margin: 0 0 18px; }
+  .sub-group { flex: 1 1 100%; margin: 4px 0 10px; }
+  .sub-name { font-size: 12.5px; color: #557799; font-weight: 600; margin-bottom: 3px; }
+  .sub-name .cnt { color: #a09890; font-weight: 400; }
+  .sub-phon { font-size: 11px; color: #a09890; font-weight: 400; margin-left: 5px; font-family: 'Noto Sans', 'DejaVu Sans', 'Charis SIL', 'Segoe UI', sans-serif; }
+  .ipa { font-family: 'Noto Sans', 'DejaVu Sans', 'Charis SIL', 'Segoe UI', 'Noto Sans SC', sans-serif; }
+  .sub-chars { display: flex; flex-wrap: wrap; gap: 2px 10px; }
+  .sub-chars span, .sub-chars a { font-size: 14.5px; color: #4c443c; letter-spacing: 1px; }
+  .sub-chars a { text-decoration: none; }
+  .sub-chars a:hover { color: #557799; text-decoration: underline; }
+  .chars span, .chars a { font-size: 15px; color: #4c443c; letter-spacing: 1px; }
+  .chars a { text-decoration: none; }
+  .chars a:hover { color: #557799; text-decoration: underline; }
+  .chars .dim { color: #c4bcb2; }
+  .search { width: 100%; max-width: 380px; padding: 9px 14px; border-radius: 9px; border: 1px solid #e0dad2; font-size: 14px; background: #fff; color: #5C534A; margin-bottom: 18px; }
+  .search:focus { outline: none; border-color: #557799; }
+  .legend { font-size: 12.5px; color: #8a8178; margin: 4px 0 16px; display: flex; gap: 14px; flex-wrap: wrap; align-items: center; }
+  .legend b { font-weight: 600; }
+  .legend .yun { color: #b3543c; }
+  .tp { font-size: 15px; letter-spacing: 1px; color: #4c443c; background: #fff; border: 1px solid #ece7e1; border-radius: 10px; padding: 12px 16px; margin: 8px 0 14px; line-height: 2; }
+  .tp-row { display: block; }
+  .tp b.yun { color: #b3543c; font-weight: 700; }
+  .tp .punc { color: #c4bcb2; }
+  .tp .alt { color: #557799; }
+  .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(380px, 1fr)); gap: 16px; }
+  @media (max-width: 640px) { .cards { grid-template-columns: 1fr; } }
+  .card { background: #fff; border: 1px solid #ece7e1; border-radius: 12px; padding: 18px 20px; }
+  .card h3 { margin: 0 0 6px; font-size: 16px; }
+  .card .meta { font-size: 12.5px; color: #a09890; margin-bottom: 10px; }
+  .card p { margin: 8px 0; font-size: 14px; }
+  .card ul { margin: 8px 0 8px 20px; }
+  .card li { margin: 3px 0; font-size: 14px; }
+  .card .ex { background: #faf7f3; border-left: 3px solid #d8c9b8; border-radius: 0 8px 8px 0; padding: 8px 12px; margin: 10px 0 0; font-size: 13.5px; }
+  .card details { margin-top: 8px; }
+  .card details > summary { cursor: pointer; font-size: 13.5px; color: #557799; display: flex; align-items: center; }
+  .card details > summary::before { content: "▸"; color: #b9b0a6; font-size: 11px; margin-right: 6px; transition: transform .15s; }
+  .card details[open] > summary::before { transform: rotate(90deg); }
+  .card details > summary .write-btn { float: none; margin-left: auto; }
+  .card .tp { margin: 6px 0 0; font-size: 14px; }
+  .article { background: #fff; border: 1px solid #ece7e1; border-radius: 12px; padding: 26px 28px; margin-bottom: 22px; }
+  .article h2 { border: none; margin: 0 0 4px; padding: 0; font-size: 19px; }
+  .article .a-meta { font-size: 12.5px; color: #a09890; margin-bottom: 12px; }
+  .article ul, .article ol { margin: 8px 0 8px 22px; }
+  .article li { margin: 4px 0; }
+  .article code { background: #f4f0ea; border-radius: 5px; padding: 1px 6px; font-size: 13.5px; color: #6d5648; }
+  .article .ex { background: #faf7f3; border-left: 3px solid #d8c9b8; border-radius: 0 8px 8px 0; padding: 10px 14px; margin: 12px 0; font-size: 14px; }
+  .article .ex .yz { color: #b3543c; font-weight: 700; }
+  .cta { display: inline-block; margin-top: 10px; padding: 8px 18px; border-radius: 9px; background: #557799; color: #fff; font-size: 14px; }
+  .cta:hover { background: #46688a; text-decoration: none; }
+  .toc { background: #fff; border: 1px solid #ece7e1; border-radius: 12px; padding: 16px 22px; margin-bottom: 26px; }
+  .toc h2 { border: none; margin: 0 0 8px; padding: 0; font-size: 15px; color: #8a8178; }
+  .toc ol { margin-left: 20px; }
+  .toc li { margin: 3px 0; font-size: 14.5px; }
+  .cipai-list .item { background: #fff; border: 1px solid #ece7e1; border-radius: 10px; margin-bottom: 8px; }
+  .cipai-list .item > button { width: 100%; text-align: left; padding: 10px 16px; border: none; background: none; cursor: pointer; font-size: 14.5px; display: flex; align-items: baseline; gap: 12px; color: #4c443c; font-family: inherit; }
+  .cipai-list .item > button:hover { background: #faf7f3; }
+  .cipai-list .item > button .cname { font-weight: 600; }
+  .cipai-list .item > button .cinfo { font-size: 12px; color: #a09890; }
+  .cipai-list .item .detail { padding: 0 16px 14px; border-top: 1px dashed #ece7e1; }
+  .cipai-list .variant { margin: 10px 0; }
+  .cipai-list .variant .vname { font-size: 13px; color: #8a8178; margin-bottom: 4px; }
+  .cipai-list .variant .tp { margin: 0; font-size: 13.5px; }
+  .filters { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
+  .filters button { padding: 6px 14px; border-radius: 18px; border: 1px solid #e0dad2; background: #fff; font-size: 13px; color: #6b6360; cursor: pointer; font-family: inherit; }
+  .filters button.active { background: #557799; border-color: #557799; color: #fff; }
+  .filters button:hover { border-color: #557799; }
+  .tabs2 { display: flex; gap: 2px; border-bottom: 2px solid #ece7e1; margin-bottom: 22px; }
+  .tab2 { padding: 9px 18px; font-size: 15px; color: #8a8178; background: none; border: none; border-bottom: 2px solid transparent; margin-bottom: -2px; cursor: pointer; font-family: inherit; }
+  .tab2:hover { color: #5C534A; }
+  .tab2.active { color: #557799; font-weight: 600; border-bottom-color: #557799; }
+  .badge { display: inline-block; padding: 1px 9px; border-radius: 10px; font-size: 11.5px; font-weight: 600; margin-right: 6px; vertical-align: 1.5px; }
+  .badge-qin { background: #eef2f8; color: #4a6d94; border: 1px solid #c9d8e8; }
+  .badge-long { background: #f7eef2; color: #8a4a63; border: 1px solid #e3c9d6; }
+  .badge-other { background: #f4f1ec; color: #8a8178; border: 1px solid #e0d8cc; }
+  .lg-capsule { display: inline-flex; align-items: center; padding: 2px 12px; border-radius: 999px; font-size: 12px; font-weight: 600; }
+  .lg-long { background: #f7eef2; color: #8a4a63; border: 1px solid #e3c9d6; }
+  .lg-qin { background: #eef2f8; color: #4a6d94; border: 1px solid #c9d8e8; }
+  .lg-desc { font-size: 12px; color: #8a8178; margin-right: 14px; }
+  .write-btn { float: right; display: inline-block; padding: 1px 14px; border-radius: 999px; font-size: 12.5px; border: 1px solid #557799; color: #557799; background: #fff; cursor: pointer; text-decoration: none; margin-left: 8px; }
+  .write-btn:hover { background: #557799; color: #fff; text-decoration: none; }
+  /* 查字页空闲态：常用字玻璃卡片墙（两行、反向滚动、可拖拽、随机浅彩底） */
+  .char-marquee { overflow: hidden; position: relative; padding: 24px 0 10px; -webkit-mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent); mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent); }
+  .char-row { display: flex; gap: 14px; width: max-content; cursor: grab; will-change: transform; user-select: none; }
+  .char-row + .char-row { margin-top: 16px; }
+  .char-card {
+    flex-shrink: 0; width: 74px; height: 98px; border-radius: 16px;
+    background: hsla(var(--h), 32%, 88%, 0.55);
+    -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
+    border: 1px solid rgba(255,255,255,0.75);
+    box-shadow: 0 10px 28px rgba(92,83,74,0.10), inset 0 1px 0 rgba(255,255,255,0.85);
+    font-size: 34px; font-family: "ml", "Noto Serif SC", serif; color: #5C534A;
+    display: flex; align-items: center; justify-content: center; cursor: pointer;
+    animation: floaty 5.5s ease-in-out infinite;
+    animation-delay: calc(var(--i) * -0.28s);
+  }
+  @keyframes floaty {
+    0%, 100% { transform: rotate(var(--tilt, 0deg)) translateY(0); }
+    50% { transform: rotate(var(--tilt, 0deg)) translateY(-8px); }
+  }
+  .char-card:hover { animation: none; transform: rotate(0deg) translateY(-5px) scale(1.08); box-shadow: 0 18px 42px rgba(92,83,74,0.18); z-index: 2; }
+  .char-hero { display: flex; align-items: center; gap: 14px; margin: 8px 0 22px; }
+  .char-hero .big { font-size: 54px; font-weight: 400; line-height: 1.2; color: #4c443c; font-family: "ml", "Noto Serif SC", serif; }
+  .def-block { margin: 0 0 22px; }
+  .sg-def-block { margin: 0 0 22px; border-top: 1px dashed #e0dad2; padding-top: 10px; }
+  .sg-def-title { font-size: 12px; font-weight: 600; color: #557799; letter-spacing: 2px; margin-bottom: 6px; }
+  .def-reading { margin: 7px 0; }
+  .def-py { font-size: 13px; color: #557799; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; margin-bottom: 2px; }
+  .def-item { font-size: 13.5px; margin: 2px 0; color: #4c443c; }
+  .def-no { color: #a09890; margin-right: 4px; font-size: 12px; }
+  .def-c { font-size: 11.5px; color: #a09890; padding-left: 18px; margin-top: 2px; line-height: 1.6; }
+  /* 胶囊：中性边框/文字（标准文字色 #4c443c），内部前置色块承载韵色/声调色 */
+  .chip { display: inline-flex; align-items: center; gap: 5px; padding: 2px 10px; border-radius: 999px; font-size: 12.5px; border: 1px solid #4c443c; color: #4c443c; margin: 2px 4px 2px 0; text-decoration: none; }
+  .cl-mark { width: 10px; height: 10px; border-radius: 3px; display: inline-block; flex-shrink: 0; }
+  .sg-line { margin: 3px 0; display: flex; align-items: baseline; flex-wrap: wrap; gap: 6px; }
+  .sg-reading { font-size: 12.5px; color: #6b6360; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; white-space: nowrap; }
+  .loading { text-align: center; padding: 30px 0; color: #a09890; }
+  .timeline { margin: 8px 0 10px; }
+  .tl-item { position: relative; padding: 0 0 18px 30px; border-left: 2px solid #ece7e1; }
+  .tl-item:last-child { border-left-color: transparent; padding-bottom: 0; }
+  .tl-dot { position: absolute; left: -8px; top: 3px; width: 14px; height: 14px; border-radius: 50%; border: 2px solid #fff; box-shadow: 0 0 0 1px rgba(0,0,0,0.08); }
+  .tl-head { font-size: 14.5px; font-weight: 600; color: #5C534A; margin: 0 0 6px; }
+  .tl-body { font-size: 13.5px; }
+  .more-btn { display: block; margin: 14px auto; padding: 8px 22px; border-radius: 9px; border: 1px solid #e0dad2; background: #fff; font-size: 13.5px; color: #6b6360; cursor: pointer; font-family: inherit; }
+  .more-btn:hover { border-color: #557799; color: #557799; }
+  .empty { color: #a09890; font-size: 14px; text-align: center; padding: 30px 0; }
+  footer { border-top: 1px solid #e8e4e0; margin-top: 60px; padding: 20px; text-align: center; font-size: 12.5px; color: #b9b0a6; }
+  footer .links { margin-top: 4px; }
+  footer .contact { margin-top: 4px; }
+  footer .contact a { color: #8a8178; }
+  footer a { color: #8a8178; }
+  /* 移动端顶栏压缩为单行（目标 ≥375px 宽度） */
+  @media (max-width: 700px) {
+    .topbar-inner { padding: 8px 10px; gap: 10px; flex-wrap: nowrap; }
+    .brand { font-size: 14px; letter-spacing: 1px; gap: 5px; }
+    .brand-logo { width: 20px; height: 20px; }
+    .tabs { gap: 2px; flex-wrap: nowrap; }
+    .tab { padding: 4px 8px; font-size: 13px; }
+    .back { font-size: 13px; }
+    .back-long { display: none; }
+    .back-short { display: inline; }
+  }
+  /* 标题族使用沐瓴体（刻本风格）；正文/信息性文字保持正文衬线 */
+  h1, h2, h3, .tone-group-title, .cat > summary .name, .sub-name, .tl-head, .brand {
+    font-family: "ml", "Noto Serif SC", "Songti SC", serif;
+  }
+</style>
+</head>
+<body>
+<header class="topbar">
+  <div class="topbar-inner">
+    <a class="brand" href="/"><img class="brand-logo" src="/logo.svg" alt="方寸" />方寸</a>
+    <nav class="tabs"><a class="tab" href="/ref/index.html">韵书</a><a class="tab" href="/ref/char.html">查字</a><a class="tab" href="/ref/cipai.html">词谱</a><a class="tab active" href="/ref/shi.html">诗格</a><a class="tab" href="/ref/tutorial.html">教程</a></nav>
+    <a class="back" href="/"><span class="back-long">← 返回创作</span><span class="back-short">← 返回</span></a>
+  </div>
+</header>
+<main class="container">
+<h1>诗格速查：五言七言律诗绝句平仄</h1>
+<p class="subtitle">五绝 20 字 · 七绝 28 字 · 五律 40 字 · 七律 56 字 · 共 8 种基本格式</p>
+<p class="intro">近体诗每句字数与句数固定，平仄遵循“一句之内交替、一联之内相对、联与联之间相粘”的规则。押平声韵（平水韵），二、四、六、八句押韵，首句可押可不押。韵脚配色与方寸编辑器一致（近体诗押平声韵，故韵脚为<span style="color:#559977;font-weight:600">绿色</span>）；「中」表示该字可平可仄。</p>
+<div class="cards"><div class="card">
+      <h3>五绝 · 平起</h3>
+      <div class="meta">20 字 · 4 句 · 每句 5 字 · 平水韵押平声韵</div>
+      <details open><summary><span class="sum-label">首句不入韵</span><a class="write-btn" href="/?ciyun=1&genre=Shi&rule=%E4%BA%94%E7%BB%9D%E5%B9%B3%E8%B5%B7&chars=20&title=%E4%BA%94%E7%BB%9D%E5%B9%B3%E8%B5%B7" title="新建画板并跳转创作区">写</a></summary><div class="tp"><div class="tp-row"><span>中</span><span>平</span><span>平</span><span>仄</span><span>仄</span><span class="punc">，</span><span>中</span><span>仄</span><span>仄</span><span>平</span><span style="color:#559977;font-weight:600">平</span><span class="punc">。</span></div><div class="tp-row"><span>中</span><span>仄</span><span>中</span><span>平</span><span>仄</span><span class="punc">，</span><span>平</span><span>平</span><span>中</span><span>仄</span><span style="color:#559977;font-weight:600">平</span><span class="punc">。</span></div></div><div style="font-size:12.5px;color:#a09890">20 字 · 二、四、六、八句押韵 · 韵脚 2 处</div></details>
+      <details><summary><span class="sum-label">首句入韵</span><a class="write-btn" href="/?ciyun=1&genre=Shi&rule=%E4%BA%94%E7%BB%9D%E5%B9%B3%E8%B5%B7%E9%A6%96%E5%8F%A5%E5%85%A5%E9%9F%B5&chars=20&title=%E4%BA%94%E7%BB%9D%E5%B9%B3%E8%B5%B7%E9%A6%96%E5%8F%A5%E5%85%A5%E9%9F%B5" title="新建画板并跳转创作区">写</a></summary><div class="tp"><div class="tp-row"><span>中</span><span>平</span><span>平</span><span>仄</span><span style="color:#559977;font-weight:600">平</span><span class="punc">。</span><span>中</span><span>仄</span><span>仄</span><span>平</span><span style="color:#559977;font-weight:600">平</span><span class="punc">。</span></div><div class="tp-row"><span>中</span><span>仄</span><span>中</span><span>平</span><span>仄</span><span class="punc">，</span><span>平</span><span>平</span><span>中</span><span>仄</span><span style="color:#559977;font-weight:600">平</span><span class="punc">。</span></div></div><div style="font-size:12.5px;color:#a09890">20 字 · 二、四、六、八句押韵，首句可入韵 · 韵脚 3 处</div></details>
+    </div><div class="card">
+      <h3>五绝 · 仄起</h3>
+      <div class="meta">20 字 · 4 句 · 每句 5 字 · 平水韵押平声韵</div>
+      <details open><summary><span class="sum-label">首句不入韵</span><a class="write-btn" href="/?ciyun=1&genre=Shi&rule=%E4%BA%94%E7%BB%9D%E4%BB%84%E8%B5%B7&chars=20&title=%E4%BA%94%E7%BB%9D%E4%BB%84%E8%B5%B7" title="新建画板并跳转创作区">写</a></summary><div class="tp"><div class="tp-row"><span>中</span><span>仄</span><span>中</span><span>平</span><span>仄</span><span class="punc">，</span><span>平</span><span>平</span><span>中</span><span>仄</span><span style="color:#559977;font-weight:600">平</span><span class="punc">。</span></div><div class="tp-row"><span>中</span><span>平</span><span>平</span><span>仄</span><span>仄</span><span class="punc">，</span><span>中</span><span>仄</span><span>仄</span><span>平</span><span style="color:#559977;font-weight:600">平</span><span class="punc">。</span></div></div><div style="font-size:12.5px;color:#a09890">20 字 · 二、四、六、八句押韵 · 韵脚 2 处</div></details>
+      <details><summary><span class="sum-label">首句入韵</span><a class="write-btn" href="/?ciyun=1&genre=Shi&rule=%E4%BA%94%E7%BB%9D%E4%BB%84%E8%B5%B7%E9%A6%96%E5%8F%A5%E5%85%A5%E9%9F%B5&chars=20&title=%E4%BA%94%E7%BB%9D%E4%BB%84%E8%B5%B7%E9%A6%96%E5%8F%A5%E5%85%A5%E9%9F%B5" title="新建画板并跳转创作区">写</a></summary><div class="tp"><div class="tp-row"><span>中</span><span>仄</span><span>仄</span><span>平</span><span style="color:#559977;font-weight:600">平</span><span class="punc">。</span><span>平</span><span>平</span><span>中</span><span>仄</span><span style="color:#559977;font-weight:600">平</span><span class="punc">。</span></div><div class="tp-row"><span>中</span><span>平</span><span>平</span><span>仄</span><span>仄</span><span class="punc">，</span><span>中</span><span>仄</span><span>仄</span><span>平</span><span style="color:#559977;font-weight:600">平</span><span class="punc">。</span></div></div><div style="font-size:12.5px;color:#a09890">20 字 · 二、四、六、八句押韵，首句可入韵 · 韵脚 3 处</div></details>
+    </div><div class="card">
+      <h3>五律 · 平起</h3>
+      <div class="meta">40 字 · 8 句 · 每句 5 字 · 平水韵押平声韵</div>
+      <details open><summary><span class="sum-label">首句不入韵</span><a class="write-btn" href="/?ciyun=1&genre=Shi&rule=%E4%BA%94%E5%BE%8B%E5%B9%B3%E8%B5%B7&chars=40&title=%E4%BA%94%E5%BE%8B%E5%B9%B3%E8%B5%B7" title="新建画板并跳转创作区">写</a></summary><div class="tp"><div class="tp-row"><span>中</span><span>平</span><span>平</span><span>仄</span><span>仄</span><span class="punc">，</span><span>中</span><span>仄</span><span>仄</span><span>平</span><span style="color:#559977;font-weight:600">平</span><span class="punc">。</span></div><div class="tp-row"><span>中</span><span>仄</span><span>中</span><span>平</span><span>仄</span><span class="punc">，</span><span>平</span><span>平</span><span>中</span><span>仄</span><span style="color:#559977;font-weight:600">平</span><span class="punc">。</span></div><div class="tp-row"><span>中</span><span>平</span><span>平</span><span>仄</span><span>仄</span><span class="punc">，</span><span>中</span><span>仄</span><span>仄</span><span>平</span><span style="color:#559977;font-weight:600">平</span><span class="punc">。</span></div><div class="tp-row"><span>中</span><span>仄</span><span>中</span><span>平</span><span>仄</span><span class="punc">，</span><span>平</span><span>平</span><span>中</span><span>仄</span><span style="color:#559977;font-weight:600">平</span><span class="punc">。</span></div></div><div style="font-size:12.5px;color:#a09890">40 字 · 二、四、六、八句押韵 · 韵脚 4 处</div></details>
+      <details><summary><span class="sum-label">首句入韵</span><a class="write-btn" href="/?ciyun=1&genre=Shi&rule=%E4%BA%94%E5%BE%8B%E5%B9%B3%E8%B5%B7%E9%A6%96%E5%8F%A5%E5%85%A5%E9%9F%B5&chars=40&title=%E4%BA%94%E5%BE%8B%E5%B9%B3%E8%B5%B7%E9%A6%96%E5%8F%A5%E5%85%A5%E9%9F%B5" title="新建画板并跳转创作区">写</a></summary><div class="tp"><div class="tp-row"><span>中</span><span>平</span><span>平</span><span>仄</span><span style="color:#559977;font-weight:600">平</span><span class="punc">。</span><span>中</span><span>仄</span><span>仄</span><span>平</span><span style="color:#559977;font-weight:600">平</span><span class="punc">。</span></div><div class="tp-row"><span>中</span><span>仄</span><span>中</span><span>平</span><span>仄</span><span class="punc">，</span><span>平</span><span>平</span><span>中</span><span>仄</span><span style="color:#559977;font-weight:600">平</span><span class="punc">。</span></div><div class="tp-row"><span>中</span><span>平</span><span>平</span><span>仄</span><span>仄</span><span class="punc">，</span><span>中</span><span>仄</span><span>仄</span><span>平</span><span style="color:#559977;font-weight:600">平</span><span class="punc">。</span></div><div class="tp-row"><span>中</span><span>仄</span><span>中</span><span>平</span><span>仄</span><span class="punc">，</span><span>平</span><span>平</span><span>中</span><span>仄</span><span style="color:#559977;font-weight:600">平</span><span class="punc">。</span></div></div><div style="font-size:12.5px;color:#a09890">40 字 · 二、四、六、八句押韵，首句可入韵 · 韵脚 5 处</div></details>
+    </div><div class="card">
+      <h3>五律 · 仄起</h3>
+      <div class="meta">40 字 · 8 句 · 每句 5 字 · 平水韵押平声韵</div>
+      <details open><summary><span class="sum-label">首句不入韵</span><a class="write-btn" href="/?ciyun=1&genre=Shi&rule=%E4%BA%94%E5%BE%8B%E4%BB%84%E8%B5%B7&chars=40&title=%E4%BA%94%E5%BE%8B%E4%BB%84%E8%B5%B7" title="新建画板并跳转创作区">写</a></summary><div class="tp"><div class="tp-row"><span>中</span><span>仄</span><span>中</span><span>平</span><span>仄</span><span class="punc">，</span><span>平</span><span>平</span><span>中</span><span>仄</span><span style="color:#559977;font-weight:600">平</span><span class="punc">。</span></div><div class="tp-row"><span>中</span><span>平</span><span>平</span><span>仄</span><span>仄</span><span class="punc">，</span><span>中</span><span>仄</span><span>仄</span><span>平</span><span style="color:#559977;font-weight:600">平</span><span class="punc">。</span></div><div class="tp-row"><span>中</span><span>仄</span><span>中</span><span>平</span><span>仄</span><span class="punc">，</span><span>平</span><span>平</span><span>中</span><span>仄</span><span style="color:#559977;font-weight:600">平</span><span class="punc">。</span></div><div class="tp-row"><span>中</span><span>平</span><span>平</span><span>仄</span><span>仄</span><span class="punc">，</span><span>中</span><span>仄</span><span>仄</span><span>平</span><span style="color:#559977;font-weight:600">平</span><span class="punc">。</span></div></div><div style="font-size:12.5px;color:#a09890">40 字 · 二、四、六、八句押韵 · 韵脚 4 处</div></details>
+      <details><summary><span class="sum-label">首句入韵</span><a class="write-btn" href="/?ciyun=1&genre=Shi&rule=%E4%BA%94%E5%BE%8B%E4%BB%84%E8%B5%B7%E9%A6%96%E5%8F%A5%E5%85%A5%E9%9F%B5&chars=40&title=%E4%BA%94%E5%BE%8B%E4%BB%84%E8%B5%B7%E9%A6%96%E5%8F%A5%E5%85%A5%E9%9F%B5" title="新建画板并跳转创作区">写</a></summary><div class="tp"><div class="tp-row"><span>中</span><span>仄</span><span>仄</span><span>平</span><span style="color:#559977;font-weight:600">平</span><span class="punc">。</span><span>平</span><span>平</span><span>中</span><span>仄</span><span style="color:#559977;font-weight:600">平</span><span class="punc">。</span></div><div class="tp-row"><span>中</span><span>平</span><span>平</span><span>仄</span><span>仄</span><span class="punc">，</span><span>中</span><span>仄</span><span>仄</span><span>平</span><span style="color:#559977;font-weight:600">平</span><span class="punc">。</span></div><div class="tp-row"><span>中</span><span>仄</span><span>中</span><span>平</span><span>仄</span><span class="punc">，</span><span>平</span><span>平</span><span>中</span><span>仄</span><span style="color:#559977;font-weight:600">平</span><span class="punc">。</span></div><div class="tp-row"><span>中</span><span>平</span><span>平</span><span>仄</span><span>仄</span><span class="punc">，</span><span>中</span><span>仄</span><span>仄</span><span>平</span><span style="color:#559977;font-weight:600">平</span><span class="punc">。</span></div></div><div style="font-size:12.5px;color:#a09890">40 字 · 二、四、六、八句押韵，首句可入韵 · 韵脚 5 处</div></details>
+    </div><div class="card">
+      <h3>七绝 · 平起</h3>
+      <div class="meta">28 字 · 4 句 · 每句 7 字 · 平水韵押平声韵</div>
+      <details open><summary><span class="sum-label">首句入韵</span><a class="write-btn" href="/?ciyun=1&genre=Shi&rule=%E4%B8%83%E7%BB%9D%E5%B9%B3%E8%B5%B7%E9%A6%96%E5%8F%A5%E5%85%A5%E9%9F%B5&chars=28&title=%E4%B8%83%E7%BB%9D%E5%B9%B3%E8%B5%B7%E9%A6%96%E5%8F%A5%E5%85%A5%E9%9F%B5" title="新建画板并跳转创作区">写</a></summary><div class="tp"><div class="tp-row"><span>中</span><span>平</span><span>中</span><span>仄</span><span>仄</span><span>平</span><span style="color:#559977;font-weight:600">平</span><span class="punc">。</span><span>中</span><span>仄</span><span>平</span><span>平</span><span>中</span><span>仄</span><span style="color:#559977;font-weight:600">平</span><span class="punc">。</span></div><div class="tp-row"><span>中</span><span>仄</span><span>中</span><span>平</span><span>平</span><span>仄</span><span>仄</span><span class="punc">，</span><span>中</span><span>平</span><span>中</span><span>仄</span><span>仄</span><span>平</span><span style="color:#559977;font-weight:600">平</span><span class="punc">。</span></div></div><div style="font-size:12.5px;color:#a09890">28 字 · 二、四、六、八句押韵，首句可入韵 · 韵脚 3 处</div></details>
+      <details><summary><span class="sum-label">首句不入韵</span><a class="write-btn" href="/?ciyun=1&genre=Shi&rule=%E4%B8%83%E7%BB%9D%E5%B9%B3%E8%B5%B7&chars=28&title=%E4%B8%83%E7%BB%9D%E5%B9%B3%E8%B5%B7" title="新建画板并跳转创作区">写</a></summary><div class="tp"><div class="tp-row"><span>中</span><span>平</span><span>中</span><span>仄</span><span>中</span><span>平</span><span>仄</span><span class="punc">，</span><span>中</span><span>仄</span><span>平</span><span>平</span><span>中</span><span>仄</span><span style="color:#559977;font-weight:600">平</span><span class="punc">。</span></div><div class="tp-row"><span>中</span><span>仄</span><span>中</span><span>平</span><span>平</span><span>仄</span><span>仄</span><span class="punc">，</span><span>中</span><span>平</span><span>中</span><span>仄</span><span>仄</span><span>平</span><span style="color:#559977;font-weight:600">平</span><span class="punc">。</span></div></div><div style="font-size:12.5px;color:#a09890">28 字 · 二、四、六、八句押韵 · 韵脚 2 处</div></details>
+    </div><div class="card">
+      <h3>七绝 · 仄起</h3>
+      <div class="meta">28 字 · 4 句 · 每句 7 字 · 平水韵押平声韵</div>
+      <details open><summary><span class="sum-label">首句入韵</span><a class="write-btn" href="/?ciyun=1&genre=Shi&rule=%E4%B8%83%E7%BB%9D%E4%BB%84%E8%B5%B7%E9%A6%96%E5%8F%A5%E5%85%A5%E9%9F%B5&chars=28&title=%E4%B8%83%E7%BB%9D%E4%BB%84%E8%B5%B7%E9%A6%96%E5%8F%A5%E5%85%A5%E9%9F%B5" title="新建画板并跳转创作区">写</a></summary><div class="tp"><div class="tp-row"><span>中</span><span>仄</span><span>中</span><span>平</span><span>平</span><span>仄</span><span style="color:#559977;font-weight:600">平</span><span class="punc">。</span><span>中</span><span>平</span><span>中</span><span>仄</span><span>仄</span><span>平</span><span style="color:#559977;font-weight:600">平</span><span class="punc">。</span></div><div class="tp-row"><span>中</span><span>平</span><span>中</span><span>仄</span><span>中</span><span>平</span><span>仄</span><span class="punc">，</span><span>中</span><span>仄</span><span>平</span><span>平</span><span>中</span><span>仄</span><span style="color:#559977;font-weight:600">平</span><span class="punc">。</span></div></div><div style="font-size:12.5px;color:#a09890">28 字 · 二、四、六、八句押韵，首句可入韵 · 韵脚 3 处</div></details>
+      <details><summary><span class="sum-label">首句不入韵</span><a class="write-btn" href="/?ciyun=1&genre=Shi&rule=%E4%B8%83%E7%BB%9D%E4%BB%84%E8%B5%B7&chars=28&title=%E4%B8%83%E7%BB%9D%E4%BB%84%E8%B5%B7" title="新建画板并跳转创作区">写</a></summary><div class="tp"><div class="tp-row"><span>中</span><span>仄</span><span>中</span><span>平</span><span>平</span><span>仄</span><span>仄</span><span class="punc">，</span><span>中</span><span>平</span><span>中</span><span>仄</span><span>仄</span><span>平</span><span style="color:#559977;font-weight:600">平</span><span class="punc">。</span></div><div class="tp-row"><span>中</span><span>平</span><span>中</span><span>仄</span><span>中</span><span>平</span><span>仄</span><span class="punc">，</span><span>中</span><span>仄</span><span>平</span><span>平</span><span>中</span><span>仄</span><span style="color:#559977;font-weight:600">平</span><span class="punc">。</span></div></div><div style="font-size:12.5px;color:#a09890">28 字 · 二、四、六、八句押韵 · 韵脚 2 处</div></details>
+    </div><div class="card">
+      <h3>七律 · 平起</h3>
+      <div class="meta">56 字 · 8 句 · 每句 7 字 · 平水韵押平声韵</div>
+      <details open><summary><span class="sum-label">首句入韵</span><a class="write-btn" href="/?ciyun=1&genre=Shi&rule=%E4%B8%83%E5%BE%8B%E5%B9%B3%E8%B5%B7%E9%A6%96%E5%8F%A5%E5%85%A5%E9%9F%B5&chars=56&title=%E4%B8%83%E5%BE%8B%E5%B9%B3%E8%B5%B7%E9%A6%96%E5%8F%A5%E5%85%A5%E9%9F%B5" title="新建画板并跳转创作区">写</a></summary><div class="tp"><div class="tp-row"><span>中</span><span>平</span><span>中</span><span>仄</span><span>仄</span><span>平</span><span style="color:#559977;font-weight:600">平</span><span class="punc">。</span><span>中</span><span>仄</span><span>平</span><span>平</span><span>中</span><span>仄</span><span style="color:#559977;font-weight:600">平</span><span class="punc">。</span></div><div class="tp-row"><span>中</span><span>仄</span><span>中</span><span>平</span><span>平</span><span>仄</span><span>仄</span><span class="punc">，</span><span>中</span><span>平</span><span>中</span><span>仄</span><span>仄</span><span>平</span><span style="color:#559977;font-weight:600">平</span><span class="punc">。</span></div><div class="tp-row"><span>中</span><span>平</span><span>中</span><span>仄</span><span>中</span><span>平</span><span>仄</span><span class="punc">，</span><span>中</span><span>仄</span><span>平</span><span>平</span><span>中</span><span>仄</span><span style="color:#559977;font-weight:600">平</span><span class="punc">。</span></div><div class="tp-row"><span>中</span><span>仄</span><span>中</span><span>平</span><span>平</span><span>仄</span><span>仄</span><span class="punc">，</span><span>中</span><span>平</span><span>中</span><span>仄</span><span>仄</span><span>平</span><span style="color:#559977;font-weight:600">平</span><span class="punc">。</span></div></div><div style="font-size:12.5px;color:#a09890">56 字 · 二、四、六、八句押韵，首句可入韵 · 韵脚 5 处</div></details>
+      <details><summary><span class="sum-label">首句不入韵</span><a class="write-btn" href="/?ciyun=1&genre=Shi&rule=%E4%B8%83%E5%BE%8B%E5%B9%B3%E8%B5%B7&chars=56&title=%E4%B8%83%E5%BE%8B%E5%B9%B3%E8%B5%B7" title="新建画板并跳转创作区">写</a></summary><div class="tp"><div class="tp-row"><span>中</span><span>平</span><span>中</span><span>仄</span><span>中</span><span>平</span><span>仄</span><span class="punc">，</span><span>中</span><span>仄</span><span>平</span><span>平</span><span>中</span><span>仄</span><span style="color:#559977;font-weight:600">平</span><span class="punc">。</span></div><div class="tp-row"><span>中</span><span>仄</span><span>中</span><span>平</span><span>平</span><span>仄</span><span>仄</span><span class="punc">，</span><span>中</span><span>平</span><span>中</span><span>仄</span><span>仄</span><span>平</span><span style="color:#559977;font-weight:600">平</span><span class="punc">。</span></div><div class="tp-row"><span>中</span><span>平</span><span>中</span><span>仄</span><span>中</span><span>平</span><span>仄</span><span class="punc">，</span><span>中</span><span>仄</span><span>平</span><span>平</span><span>中</span><span>仄</span><span style="color:#559977;font-weight:600">平</span><span class="punc">。</span></div><div class="tp-row"><span>中</span><span>仄</span><span>中</span><span>平</span><span>平</span><span>仄</span><span>仄</span><span class="punc">，</span><span>中</span><span>平</span><span>中</span><span>仄</span><span>仄</span><span>平</span><span style="color:#559977;font-weight:600">平</span><span class="punc">。</span></div></div><div style="font-size:12.5px;color:#a09890">56 字 · 二、四、六、八句押韵 · 韵脚 4 处</div></details>
+    </div><div class="card">
+      <h3>七律 · 仄起</h3>
+      <div class="meta">56 字 · 8 句 · 每句 7 字 · 平水韵押平声韵</div>
+      <details open><summary><span class="sum-label">首句入韵</span><a class="write-btn" href="/?ciyun=1&genre=Shi&rule=%E4%B8%83%E5%BE%8B%E4%BB%84%E8%B5%B7%E9%A6%96%E5%8F%A5%E5%85%A5%E9%9F%B5&chars=56&title=%E4%B8%83%E5%BE%8B%E4%BB%84%E8%B5%B7%E9%A6%96%E5%8F%A5%E5%85%A5%E9%9F%B5" title="新建画板并跳转创作区">写</a></summary><div class="tp"><div class="tp-row"><span>中</span><span>仄</span><span>中</span><span>平</span><span>平</span><span>仄</span><span style="color:#559977;font-weight:600">平</span><span class="punc">。</span><span>中</span><span>平</span><span>中</span><span>仄</span><span>仄</span><span>平</span><span style="color:#559977;font-weight:600">平</span><span class="punc">。</span></div><div class="tp-row"><span>中</span><span>平</span><span>中</span><span>仄</span><span>中</span><span>平</span><span>仄</span><span class="punc">，</span><span>中</span><span>仄</span><span>平</span><span>平</span><span>中</span><span>仄</span><span style="color:#559977;font-weight:600">平</span><span class="punc">。</span></div><div class="tp-row"><span>中</span><span>仄</span><span>中</span><span>平</span><span>平</span><span>仄</span><span>仄</span><span class="punc">，</span><span>中</span><span>平</span><span>中</span><span>仄</span><span>仄</span><span>平</span><span style="color:#559977;font-weight:600">平</span><span class="punc">。</span></div><div class="tp-row"><span>中</span><span>平</span><span>中</span><span>仄</span><span>中</span><span>平</span><span>仄</span><span class="punc">，</span><span>中</span><span>仄</span><span>平</span><span>平</span><span>中</span><span>仄</span><span style="color:#559977;font-weight:600">平</span><span class="punc">。</span></div></div><div style="font-size:12.5px;color:#a09890">56 字 · 二、四、六、八句押韵，首句可入韵 · 韵脚 5 处</div></details>
+      <details><summary><span class="sum-label">首句不入韵</span><a class="write-btn" href="/?ciyun=1&genre=Shi&rule=%E4%B8%83%E5%BE%8B%E4%BB%84%E8%B5%B7&chars=56&title=%E4%B8%83%E5%BE%8B%E4%BB%84%E8%B5%B7" title="新建画板并跳转创作区">写</a></summary><div class="tp"><div class="tp-row"><span>中</span><span>仄</span><span>中</span><span>平</span><span>平</span><span>仄</span><span>仄</span><span class="punc">，</span><span>中</span><span>平</span><span>中</span><span>仄</span><span>仄</span><span>平</span><span style="color:#559977;font-weight:600">平</span><span class="punc">。</span></div><div class="tp-row"><span>中</span><span>平</span><span>中</span><span>仄</span><span>中</span><span>平</span><span>仄</span><span class="punc">，</span><span>中</span><span>仄</span><span>平</span><span>平</span><span>中</span><span>仄</span><span style="color:#559977;font-weight:600">平</span><span class="punc">。</span></div><div class="tp-row"><span>中</span><span>仄</span><span>中</span><span>平</span><span>平</span><span>仄</span><span>仄</span><span class="punc">，</span><span>中</span><span>平</span><span>中</span><span>仄</span><span>仄</span><span>平</span><span style="color:#559977;font-weight:600">平</span><span class="punc">。</span></div><div class="tp-row"><span>中</span><span>平</span><span>中</span><span>仄</span><span>中</span><span>平</span><span>仄</span><span class="punc">，</span><span>中</span><span>仄</span><span>平</span><span>平</span><span>中</span><span>仄</span><span style="color:#559977;font-weight:600">平</span><span class="punc">。</span></div></div><div style="font-size:12.5px;color:#a09890">56 字 · 二、四、六、八句押韵 · 韵脚 4 处</div></details>
+    </div></div>
+<h2>拗救与特殊句式</h2>
+<p class="intro">格律并非死板。当某字拗于标准句式时，可在本句或对句的特定位置用平声补救，称「<b>拗救</b>」；另有少数被认可的特殊句式可直接使用。方寸的校验器把这类句式编码为<b>句式变体块</b>——诗句匹配任一合法变体即通过校验；上方 8 种格式卡片展示的是标准句式，拗救变体见本节。</p>
+<div class="cards">
+  <div class="card">
+    <h3>一三五不论，二四六分明？</h3>
+    <div class="meta">宽严规律与两个铁律例外</div>
+    <p>五言第 1、3 字，七言第 1、3、5 字可平可仄（模板中的「中」），第 2、4、6 字必须严守。但有两条铁律不可破：</p>
+    <ul>
+      <li><b>孤平</b>：五言「平平仄仄平」首字、七言「仄仄平平仄仄平」第三字若用仄，全句除韵脚外只剩一个平声字，必须补救（见下）。</li>
+      <li><b>三平调</b>：句末三字皆平（如「仄仄平平平」）为近体诗大忌，任何变体都不可出现三平尾；句末三仄（三仄尾）亦当避忌。</li>
+    </ul>
+  </div>
+  <div class="card">
+    <h3>本句自救 · 孤平拗救</h3>
+    <div class="meta">数据变体：平平中仄平 ⇄ 中平平仄平</div>
+    <p>「平平仄仄平」句若首字用仄（仄平仄仄平，成孤平），第三字即改用平自救（仄平平仄平）。七言「仄仄平平仄仄平」同理：第三字用仄时，第五字改用平（仄仄仄平平仄平）。</p>
+    <div class="ex">例：李白《宿五松山下荀媪家》<br>「寂寥无所欢」→ <b>仄平平仄平</b>：首字「寂」仄，第三字「无」平救。</div>
+  </div>
+  <div class="card">
+    <h3>特拗句 · 锦鲤翻波</h3>
+    <div class="meta">数据变体：中平平仄仄 ⇄ 平平仄平仄</div>
+    <p>五言「平平平仄仄」第三字拗仄、第四字拗平，成「平平仄平仄」；七言「仄仄平平平仄仄」成「仄仄平平仄平仄」。这是律诗中<b>被认可的特定句式</b>（多用于首联或尾联），无需补救。</p>
+    <div class="ex">例：王维《辋川闲居赠裴秀才迪》「寒山转苍翠」→ <b>平平仄平仄</b><br>杜甫《江南逢李龟年》「正是江南好风景」→ <b>仄仄平平仄平仄</b></div>
+  </div>
+  <div class="card">
+    <h3>对句相救</h3>
+    <div class="meta">出句拗仄 ⇄ 对句平救，两句绑定</div>
+    <p>五言出句「仄仄平平仄」第四字拗仄（仄仄平仄仄），对句「平平仄仄平」第三字即改用平（平平平仄平）；七言相应为出句第六字拗、对句第五字救。两处必须成对出现——数据中两句合为一个变体块整体匹配。</p>
+    <div class="ex">例：杜甫《奉济驿重送严公四韵》<br>「远送从此别」→ <b>仄仄平仄仄</b>（第四字「此」拗仄）<br>「青山空复情」→ <b>平平平仄平</b>（第三字「空」平救）</div>
+  </div>
+</div>
+<p class="intro" style="margin-top:14px"><b>小结</b>：拗救的本质是维持句内与联内的平仄平衡——孤平句补平以保平声底线，对句相救以平补仄。在方寸中，标准句式与拗救句式都算正确，无须手工判断；输入诗句后若有平仄标红，先对照本节检查是否属合法的拗救句式。</p>
+</main>
+<footer><div class="copy">© 上海交大国学社·文韵部×技术部</div><div class="links"><a href="https://sjtuguoxue.space" target="_blank" rel="noopener">南洋吟游诗词平台</a> · <a href="/">方寸创作页</a> · <a href="/ref/poetry-tools.html">工具对比</a> · <a href="/docs">API 文档</a></div><div class="contact"><a href="mailto:guoxue_sjtu@163.com">guoxue_sjtu@163.com</a></div></footer>
+</body>
+</html>

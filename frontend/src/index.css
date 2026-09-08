@@ -43,6 +43,34 @@ body {
 * { scrollbar-width: none; }
 *::-webkit-scrollbar { display: none; }
 
+/* 自定义横向滚动条：供少量横向滚动容器（如导出主题选择）。
+   桌面端鼠标悬停到该区域时才显示，移出即淡出；滚动状态不影响显隐。 */
+.h-scroll { scrollbar-width: thin; scrollbar-color: transparent transparent; }
+.h-scroll::-webkit-scrollbar { display: block; height: 8px; }
+.h-scroll::-webkit-scrollbar-track { background: transparent; }
+.h-scroll::-webkit-scrollbar-thumb {
+  background: transparent;
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+  transition: background-color 0.18s ease;
+}
+.h-scroll:hover::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.22); background-clip: padding-box; }
+.h-scroll::-webkit-scrollbar-thumb:hover { background: rgba(0,0,0,0.38); background-clip: padding-box; }
+.h-scroll:hover { scrollbar-color: rgba(0,0,0,0.22) transparent; }
+.dark .h-scroll { scrollbar-color: transparent transparent; }
+.dark .h-scroll:hover { scrollbar-color: rgba(255,255,255,0.22) transparent; }
+.dark .h-scroll:hover::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.22); background-clip: padding-box; }
+.dark .h-scroll::-webkit-scrollbar-thumb:hover {
+  background: rgba(255,255,255,0.4);
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+@media (hover: none) {
+  .h-scroll::-webkit-scrollbar { display: none; }
+  .h-scroll { scrollbar-width: none; }
+}
+
 /* 触摸设备：隐藏候选字叉号按钮（改用长按删除） */
 @media (hover: none) {
   .max-touch\:hidden {
@@ -64,3 +92,28 @@ body {
   -webkit-touch-callout: none;
   -webkit-tap-highlight-color: transparent;
 }
+
+/* 新手引导淡入 */
+@keyframes onboarding-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ===================== 新手引导（overlay 聚光灯） ===================== */
+/* 遮暗层：四块挖洞矩形共享同一暗色；浅/深色主题各自收敛 */
+.onb-dim { background: rgba(16, 10, 14, 0.55); }
+.dark .onb-dim { background: rgba(0, 0, 0, 0.72); }
+
+/* 高亮「洞」的描边（accent 圈 + 柔光），本身不拦截点击 */
+.onb-ring {
+  pointer-events: none;
+  border: 2px solid var(--accent);
+  border-radius: 12px;
+  box-shadow:
+    0 0 0 3px color-mix(in srgb, var(--accent) 30%, transparent),
+    0 2px 18px rgba(0, 0, 0, 0.35);
+}
+
+/* 引导卡投影（比普通卡片稍重，浮在遮罩上更清晰） */
+.onb-card-shadow { box-shadow: var(--shadow), 0 12px 36px rgba(0, 0, 0, 0.3); }
+.dark .onb-card-shadow { box-shadow: var(--shadow), 0 12px 36px rgba(0, 0, 0, 0.55); }

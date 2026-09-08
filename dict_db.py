@@ -202,3 +202,17 @@ def lookup_definitions(ch: str) -> Optional[list]:
         return defs.get(ch)
     rows = _pg_query("SELECT defs FROM char_defs WHERE ch = %s", (ch,))
     return rows[0][0] if rows else None
+
+
+# 上古释义：不区分诗经/楚辞，每字一份（繁体原文，义项去重保序）。
+# 本地/Android 走 sg_char_definitions.json；生产若建 sg_char_defs 表则优先表查询。
+def lookup_sg_definitions(ch: str) -> Optional[list]:
+    if POSTGRES_URL:
+        try:
+            rows = _pg_query("SELECT defs FROM sg_char_defs WHERE ch = %s", (ch,))
+            if rows:
+                return rows[0][0]
+        except Exception:
+            pass  # 生产未建表时静默回退 JSON
+    defs = _load_json("sg_char_definitions.json")
+    return defs.get(ch)

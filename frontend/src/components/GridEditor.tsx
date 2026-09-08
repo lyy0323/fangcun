@@ -3,6 +3,7 @@ import { useBoardContext, useActiveBoard } from '../context/BoardContext';
 import { track } from '../lib/api';
 import { isMarkdownPaste, parseMarkdownPaste } from '../lib/markdownParse';
 import { useValidation } from '../hooks/useValidation';
+import { usePinEditorFocus } from '../lib/usePinEditorFocus';
 import { GridCell } from './GridCell';
 import { PLACEHOLDER } from '../lib/types';
 import { Solar } from 'lunar-javascript';
@@ -318,6 +319,8 @@ export function GridEditor() {
   const [confirmDeleteSection, setConfirmDeleteSection] = useState<number | null>(null);
   const [immersiveHint, setImmersiveHint] = useState<number | null>(null);
   const [inputFocused, setInputFocused] = useState(true);
+  // 点击创作区外可聚焦控件时不夺走隐藏输入的焦点（click 照常触发）
+  usePinEditorFocus(containerRef, inputRef, !!board);
   const hintTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
   const [punctPickerAt, setPunctPickerAt] = useState<number | null>(null);
   const [auxPickerAt, setAuxPickerAt] = useState<number | null>(null);
@@ -445,40 +448,50 @@ export function GridEditor() {
   // Register insert-char callback for active section
   useEffect(() => {
     if (!board || !sec) return;
-    const sl = board.genre === 'Shi' ? (sec.charCount % 7 === 0 ? 7 : 5) : 0;
 
     const fn = (text: string, mode: 'forward' | 'backward' | 'pair' = 'forward') => {
       const cur = cursorRef.current;
       const chars = [...text].filter(c => /[\u4e00-\u9fff]/.test(c));
       if (chars.length === 0) return;
 
-      if (mode === 'forward') {
+      // 填入完成后把创作焦点移到「末字后一位」并滚动可见：
+      //   - forward / pair（对语同位并入）：从当前格 N 起连续填 k 字，
+      //     末字 N+k-1 → 光标 N+k（=N+1 语义），不再计算对句相对位置
+      //   - backward：以 N 为末位往前填（词末联想 N-n…N）→ 末字停在 N → 光标 N+1
+      let next: number | null = null;
+      let focus = true;
+      if (mode === 'forward' || mode === 'pair') {
         let pos = cur;
         for (const ch of chars) {
           if (pos >= sec.charCount) break;
           dispatch({ type: 'UPDATE_CHAR', index: pos, char: ch });
           pos++;
         }
-        setCursor(Math.min(pos, sec.charCount - 1));
+        next = Math.min(pos, sec.charCount - 1);
       } else if (mode === 'backward') {
         const endPos = cur;
         const startPos = endPos - chars.length + 1;
+        let wroteLast = false;
         for (let i = 0; i < chars.length; i++) {
           const pos = startPos + i;
           if (pos < 0 || pos >= sec.charCount) continue;
           dispatch({ type: 'UPDATE_CHAR', index: pos, char: chars[i] });
+          wroteLast = pos === endPos;
         }
-        setCursor(Math.max(0, startPos));
-      } else if (mode === 'pair' && sl > 0) {
-        const coupletLen = sl * 2;
-        const posInCouplet = cur % coupletLen;
-        const targetStart = posInCouplet < sl ? cur + sl : cur - sl;
-        let pos = targetStart;
-        for (const ch of chars) {
-          if (pos >= sec.charCount || pos < 0) break;
-          dispatch({ type: 'UPDATE_CHAR', index: pos, char: ch });
-          pos++;
-        }
+        next = wroteLast ? Math.min(endPos + 1, sec.charCount - 1) : cur;
+      }
+      if (next != null) {
+        setCursor(next);
+        setSelectionEnd(null);
+      }
+      if (focus) {
+        focusInput();
+        requestAnimationFrame(() => {
+          const cell = containerRef.current?.querySelector(
+            `[data-section="${si}"] [data-gi="${next ?? cur}"]`,
+          ) as HTMLElement | null;
+          cell?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+        });
       }
     };
     dispatch({ type: 'SET_INSERT_FN', fn });
@@ -538,10 +551,9 @@ export function GridEditor() {
     if (Math.floor(selStart / sentenceLen) !== Math.floor(selEnd / sentenceLen)) return;
     const text = poemChars.slice(selStart, selEnd + 1).filter(c => c !== PLACEHOLDER).join('');
     if (text.length !== len) return;
-    const coupletLen = sentenceLen * 2;
-    const posInCouplet = selStart % coupletLen;
-    const insertAt = posInCouplet < sentenceLen ? selStart + sentenceLen : selStart - sentenceLen;
-    dispatch({ type: 'SET_PAIR_QUERY', payload: { text, insertAt } });
+    // 填入不再按对句相对位置定位：仅把选中文本送给字典做对语搜索，
+    // 点击结果一律从当前焦点起填（forward）
+    dispatch({ type: 'SET_PAIR_QUERY', payload: { text } });
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selStart, selEnd]);
 
@@ -575,6 +587,9 @@ export function GridEditor() {
       if (/[\u4e00-\u9fff\u3400-\u4dbf]/.test(ch) && cur < charCount) {
         dispatch({ type: 'UPDATE_CHAR', index: cur, char: ch });
         lastCharIdx = cur;
+        cur = Math.min(cur + 1, charCount - 1);
+      } else if (ch === '□' && cur < charCount) {
+        // 导出文本中的空位占位符：跳过不写入，保持后续字位不错位
         cur = Math.min(cur + 1, charCount - 1);
       } else if (/[，。、；：？！]/.test(ch) && lastCharIdx >= 0) {
         dispatch({ type: 'SET_PUNCT_OVERRIDE', index: lastCharIdx, punct: ch });

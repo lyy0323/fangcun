@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useActiveBoard, useBoardContext } from '../context/BoardContext';
 import { charLookup, dictionarySearch, allusionSearch, type AllusionEntry } from '../lib/api';
+import { isShangguyunBook, normalizeBookKey } from '../lib/types';
 import { SendHorizontal, ChevronsDown, ChevronsUp } from 'lucide-react';
 import { AllusionPopup } from './AllusionPopup';
 
@@ -45,20 +46,40 @@ const TAB_LABELS: Record<TabId, string> = {
   rhyme: '韵部', head: '词首', tail: '词末', allusion: '典故', pair: '对语', tongwei: '同位',
 };
 
+const TAB_KEY = 'fangcun_dict_tab';
+
+function readSavedTab(): TabId {
+  try {
+    const v = localStorage.getItem(TAB_KEY);
+    if (v && v in TAB_LABELS) return v as TabId;
+  } catch { /* ignore */ }
+  return 'rhyme';
+}
+
 export function Dictionary() {
   const { state, dispatch } = useBoardContext();
   const board = useActiveBoard();
   const [term, setTerm] = useState('');
-  const [tab, setTab] = useState<TabId>('rhyme');
+  const [tab, setTab] = useState<TabId>(readSavedTab);
   const [length, setLength] = useState('2');
   const [tone, setTone] = useState('all');
   const pendingQuery = useRef(false);
 
+  // 字典 tab 持久化：用户手动切换后记住，下次打开仍在该 tab
+  useEffect(() => {
+    try { localStorage.setItem(TAB_KEY, tab); } catch { /* ignore */ }
+  }, [tab]);
+
   // 结果
   const [rhymeResult, setRhymeResult] = useState<{
     tones: string[];
-    categories: { name: string; tone_type: string }[];
+    categories: {
+      name: string;
+      tone_type: string;
+      readings?: { sj: string[]; cc: string[]; py: string; ipa: string; ipaf: string; tone: string }[];
+    }[];
     definitions: { py: string; defs: { d: string; c?: string }[] }[];
+    sgDefinitions?: string[];
   } | null>(null);
   const [phraseResult, setPhraseResult] = useState<[string, number][]>([]);
   const [allusionResult, setAllusionResult] = useState<AllusionEntry[]>([]);
@@ -71,7 +92,7 @@ export function Dictionary() {
   const [lastDictQuery, setLastDictQuery] = useState<string | null>(null);
   const [lastDictCursor, setLastDictCursor] = useState<number | null>(null);
 
-  const bookName = board?.rhymeBookName ?? 'Pingshuiyun';
+  const bookName = normalizeBookKey(board?.rhymeBookName ?? 'Pingshuiyun');
   const isSingle = term.length <= 1;
   const visibleTabs: TabId[] = isSingle
     ? ['rhyme', 'head', 'tail', 'allusion', 'pair', 'tongwei']
@@ -103,7 +124,7 @@ export function Dictionary() {
     try {
       if (curTab === 'rhyme') {
         const r = await charLookup(q, bookName);
-        setRhymeResult({ tones: r.tones, categories: r.rhyme_categories, definitions: r.definitions ?? [] });
+        setRhymeResult({ tones: r.tones, categories: r.rhyme_categories, definitions: r.definitions ?? [], sgDefinitions: r.sg_definitions ?? [] });
         setPhraseResult([]);
         setAllusionResult([]);
       } else if (curTab === 'allusion') {
@@ -132,13 +153,12 @@ export function Dictionary() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tab, length, tone]);
 
-  // 联动：网格点击已填字时触发搜索
+  // 联动：网格点击已填字时触发搜索（保持当前 tab，不强制切回「韵部」）
   useEffect(() => {
     if (state.dictQuery) {
       setTerm(state.dictQuery);
       setLastDictQuery(state.dictQuery);
       setLastDictCursor(state.dictQueryCursor);
-      setTab('rhyme');
       pendingQuery.current = true;
       dispatch({ type: 'SET_DICT_QUERY', query: null });
     }
@@ -192,7 +212,7 @@ export function Dictionary() {
   const noAllusionResult = !loading && term && tab === 'allusion' && !hasAllusionResults;
 
   return (
-    <div className={`border-t border-[var(--border)] bg-[var(--bg-card)] flex flex-col overflow-hidden transition-[height] duration-200 ease-in-out ${expanded ? 'h-[255px]' : 'h-[65px]'}`}>
+    <div data-onb="onb-dict" className={`border-t border-[var(--border)] bg-[var(--bg-card)] flex flex-col overflow-hidden transition-[height] duration-200 ease-in-out ${expanded ? 'h-[255px]' : 'h-[65px]'}`}>
       {/* 抽拉控件 */}
       <button
         className="w-full h-5 flex items-center justify-center text-[var(--text-muted)] hover:text-[var(--accent)] transition-colors"
@@ -289,21 +309,38 @@ export function Dictionary() {
           <div className="py-1">
             {rhymeResult.categories.length > 0 ? (
               <div className="flex flex-wrap gap-1">
-                {rhymeResult.categories.map(c => (
-                  <span
-                    key={c.name}
-                    className="inline-block px-2 py-0.5 rounded text-xs border cursor-pointer transition-colors hover:opacity-80"
-                    style={{
-                      color: c.tone_type === 'P' ? '#559977' : '#557799',
-                      borderColor: (c.tone_type === 'P' ? '#559977' : '#557799') + '40',
-                      backgroundColor: (c.tone_type === 'P' ? '#559977' : '#557799') + '10',
-                    }}
-                    onClick={() => dispatch({ type: 'SET_RHYME_OVERRIDE', category: c.name })}
-                    title="点击切换右侧韵部面板"
-                  >
-                    {c.name}
-                  </span>
-                ))}
+                {rhymeResult.categories.map(c => {
+                  const badge = (
+                    <span
+                      className="inline-block px-2 py-0.5 rounded text-xs border cursor-pointer transition-colors hover:opacity-80 whitespace-nowrap"
+                      style={{
+                        color: c.tone_type === 'P' ? '#559977' : '#557799',
+                        borderColor: (c.tone_type === 'P' ? '#559977' : '#557799') + '40',
+                        backgroundColor: (c.tone_type === 'P' ? '#559977' : '#557799') + '10',
+                      }}
+                      onClick={() => dispatch({ type: 'SET_RHYME_OVERRIDE', category: c.name })}
+                      title="点击切换右侧韵部面板"
+                    >
+                      {c.name}
+                    </span>
+                  );
+                  // [上古韵双套] 每个读音一行：badge + 声调·拟音 同行
+                  if (isShangguyunBook(bookName) && c.readings && c.readings.length > 0) {
+                    return (
+                      <div key={c.name} className="flex flex-col gap-0.5 w-full">
+                        {c.readings.map((r, ri) => (
+                          <div key={ri} className="flex items-center gap-1.5">
+                            {badge}
+                            <span className="text-[10px] text-[var(--text-muted)] font-mono whitespace-nowrap">
+                              [{r.ipa || r.py}] {r.tone}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    );
+                  }
+                  return <div key={c.name}>{badge}</div>;
+                })}
               </div>
             ) : (
               <div className="text-xs text-[var(--text-muted)]">无韵部信息</div>
@@ -326,39 +363,36 @@ export function Dictionary() {
                 ))}
               </div>
             )}
+            {/* 上古释义（繁体原文，不区分诗经/楚辞） */}
+            {rhymeResult.sgDefinitions && rhymeResult.sgDefinitions.length > 0 && (
+              <div className="mt-2 pt-1.5 space-y-1.5">
+                <div className="flex items-center gap-1.5 mb-1">
+                  <span className="text-[10px] font-semibold tracking-wider text-[var(--text-secondary)]">上古释义</span>
+                  <span className="h-px flex-1 bg-[var(--border)]" />
+                </div>
+                {rhymeResult.sgDefinitions.map((d, di) => (
+                  <div key={di} className="text-xs leading-relaxed pl-1">
+                    <span className="text-[var(--text-muted)]">{di + 1}. </span>
+                    <span>{d}</span>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
 
-        {/* 词首/词末/对语结果（可点击填入网格） */}
+        {/* 词首/词末/对语/同位结果（可点击填入网格：一律从当前焦点位置起填） */}
         {tab !== 'rhyme' && tab !== 'allusion' && phraseResult.length > 0 && (() => {
-          const isPairDisabled = (effectiveTab === 'pair' || effectiveTab === 'tongwei') && board?.genre !== 'Shi';
-          // 对语点击：如果有 pairQuery.insertAt，直接写入该位置
-          const handlePairClick = (word: string) => {
-            if (state.pairQuery && board) {
-              const start = state.pairQuery.insertAt;
-              for (let i = 0; i < word.length; i++) {
-                const pos = start + i;
-                if (pos >= 0 && pos < board.sections[0].charCount) {
-                  dispatch({ type: 'UPDATE_CHAR', index: pos, char: word[i] });
-                }
-              }
-            } else {
-              state.insertCharFn?.(word, 'pair');
-            }
-          };
-          const clickMode = effectiveTab === 'tail' ? 'backward' as const
-            : (effectiveTab === 'pair' || effectiveTab === 'tongwei') ? 'pair' as const
-            : 'forward' as const;
+          // 词末（tail）联想：以当前格为末字、把词回填到其前 → backward；
+          // 词首 / 对语 / 同位：从当前格起顺序前填 → forward（不再计算对句相对位置）。
+          const clickMode = effectiveTab === 'tail' ? 'backward' as const : 'forward' as const;
           return (
             <div className="py-1 leading-7 text-sm break-all">
               {phraseResult.map(([word, count]) => (
                 <span
                   key={word}
-                  className={`inline mr-2 whitespace-nowrap rounded px-0.5 transition-colors ${isPairDisabled ? 'text-[var(--text)]' : 'cursor-pointer hover:text-[var(--accent)] hover:bg-[var(--accent-light)]'}`}
-                  onClick={isPairDisabled ? undefined : () => {
-                    if (effectiveTab === 'pair' || effectiveTab === 'tongwei') handlePairClick(word);
-                    else state.insertCharFn?.(word, clickMode);
-                  }}
+                  className="inline mr-2 whitespace-nowrap rounded px-0.5 cursor-pointer transition-colors hover:text-[var(--accent)] hover:bg-[var(--accent-light)]"
+                  onClick={() => state.insertCharFn?.(word, clickMode)}
                 >
                   {word}<span className="text-[11px] text-[var(--text-muted)] ml-0.5">{count}</span>
                 </span>

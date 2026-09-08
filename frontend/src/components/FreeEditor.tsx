@@ -3,6 +3,7 @@ import { useBoardContext, useActiveBoard } from '../context/BoardContext';
 import { useFreeRhyme } from '../hooks/useFreeRhyme';
 import { track } from '../lib/api';
 import { isMarkdownPaste, parseMarkdownPaste } from '../lib/markdownParse';
+import { usePinEditorFocus } from '../lib/usePinEditorFocus';
 import { Plus, Eye } from 'lucide-react';
 
 const MAX_LINE_CHARS = 26;
@@ -50,6 +51,9 @@ export function FreeEditor() {
   const cursorPosRef = useRef(cursorPos);
   activeLineRef.current = activeLine;
   cursorPosRef.current = cursorPos;
+
+  // 点击创作区外可聚焦控件时不夺走隐藏输入的焦点（click 照常触发）
+  usePinEditorFocus(containerRef, inputRef, !!board);
 
   useFreeRhyme();
 
@@ -125,6 +129,8 @@ export function FreeEditor() {
       const re = new RegExp(`[\\u4e00-\\u9fff\\u3400-\\u4dbf${CJK_PUNCT}]`); const filtered = [...text].filter(c => re.test(c)).join('');
       if (!filtered) return;
       insertText(filtered, activeLineRef.current, cursorPosRef.current, lines);
+      // 从功能区填入后保持创作输入焦点（后续打字直接续写）
+      focusInput();
     };
     dispatch({ type: 'SET_INSERT_FN', fn });
     return () => { dispatch({ type: 'SET_INSERT_FN', fn: null }); };

@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { useBoardContext, useActiveBoard } from '../context/BoardContext';
 import { freeRhyme } from '../lib/api';
+import { normalizeBookKey } from '../lib/types';
 
 export function useFreeRhyme() {
   const { dispatch } = useBoardContext();
@@ -11,7 +12,7 @@ export function useFreeRhyme() {
 
   const lines = board?.genre === 'Free' ? (board.sections[0]?.lines ?? []) : [];
   const linesKey = lines.join('\n');
-  const rhymeBookName = board?.rhymeBookName ?? '';
+  const rhymeBookName = normalizeBookKey(board?.rhymeBookName ?? '');
 
   boardIdRef.current = board?.id ?? '';
 
@@ -32,7 +33,7 @@ export function useFreeRhyme() {
       try {
         const result = await freeRhyme({
           lines,
-          rhyme_book_name: board.rhymeBookName,
+          rhyme_book_name: rhymeBookName,
           merge_tones: true,
         });
         if (boardIdRef.current === currentBoardId) {
