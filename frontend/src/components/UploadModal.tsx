@@ -5,6 +5,7 @@ import { ensureGregorianDate } from '../lib/dateConvert';
 import { submitPoem, track } from '../lib/api';
 import type { SubmitResult, SubmitData } from '../lib/api';
 import { runUploadSequence } from '../lib/uploadSequence';
+import { resolveUploadPreface } from '../lib/uploadPreface';
 import type { ValidationResult } from '../lib/types';
 import { X, Loader, Check, AlertCircle } from 'lucide-react';
 
@@ -106,6 +107,15 @@ export function UploadModal({ onClose }: { onClose: () => void }) {
       const title = board.sections.length > 1
         ? (sec.title || autoTitle)
         : board.title;
+      // 序的上传映射：单首画板的序存于画板级 metadata.preface（组诗整组序同源，归入首首）；
+      // 组诗各首另有本首小序 sectionPreface。两者并存时按 组序 → 本首序 顺序拼接。
+      const isSingle = board.sections.length <= 1;
+      const preface = resolveUploadPreface({
+        boardPreface: metadata.preface,
+        sectionPreface: sec.sectionPreface,
+        isSingle,
+        isFirstOfGroup: idx === 0,
+      });
       return {
         title,
         content,
@@ -113,7 +123,7 @@ export function UploadModal({ onClose }: { onClose: () => void }) {
         genre: undefined,
         date: sec.sectionDate ? toApiDate(sec.sectionDate, metadata.dateFormat, board.updatedAt) : date,
         author,
-        preface: sec.sectionPreface || undefined,
+        preface,
         footnote: sec.sectionFootnote || undefined,
         legacyId: board.sections.length > 1
           ? (sec.sectionLegacyId || undefined)

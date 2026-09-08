@@ -17,7 +17,8 @@ const srcDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../sr
 
 const result = await build({
   stdin: {
-    contents: `export { runUploadSequence } from '${srcDir}/lib/uploadSequence.ts';`,
+    contents: `export { runUploadSequence } from '${srcDir}/lib/uploadSequence.ts';
+export { resolveUploadPreface } from '${srcDir}/lib/uploadPreface.ts';`,
     resolveDir: srcDir,
     loader: 'ts',
   },
@@ -26,7 +27,7 @@ const result = await build({
   platform: 'node',
   write: false,
 });
-const { runUploadSequence } = await import(
+const { runUploadSequence, resolveUploadPreface } = await import(
   'data:text/javascript;base64,' + Buffer.from(result.outputFiles[0].text).toString('base64')
 );
 
@@ -102,6 +103,22 @@ const mkItems = (n) => Array.from({ length: n }, (_, i) => ({
   const { results, stopped } = await runUploadSequence(mkItems(3), 'key', submit, [null, null, null], (r) => progress.push(JSON.stringify(r)));
   check('T6 超时停止', stopped && results[1]?.error?.includes('网络超时') && results[2] === null, JSON.stringify(results));
   check('T6 onProgress 触发', progress.length >= 2, `got ${progress.length}`);
+}
+
+// T7 单首画板：序存于画板级 metadata.preface → 上传必须带上（回归：曾只取 sectionPreface 丢失）
+{
+  check('T7 单首仅画板序', resolveUploadPreface({ boardPreface: '序一', isSingle: true, isFirstOfGroup: true }) === '序一');
+  check('T7 单首画板序+本首序拼接', resolveUploadPreface({ boardPreface: '序一', sectionPreface: '小序', isSingle: true, isFirstOfGroup: true }) === '序一\n\n小序');
+  check('T7 单首无序', resolveUploadPreface({ isSingle: true, isFirstOfGroup: true }) === undefined);
+}
+
+// T8 组诗：整组序归入首首并与本首序拼接；其余各首只带本首序
+{
+  const first = resolveUploadPreface({ boardPreface: '组序', sectionPreface: '其一小序', isSingle: false, isFirstOfGroup: true });
+  check('T8 组诗首首带整组序+小序', first === '组序\n\n其一小序', String(first));
+  const second = resolveUploadPreface({ boardPreface: '组序', sectionPreface: '其二小序', isSingle: false, isFirstOfGroup: false });
+  check('T8 组诗次首仅本首序', second === '其二小序', String(second));
+  check('T8 组诗无本首序为空', resolveUploadPreface({ isSingle: false, isFirstOfGroup: false }) === undefined);
 }
 
 console.log(`\n==== ${pass} passed, ${fail} failed ====`);
