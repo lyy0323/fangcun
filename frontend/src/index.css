@@ -43,6 +43,34 @@ body {
 * { scrollbar-width: none; }
 *::-webkit-scrollbar { display: none; }
 
+/* 自定义横向滚动条：供少量横向滚动容器（如导出主题选择）在桌面端可见可拖 */
+.h-scroll { scrollbar-width: thin; scrollbar-color: rgba(0,0,0,0.25) transparent; }
+.h-scroll::-webkit-scrollbar { display: block; height: 8px; }
+.h-scroll::-webkit-scrollbar-track { background: transparent; }
+.h-scroll::-webkit-scrollbar-thumb {
+  background: rgba(0,0,0,0.18);
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+.h-scroll::-webkit-scrollbar-thumb:hover { background: rgba(0,0,0,0.35); background-clip: padding-box; }
+.dark .h-scroll { scrollbar-color: rgba(255,255,255,0.25) transparent; }
+.dark .h-scroll::-webkit-scrollbar-thumb {
+  background: rgba(255,255,255,0.2);
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+.dark .h-scroll::-webkit-scrollbar-thumb:hover {
+  background: rgba(255,255,255,0.38);
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+@media (hover: none) {
+  .h-scroll::-webkit-scrollbar { display: none; }
+  .h-scroll { scrollbar-width: none; }
+}
+
 /* 触摸设备：隐藏候选字叉号按钮（改用长按删除） */
 @media (hover: none) {
   .max-touch\:hidden {

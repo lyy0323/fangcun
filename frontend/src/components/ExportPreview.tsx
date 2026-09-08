@@ -685,7 +685,7 @@ export function ExportPreview({ onClose }: { onClose: () => void }) {
           </div>
           {/* 配色 + 下载 */}
           <div className="flex items-center justify-between gap-3">
-          <div className="flex gap-1.5 overflow-x-auto flex-1 min-w-0 py-1 px-1">
+          <div className="flex gap-1.5 overflow-x-auto h-scroll flex-1 min-w-0 py-1 px-1">
             {THEME_KEYS.map((k) => {
               const t = THEMES[k];
               const available = availableThemes.includes(k);
