@@ -7,7 +7,7 @@ import { track } from '../lib/api';
 import type { BoardMetadata } from '../lib/types';
 import { ChevronDown, Info, Eye, EyeOff } from 'lucide-react';
 
-export function MetadataPopover({ onClose }: { onClose: () => void }) {
+export function MetadataPopover({ onClose, overlay = true }: { onClose: () => void; overlay?: boolean }) {
   const { dispatch } = useBoardContext();
   const board = useActiveBoard();
   const [dateError, setDateError] = useState<string>('');
@@ -118,7 +118,7 @@ export function MetadataPopover({ onClose }: { onClose: () => void }) {
 
   return (
     <>
-      <div className="fixed inset-0 z-30" onClick={onClose} />
+      {overlay && <div className="fixed inset-0 z-30" onClick={onClose} />}
       <div
         className="absolute top-10 left-0 bg-[var(--bg-card)] border border-[var(--border)] rounded-lg shadow-lg w-72 py-3 px-3 z-40 space-y-3 max-h-[60vh] overflow-y-auto"
         onClick={e => e.stopPropagation()}

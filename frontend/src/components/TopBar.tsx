@@ -449,6 +449,9 @@ function SettingsModal({ onClose, onExportMarkdown }: { onClose: () => void; onE
   );
 }
 
+// 统一 topbar 图标按钮样式（画板选择/元数据/导出/其余图标按钮共用）
+const ICON_BTN_CLS = 'w-8 h-8 rounded-lg border border-[var(--border)] flex items-center justify-center text-[var(--text-muted)] hover:bg-[var(--accent-light)] hover:text-[var(--accent)] transition-colors';
+
 export function TopBar() {
   const { state, dispatch, canUndo, canRedo } = useBoardContext();
   const board = useActiveBoard();
@@ -465,9 +468,17 @@ export function TopBar() {
     return false;
   });
 
-  // UX 统一：打开画板选择（dropOpen）时，点击其它 topbar 按钮先收起画板选择，
-  // 避免与 metadata/导出等弹层重叠（画板切换按钮自身除外）。
-  const closeBoardDrop = () => setDropOpen(false);
+  // UX 统一：画板选择 / 元数据 / 导出菜单 三弹层共用同一交互——
+  // 单一全屏遮罩置于 header 首子元素（DOM 最前、低层），使其它 topbar
+  // 按钮始终可 hover/点击（点击自动收起当前弹层），不再各自用高 z 遮罩挡按钮。
+  const closeMenus = () => {
+    setDropOpen(false); setMetaOpen(false); setExportMenuOpen(false);
+    setMovingBoardId(null); setSortMenuFor(null); setSortMenuPos(null);
+  };
+  const toggleDrop = () => { setMetaOpen(false); setExportMenuOpen(false); setDropOpen(v => !v); };
+  const toggleMeta = () => { setDropOpen(false); setExportMenuOpen(false); setMetaOpen(v => !v); };
+  const toggleExport = () => { setDropOpen(false); setMetaOpen(false); setExportMenuOpen(v => !v); };
+  const anyMenuOpen = dropOpen || metaOpen || exportMenuOpen;
 
   useEffect(() => {
     document.documentElement.classList.toggle('dark', dark);
@@ -832,18 +843,20 @@ export function TopBar() {
       className="h-12 border-b border-[var(--border)] bg-[var(--bg-card)] flex items-center px-3 gap-2 shrink-0 relative z-40"
       style={safeTop ? { height: 48 + safeTop, paddingTop: safeTop } : undefined}
     >
+      {/* 共享遮罩：三弹层统一。置于 header 首子元素（低层），其它按钮在其上仍可 hover/click */}
+      {anyMenuOpen && <div className="fixed inset-0" onClick={closeMenus} />}
+
       {/* 画板切换 */}
       <div className="relative">
         <button
-          onClick={() => { setMetaOpen(false); setExportMenuOpen(false); setDropOpen(!dropOpen); }}
-          className="w-8 h-8 rounded-lg border border-[var(--border)] flex items-center justify-center text-[var(--text-muted)] hover:bg-[var(--accent-light)] hover:text-[var(--accent)] transition-colors"
+          onClick={toggleDrop}
+          className={ICON_BTN_CLS}
           title="切换画板"
         >
           <Layers size={16} />
         </button>
         {dropOpen && (
           <>
-            <div className="fixed inset-0" onClick={() => { setDropOpen(false); setMovingBoardId(null); setSortMenuFor(null); }} />
             {/* Sort dropdown (fixed to escape overflow) */}
             {sortMenuFor && sortMenuPos && (() => {
               const folderId = sortMenuFor === '__root__' ? null : sortMenuFor;
@@ -912,13 +925,13 @@ export function TopBar() {
       {board && (
         <div className="relative">
           <button
-            className={`w-8 h-8 rounded-lg border flex items-center justify-center transition-colors ${metaOpen ? 'border-[var(--accent)] text-[var(--accent)] bg-[var(--accent-light)]' : 'border-[var(--border)] text-[var(--text-muted)] hover:bg-[var(--accent-light)] hover:text-[var(--accent)]'}`}
-            onClick={() => { closeBoardDrop(); setExportMenuOpen(false); setMetaOpen(v => !v); }}
+            className={ICON_BTN_CLS}
+            onClick={toggleMeta}
             title="日期 / 序 / 脚注"
           >
             <ScrollText size={15} />
           </button>
-          {metaOpen && <MetadataPopover onClose={() => setMetaOpen(false)} />}
+          {metaOpen && <MetadataPopover overlay={false} onClose={() => setMetaOpen(false)} />}
         </div>
       )}
 
@@ -927,14 +940,14 @@ export function TopBar() {
         <>
           <button
             className={`w-8 h-8 rounded-lg border border-[var(--border)] flex items-center justify-center transition-colors ${canUndo ? 'text-[var(--text-muted)] hover:bg-[var(--accent-light)] hover:text-[var(--accent)]' : 'text-[var(--text-muted)] opacity-30 pointer-events-none'}`}
-            onClick={() => { closeBoardDrop(); dispatch({ type: 'UNDO' }); }}
+            onClick={() => { closeMenus(); dispatch({ type: 'UNDO' }); }}
             title="撤销"
           >
             <Undo2 size={15} />
           </button>
           <button
             className={`w-8 h-8 rounded-lg border border-[var(--border)] flex items-center justify-center transition-colors ${canRedo ? 'text-[var(--text-muted)] hover:bg-[var(--accent-light)] hover:text-[var(--accent)]' : 'text-[var(--text-muted)] opacity-30 pointer-events-none'}`}
-            onClick={() => { closeBoardDrop(); dispatch({ type: 'REDO' }); }}
+            onClick={() => { closeMenus(); dispatch({ type: 'REDO' }); }}
             title="重做"
           >
             <Redo2 size={15} />
@@ -944,8 +957,8 @@ export function TopBar() {
 
       {/* 深色模式切换 */}
       <button
-        className="w-8 h-8 rounded-lg border border-[var(--border)] flex items-center justify-center text-[var(--text-muted)] hover:bg-[var(--accent-light)] hover:text-[var(--accent)] transition-colors"
-        onClick={() => { closeBoardDrop(); setDark(d => !d); }}
+        className="ICON_BTN_CLS"
+        onClick={() => { closeMenus(); setDark(d => !d); }}
         title={dark ? '切换浅色模式' : '切换深色模式'}
       >
         {dark ? <Sun size={15} /> : <Moon size={15} />}
@@ -955,8 +968,8 @@ export function TopBar() {
 
       {/* 格律参考（韵书/词谱/诗格/教程 静态页） */}
       <button
-        className="w-8 h-8 rounded-lg border border-[var(--border)] flex items-center justify-center text-[var(--text-muted)] hover:bg-[var(--accent-light)] hover:text-[var(--accent)] transition-colors"
-        onClick={() => { closeBoardDrop(); window.location.href = '/ref/index.html'; track('open_ref'); }}
+        className="ICON_BTN_CLS"
+        onClick={() => { closeMenus(); window.location.href = '/ref/index.html'; track('open_ref'); }}
         title="格律参考"
       >
         <Library size={15} />
@@ -964,8 +977,8 @@ export function TopBar() {
 
       {/* 设置 */}
       <button
-        className="w-8 h-8 rounded-lg border border-[var(--border)] flex items-center justify-center text-[var(--text-muted)] hover:bg-[var(--accent-light)] hover:text-[var(--accent)] transition-colors"
-        onClick={() => { closeBoardDrop(); setSettingsOpen(true); }}
+        className="ICON_BTN_CLS"
+        onClick={() => { closeMenus(); setSettingsOpen(true); }}
         title="设置"
       >
         <Settings size={15} />
@@ -975,16 +988,14 @@ export function TopBar() {
       {board && (
         <div className="relative">
           <button
-            className="w-8 h-8 rounded-lg border border-[var(--border)] flex items-center justify-center text-[var(--text-muted)] hover:bg-[var(--accent-light)] hover:text-[var(--accent)] transition-colors"
-            onClick={() => { closeBoardDrop(); setMetaOpen(false); setExportMenuOpen(v => !v); }}
+            className={ICON_BTN_CLS}
+            onClick={toggleExport}
             title="导出"
           >
             <Download size={15} />
           </button>
           {exportMenuOpen && (
-            <>
-              <div className="fixed inset-0 z-40" onClick={() => setExportMenuOpen(false)} />
-              <div className="absolute right-0 top-10 z-50 w-40 border border-[var(--border)] rounded-lg overflow-hidden shadow-lg" style={{ backgroundColor: 'var(--bg-card)' }}>
+            <div className="absolute right-0 top-10 z-50 w-40 border border-[var(--border)] rounded-lg overflow-hidden shadow-lg" style={{ backgroundColor: 'var(--bg-card)' }}>
                 <button
                   className="w-full text-left px-3 py-2 text-sm flex items-center gap-2 hover:bg-[var(--accent-light)] transition-colors"
                   onClick={() => { handleCopy(); }}
@@ -1014,15 +1025,14 @@ export function TopBar() {
                   </>
                 )}
               </div>
-            </>
           )}
         </div>
       )}
 
       {/* 新建按钮 */}
       <button
-        className="w-8 h-8 rounded-lg border border-[var(--border)] flex items-center justify-center text-[var(--text-muted)] hover:bg-[var(--accent-light)] hover:text-[var(--accent)] transition-colors"
-        onClick={() => { closeBoardDrop(); dispatch({ type: 'SHOW_GENRE_SELECTOR', show: true }); }}
+        className="ICON_BTN_CLS"
+        onClick={() => { closeMenus(); dispatch({ type: 'SHOW_GENRE_SELECTOR', show: true }); }}
         title="新建画板"
       >
         <Plus size={18} />
