@@ -439,7 +439,7 @@ export const FONT_OPTIONS: FontOption[] = [
   { key: 'NotoSansSC', label: '思源黑体', cssDir: 'NotoSansSC-Regular' },
 ];
 
-export const DEFAULT_FONT: FontKey = 'NotoSerifSC';
+export const DEFAULT_FONT: FontKey = 'HuiwenMincho';
 
 export interface FontLoadOptions {
   onProgress?: (loaded: number, total: number) => void;
