@@ -18,6 +18,7 @@
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { buildSankey } from './ref-sankey.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(__dirname, '..', '..');
@@ -581,7 +582,7 @@ function catDetails(cat, color) {
   return `<details class="cat"${color ? ` style="--rc:${hsl}"` : ''}><summary>${dot}<span class="name">${esc(cat.name)}</span><span class="cnt">${cat.characters?.length ?? 0} 字</span></summary><div class="chars">${chars || '<span class="dim">（无数据）</span>'}${ring}</div></details>`;
 }
 
-function buildRhymePage(bookKey, { navLabel, seoTitle, seoDesc, subtitle, legendColor, credit, groups, colorOf, catRenderer, extraHead, canonicalPath, ldType }) {
+function buildRhymePage(bookKey, { navLabel, seoTitle, seoDesc, subtitle, legendColor, credit, groups, colorOf, catRenderer, extraHead, canonicalPath, ldType, hero }) {
   const book = rhymeBooks[bookKey];
   const cats = book.categories;
   const nav = BOOK_NAV.map((b) => `<a class="${b.key === bookKey ? 'active' : ''}" href="${b.href}">${b.label} ${b.desc}</a>`).join('');
@@ -625,7 +626,7 @@ function buildRhymePage(bookKey, { navLabel, seoTitle, seoDesc, subtitle, legend
     })();
   </script>`;
   let body = `<h1>${seoTitle}</h1>
-<div class="book-nav">${nav}</div>
+<div class="book-nav">${nav}</div>` + (hero ? `\n${hero}` : '') + `
 <p class="subtitle">${subtitle}</p>
 ${credit ? `<p class="credit">${credit}</p>` : ''}
 <input id="cat-search" class="search" type="search" placeholder="搜索韵部名或韵字…" />
@@ -643,6 +644,46 @@ ${credit ? `<p class="credit">${credit}</p>` : ''}
   return page({ title: seoTitle, desc: seoDesc, activeTab: '/ref/index.html', content: body, extraHead, canonicalPath, ldType });
 }
 
+/** 全库五书韵部流变桑基图（韵书总览首页顶部）：数据源 = rhyme_books 权威字表，按字+等权分摊 */
+const SANK_CSS = `
+  .sk-sec { margin: 6px 0 6px; }
+  .sk-wrap { background: #fff; border: 1px solid #ece7e1; border-radius: 14px; padding: 16px 18px 12px; overflow-x: auto; }
+  .sk-title { font-size: 15.5px; font-weight: 600; color: #4c443c; margin: 0 0 2px; font-family: "ml","Noto Serif SC",serif; }
+  .sk-note { font-size: 12px; color: #8a8178; margin: 8px 0 0; line-height: 1.8; }
+  .sk-note b { color: #6b6360; font-weight: 600; }
+  .sk-wrap svg { display: block; width: 100%; height: auto; }
+`;
+let _sankeySection = null;
+function buildSankeySection() {
+  if (_sankeySection) return _sankeySection;
+  const toHsl = (m) => {
+    const out = {};
+    for (const [k, v] of Object.entries(m)) out[k] = { h: v[0], s: v[1], l: v[2] };
+    return out;
+  };
+  const psHsl = {};
+  for (const [k, v] of Object.entries(PINGSHUI_COLORS)) psHsl[k] = { h: v[0], s: v[1], l: v[2] };
+  const colors = {
+    ShangguyunShijing: SG_SJ_COLORS,
+    ShangguyunChuci: SG_CC_COLORS,
+    Pingshuiyun: psHsl,
+    Cilinzhengyun: CILIN_COLORS,
+    Zhonghua_Tongyun: ZT_COLORS,
+  };
+  const orders = {
+    ShangguyunShijing: Object.keys(rhymeBooks.ShangguyunShijing.categories),
+    ShangguyunChuci: Object.keys(rhymeBooks.ShangguyunChuci.categories),
+    Pingshuiyun: PINGSHUI_GROUPS.flatMap(([, names]) => names),
+    Cilinzhengyun: sortByName(Object.keys(rhymeBooks.Cilinzhengyun.categories)),
+    Zhonghua_Tongyun: sortByName(Object.keys(rhymeBooks.Zhonghua_Tongyun.categories)),
+  };
+  const sk = buildSankey({ rhymeBooks, colors, orders });
+  _sankeySection = `<section class="sk-sec" aria-label="全库五书韵部流变统计">
+${sk.html}
+</section>`;
+  return _sankeySection;
+}
+
 function buildPingshuiPage() {
   const book = rhymeBooks.Pingshuiyun;
   const cats = book.categories;
@@ -654,7 +695,9 @@ function buildPingshuiPage() {
     seoDesc: '平水韵 106 韵部完整对照：上平 15 韵、下平 15 韵、上声 29 韵、去声 30 韵、入声 17 韵。查询各韵部韵字，写律诗绝句押韵必备。',
     subtitle: `平水韵是近体诗（律诗、绝句）押韵所依据的传统韵书。它承宋代《礼部韵略》一系韵书，因金元间刊行于平水（今山西临汾）而得名，明清以来一直是科举与格律诗创作通行的押韵标准。`,
     groups,
-    colorOf: (name) => { const c = PINGSHUI_COLORS[name]; return c ? { h: c[0], s: c[1], l: c[2], ring: name.slice(-1) } : undefined; }
+    colorOf: (name) => { const c = PINGSHUI_COLORS[name]; return c ? { h: c[0], s: c[1], l: c[2], ring: name.slice(-1) } : undefined; },
+    hero: buildSankeySection(),
+    extraHead: `<style>${SANK_CSS}</style>`,
   });
 }
 
