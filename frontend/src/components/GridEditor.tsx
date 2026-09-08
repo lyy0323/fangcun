@@ -455,6 +455,12 @@ export function GridEditor() {
       const chars = [...text].filter(c => /[\u4e00-\u9fff]/.test(c));
       if (chars.length === 0) return;
 
+      // 填入完成后把创作焦点移到「末字后一位」并滚动可见：
+      //   - forward：从 N 连续填 k 字 → 末字 N+k-1 → 光标 N+k（=N+1 语义）
+      //   - backward：以 N 为末位往前填（词末联想 N-n…N）→ 末字停在 N → 光标 N+1
+      //   - pair：词写入对句，主句光标保持 N 不动
+      let next: number | null = null;
+      let focus = true;
       if (mode === 'forward') {
         let pos = cur;
         for (const ch of chars) {
@@ -462,16 +468,18 @@ export function GridEditor() {
           dispatch({ type: 'UPDATE_CHAR', index: pos, char: ch });
           pos++;
         }
-        setCursor(Math.min(pos, sec.charCount - 1));
+        next = Math.min(pos, sec.charCount - 1);
       } else if (mode === 'backward') {
         const endPos = cur;
         const startPos = endPos - chars.length + 1;
+        let wroteLast = false;
         for (let i = 0; i < chars.length; i++) {
           const pos = startPos + i;
           if (pos < 0 || pos >= sec.charCount) continue;
           dispatch({ type: 'UPDATE_CHAR', index: pos, char: chars[i] });
+          wroteLast = pos === endPos;
         }
-        setCursor(Math.max(0, startPos));
+        next = wroteLast ? Math.min(endPos + 1, sec.charCount - 1) : cur;
       } else if (mode === 'pair' && sl > 0) {
         const coupletLen = sl * 2;
         const posInCouplet = cur % coupletLen;
@@ -482,6 +490,20 @@ export function GridEditor() {
           dispatch({ type: 'UPDATE_CHAR', index: pos, char: ch });
           pos++;
         }
+        next = cur; // 对句填充：主句光标保持
+      }
+      if (next != null) {
+        setCursor(next);
+        setSelectionEnd(null);
+      }
+      if (focus) {
+        focusInput();
+        requestAnimationFrame(() => {
+          const cell = containerRef.current?.querySelector(
+            `[data-section="${si}"] [data-gi="${next ?? cur}"]`,
+          ) as HTMLElement | null;
+          cell?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+        });
       }
     };
     dispatch({ type: 'SET_INSERT_FN', fn });

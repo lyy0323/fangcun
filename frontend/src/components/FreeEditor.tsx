@@ -129,6 +129,8 @@ export function FreeEditor() {
       const re = new RegExp(`[\\u4e00-\\u9fff\\u3400-\\u4dbf${CJK_PUNCT}]`); const filtered = [...text].filter(c => re.test(c)).join('');
       if (!filtered) return;
       insertText(filtered, activeLineRef.current, cursorPosRef.current, lines);
+      // 从功能区填入后保持创作输入焦点（后续打字直接续写）
+      focusInput();
     };
     dispatch({ type: 'SET_INSERT_FN', fn });
     return () => { dispatch({ type: 'SET_INSERT_FN', fn: null }); };
