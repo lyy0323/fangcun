@@ -43,26 +43,26 @@ body {
 * { scrollbar-width: none; }
 *::-webkit-scrollbar { display: none; }
 
-/* 自定义横向滚动条：供少量横向滚动容器（如导出主题选择）在桌面端可见可拖 */
-.h-scroll { scrollbar-width: thin; scrollbar-color: rgba(0,0,0,0.25) transparent; }
+/* 自定义横向滚动条：供少量横向滚动容器（如导出主题选择）。
+   桌面端鼠标悬停到该区域时才显示，移出即淡出；滚动状态不影响显隐。 */
+.h-scroll { scrollbar-width: thin; scrollbar-color: transparent transparent; }
 .h-scroll::-webkit-scrollbar { display: block; height: 8px; }
 .h-scroll::-webkit-scrollbar-track { background: transparent; }
 .h-scroll::-webkit-scrollbar-thumb {
-  background: rgba(0,0,0,0.18);
+  background: transparent;
   border-radius: 999px;
   border: 2px solid transparent;
   background-clip: padding-box;
+  transition: background-color 0.18s ease;
 }
-.h-scroll::-webkit-scrollbar-thumb:hover { background: rgba(0,0,0,0.35); background-clip: padding-box; }
-.dark .h-scroll { scrollbar-color: rgba(255,255,255,0.25) transparent; }
-.dark .h-scroll::-webkit-scrollbar-thumb {
-  background: rgba(255,255,255,0.2);
-  border-radius: 999px;
-  border: 2px solid transparent;
-  background-clip: padding-box;
-}
+.h-scroll:hover::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.22); background-clip: padding-box; }
+.h-scroll::-webkit-scrollbar-thumb:hover { background: rgba(0,0,0,0.38); background-clip: padding-box; }
+.h-scroll:hover { scrollbar-color: rgba(0,0,0,0.22) transparent; }
+.dark .h-scroll { scrollbar-color: transparent transparent; }
+.dark .h-scroll:hover { scrollbar-color: rgba(255,255,255,0.22) transparent; }
+.dark .h-scroll:hover::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.22); background-clip: padding-box; }
 .dark .h-scroll::-webkit-scrollbar-thumb:hover {
-  background: rgba(255,255,255,0.38);
+  background: rgba(255,255,255,0.4);
   border: 2px solid transparent;
   background-clip: padding-box;
 }
