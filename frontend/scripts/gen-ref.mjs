@@ -649,8 +649,10 @@ const SANK_CSS = `
   .sk-sec { margin: 6px 0 6px; }
   .sk-wrap { background: #fff; border: 1px solid #ece7e1; border-radius: 14px; padding: 16px 18px 12px; overflow-x: auto; }
   .sk-title { font-size: 15.5px; font-weight: 600; color: #4c443c; margin: 0 0 2px; font-family: "ml","Noto Serif SC",serif; }
+  .sk-beta { display: inline-block; vertical-align: 3px; margin-left: 8px; padding: 0 9px; border-radius: 999px; font-size: 11px; font-weight: 600; letter-spacing: 1px; color: #9a5b20; background: #fdf2e3; border: 1px solid #eccf9f; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", system-ui, sans-serif; }
   .sk-note { font-size: 12px; color: #8a8178; margin: 8px 0 0; line-height: 1.8; }
   .sk-note b { color: #6b6360; font-weight: 600; }
+  .sk-note .sk-remark { color: #b07a3a; }
   .sk-wrap svg { display: block; width: 100%; height: auto; }
 `;
 let _sankeySection = null;

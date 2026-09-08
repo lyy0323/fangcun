@@ -338,9 +338,9 @@ ${heads}${paths}${nodesSvg}${labelsSvg}</svg>`;
 
   const section = `
 <div class="sk-wrap">
-  <div class="sk-title">五部韵书全库韵部流变 · 按字等权统计（${totalChars} 字）</div>
+  <div class="sk-title">五部韵书全库韵部流变<span class="sk-beta">Beta</span></div>
   ${svg}
-  <div class="sk-note">口径：取五部韵书<b>兼收</b>的字作全集；每字在某书归入若干韵部时权重均分，相邻两书同字连接、两两均分，故各层总流量 = 全库字数、逐结点进出守恒。悬停结点可高亮其全部流向并查看韵部名与等权字数。</div>
+  <div class="sk-note">全库 <b>${totalChars}</b> 字（五部韵书兼收），按「字」等权统计：每字在某书归入若干韵部时权重均分，相邻两书同字连接、两两均分，故各层总流量 = 全库字数、逐结点进出守恒。悬停可高亮流向、查看韵部名与等权字数。<span class="sk-remark">注：多音字的详细对应关系将在下一版中人工标注。</span></div>
   ${script}
 </div>`;
   return { html: section, totalChars, links: linkCnt };
