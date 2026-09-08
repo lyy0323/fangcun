@@ -228,11 +228,13 @@ export function buildSankey({ rhymeBooks, colors, orders }) {
     const x1 = colX[bi + 1];
     const cx = (x1 - x0) * 0.5;
     for (const l of linkArr[bi]) {
-      const out = nodePorts[bi][posOf[bi].get(l.s)].out.find((o) => o === l);
-      const inn = nodePorts[bi + 1][posOf[bi + 1].get(l.t)].in.find((o) => o === l);
+      const rL = posOf[bi].get(l.s);
+      const rR = posOf[bi + 1].get(l.t);
+      const out = nodePorts[bi][rL].out.find((o) => o === l);
+      const inn = nodePorts[bi + 1][rR].in.find((o) => o === l);
       if (!out || !inn) continue;
       const d = `M${x0},${out.yL0} C${x0 + cx},${out.yL0} ${x1 - cx},${inn.yR0} ${x1},${inn.yR0} L${x1},${inn.yR1} C${x1 - cx},${inn.yR1} ${x0 + cx},${out.yL1} ${x0},${out.yL1} Z`;
-      paths += `<path class="sk-l" data-s="${rid(bi, out.row)}" data-t="${rid(bi + 1, inn.row)}" d="${d}" fill="${linkFill(bi, l)}"></path>`;
+      paths += `<path class="sk-l" data-s="${rid(bi, rL)}" data-t="${rid(bi + 1, rR)}" d="${d}" fill="${linkFill(bi, l)}"></path>`;
       linkCnt++;
     }
   }
