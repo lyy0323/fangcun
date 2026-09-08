@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useBoardContext, useActiveBoard } from '../context/BoardContext';
 import { rhymeLookup, rhymeList, charLookup, track } from '../lib/api';
 import type { RhymeLookupResult } from '../lib/types';
+import { isShangguyunBook, normalizeBookKey } from '../lib/types';
 import { RefreshCw, RotateCcw, ChevronDown } from 'lucide-react';
 
 export function RhymePanel() {
@@ -17,7 +18,7 @@ export function RhymePanel() {
   const [manualOverride, setManualOverride] = useState<string | null>(null); // 手动选韵覆盖
   const [bookOpen, setBookOpen] = useState(false); // 韵书下拉菜单
 
-  const bookName = board?.rhymeBookName ?? 'Pingshuiyun';
+  const bookName = normalizeBookKey(board?.rhymeBookName ?? 'Pingshuiyun');
   const rhymeName = validation?.rhyme_name ?? null;
   const isHuanyun = rhymeName?.includes('换韵') ?? false;
 
@@ -177,10 +178,10 @@ export function RhymePanel() {
   };
 
   const bookOptions = board?.genre === 'Shi'
-    ? [{ value: 'Pingshuiyun', label: '平水韵' }, { value: 'Zhonghua_Tongyun', label: '中华通韵' }, { value: 'Shangguyun', label: '上古韵' }]
+    ? [{ value: 'Pingshuiyun', label: '平水韵' }, { value: 'Zhonghua_Tongyun', label: '中华通韵' }, { value: 'ShangguyunShijing', label: '上古诗经韵' }, { value: 'ShangguyunChuci', label: '上古楚辞韵' }]
     : board?.genre === 'Ci'
-    ? [{ value: 'Cilinzhengyun', label: '词林正韵' }, { value: 'Zhonghua_Tongyun', label: '中华通韵' }, { value: 'Shangguyun', label: '上古韵' }]
-    : [{ value: 'Zhonghua_Tongyun', label: '中华通韵' }, { value: 'Pingshuiyun', label: '平水韵' }, { value: 'Cilinzhengyun', label: '词林正韵' }, { value: 'Shangguyun', label: '上古韵' }];
+    ? [{ value: 'Cilinzhengyun', label: '词林正韵' }, { value: 'Zhonghua_Tongyun', label: '中华通韵' }, { value: 'ShangguyunShijing', label: '上古诗经韵' }, { value: 'ShangguyunChuci', label: '上古楚辞韵' }]
+    : [{ value: 'Zhonghua_Tongyun', label: '中华通韵' }, { value: 'Pingshuiyun', label: '平水韵' }, { value: 'Cilinzhengyun', label: '词林正韵' }, { value: 'ShangguyunShijing', label: '上古诗经韵' }, { value: 'ShangguyunChuci', label: '上古楚辞韵' }];
   const bookLabel = bookOptions.find(o => o.value === bookName)?.label ?? bookName;
 
   return (
@@ -276,7 +277,7 @@ export function RhymePanel() {
             >
               <div className="flex items-center justify-between text-sm">
                 <span>{cat.name}</span>
-                {bookName !== 'Shangguyun' && (
+                {!isShangguyunBook(bookName) && (
                   <span className="text-xs text-[var(--text-muted)]">{cat.tone_type === 'P' ? '平' : '仄'}</span>
                 )}
               </div>

@@ -177,9 +177,11 @@
   .def-item { font-size: 13.5px; margin: 2px 0; color: #4c443c; }
   .def-no { color: #a09890; margin-right: 4px; font-size: 12px; }
   .def-c { font-size: 11.5px; color: #a09890; padding-left: 18px; margin-top: 2px; line-height: 1.6; }
-  .chip { display: inline-block; padding: 2px 10px; border-radius: 999px; font-size: 12.5px; border: 1px solid; margin: 2px 4px 2px 0; text-decoration: none; }
-  .sg-line { margin: 3px 0; }
-  .sg-reading { font-size: 12.5px; color: #6b6360; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+  /* 胶囊：中性边框/文字（标准文字色 #4c443c），内部前置色块承载韵色/声调色 */
+  .chip { display: inline-flex; align-items: center; gap: 5px; padding: 2px 10px; border-radius: 999px; font-size: 12.5px; border: 1px solid #4c443c; color: #4c443c; margin: 2px 4px 2px 0; text-decoration: none; }
+  .cl-mark { width: 10px; height: 10px; border-radius: 3px; display: inline-block; flex-shrink: 0; }
+  .sg-line { margin: 3px 0; display: flex; align-items: baseline; flex-wrap: wrap; gap: 6px; }
+  .sg-reading { font-size: 12.5px; color: #6b6360; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; white-space: nowrap; }
   .loading { text-align: center; padding: 30px 0; color: #a09890; }
   .timeline { margin: 8px 0 10px; }
   .tl-item { position: relative; padding: 0 0 18px 30px; border-left: 2px solid #ece7e1; }

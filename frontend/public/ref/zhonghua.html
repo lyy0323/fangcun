@@ -180,8 +180,8 @@
   /* 胶囊：中性边框/文字（标准文字色 #4c443c），内部前置色块承载韵色/声调色 */
   .chip { display: inline-flex; align-items: center; gap: 5px; padding: 2px 10px; border-radius: 999px; font-size: 12.5px; border: 1px solid #4c443c; color: #4c443c; margin: 2px 4px 2px 0; text-decoration: none; }
   .cl-mark { width: 10px; height: 10px; border-radius: 3px; display: inline-block; flex-shrink: 0; }
-  .sg-line { margin: 3px 0; }
-  .sg-reading { font-size: 12.5px; color: #6b6360; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+  .sg-line { margin: 3px 0; display: flex; align-items: baseline; flex-wrap: wrap; gap: 6px; }
+  .sg-reading { font-size: 12.5px; color: #6b6360; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; white-space: nowrap; }
   .loading { text-align: center; padding: 30px 0; color: #a09890; }
   .timeline { margin: 8px 0 10px; }
   .tl-item { position: relative; padding: 0 0 18px 30px; border-left: 2px solid #ece7e1; }
@@ -224,7 +224,7 @@
 </header>
 <main class="container">
 <h1>中华通韵 16 韵部总览：普通话押韵查询</h1>
-<div class="book-nav"><a class="" href="/ref/index.html">平水韵 106 韵</a><a class="" href="/ref/cilinzhengyun.html">词林正韵 19 部</a><a class="" href="/ref/shangguyun.html">上古韵 23 部</a><a class="active" href="/ref/zhonghua.html">中华通韵 16 韵</a></div>
+<div class="book-nav"><a class="" href="/ref/index.html">平水韵 106 韵</a><a class="" href="/ref/cilinzhengyun.html">词林正韵 19 部</a><a class="" href="/ref/shangguyun-shijing.html">上古诗经韵 51 部</a><a class="" href="/ref/shangguyun-chuci.html">上古楚辞韵 36 部</a><a class="active" href="/ref/zhonghua.html">中华通韵 16 韵</a></div>
 <p class="subtitle">中华通韵是当代通行的新韵书，由中华诗词学会组织专家依据现代汉语普通话审音归韵编订，不设入声，便于以现代语感创作旧体诗词。</p>
 
 <input id="cat-search" class="search" type="search" placeholder="搜索韵部名或韵字…" />

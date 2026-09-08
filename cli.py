@@ -359,7 +359,7 @@ def main():
     p = sub.add_parser("validate", help="校验诗词格律")
     p.add_argument("--text", required=True, help="诗词文本（标点自动忽略）")
     p.add_argument("--genre", required=True, choices=["Shi", "Ci"])
-    p.add_argument("--rhyme-book", default="Pingshuiyun", choices=["Pingshuiyun", "Cilinzhengyun", "Zhonghua_Tongyun", "Shangguyun"])
+    p.add_argument("--rhyme-book", default="Pingshuiyun", choices=["Pingshuiyun", "Cilinzhengyun", "Zhonghua_Tongyun", "ShangguyunShijing", "ShangguyunChuci"])
     p.add_argument("--rule", default=None, help="指定规则名")
     p.add_argument("--longpu", action="store_true")
     p.add_argument("--include-punctuation", action="store_true", help="检测句读标点（poem_text 需带标点）")
@@ -375,7 +375,7 @@ def main():
     p.add_argument("--book", default=None)
 
     p = sub.add_parser("rhyme", help="查韵部字表")
-    p.add_argument("--book", required=True, choices=["Pingshuiyun", "Cilinzhengyun", "Zhonghua_Tongyun", "Shangguyun"])
+    p.add_argument("--book", required=True, choices=["Pingshuiyun", "Cilinzhengyun", "Zhonghua_Tongyun", "ShangguyunShijing", "ShangguyunChuci"])
     p.add_argument("--category", required=True, help="韵部名（如 一东）")
     p.add_argument("--include", default=None)
     p.add_argument("--limit", type=int, default=None, help="返回字数上限")
@@ -392,7 +392,7 @@ def main():
 
     p = sub.add_parser("free-rhyme", help="自由诗/古体诗韵脚检测")
     p.add_argument("--text", required=True, help="诗文（句号/分号/换行自动分句）")
-    p.add_argument("--rhyme-book", default="Pingshuiyun", choices=["Pingshuiyun", "Cilinzhengyun", "Zhonghua_Tongyun", "Shangguyun"])
+    p.add_argument("--rhyme-book", default="Pingshuiyun", choices=["Pingshuiyun", "Cilinzhengyun", "Zhonghua_Tongyun", "ShangguyunShijing", "ShangguyunChuci"])
     p.add_argument("--merge-tones", action="store_true", help="合并平仄（新诗/歌词用）")
     p.add_argument("--pretty", action="store_true", help="人类可读输出")
 

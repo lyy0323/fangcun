@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { useBoardContext, useActiveBoard } from '../context/BoardContext';
 import { validateMeter } from '../lib/api';
+import { normalizeBookKey } from '../lib/types';
 
 /**
  * 格律检测 hook。
@@ -19,7 +20,7 @@ export function useValidation() {
 
   const charsKey = sec?.poemChars.join('') ?? '';
   const boardId = board?.id ?? '';
-  const rhymeBookName = board?.rhymeBookName ?? '';
+  const rhymeBookName = normalizeBookKey(board?.rhymeBookName ?? '');
 
   boardIdRef.current = boardId;
 
@@ -40,7 +41,7 @@ export function useValidation() {
         const result = await validateMeter({
           poem_text: sec.poemChars.join(''),
           genre: board.genre,
-          rhyme_book_name: board.rhymeBookName,
+          rhyme_book_name: rhymeBookName,
           rule_name: sec.ruleName,
           ensure_longpu: board.genre === 'Ci',
         });
@@ -69,7 +70,7 @@ export function useValidation() {
       validateMeter({
         poem_text: s.poemChars.join(''),
         genre: board.genre,
-        rhyme_book_name: board.rhymeBookName,
+        rhyme_book_name: rhymeBookName,
         rule_name: s.ruleName,
         ensure_longpu: board.genre === 'Ci',
       }).then(result => {

@@ -8,7 +8,8 @@
  * 页面清单：
  *   index.html            韵书总览 · 平水韵（默认）
  *   cilinzhengyun.html    韵书总览 · 词林正韵
- *   shangguyun.html       韵书总览 · 上古韵
+ *   shangguyun-shijing.html 韵书总览 · 上古诗经韵（51 部）
+ *   shangguyun-chuci.html   韵书总览 · 上古楚辞韵（36 部）
  *   zhonghua.html         韵书总览 · 中华通韵
  *   cipai.html           词谱格律（列表 + JS 搜索/展开）＋ cipai-data.js
  *   shi.html             诗格速查（五七言 × 律绝 × 平仄起 8 格式）
@@ -200,7 +201,8 @@ const TABS = [
 const BOOK_NAV = [
   { href: '/ref/index.html', key: 'Pingshuiyun', label: '平水韵', desc: '106 韵' },
   { href: '/ref/cilinzhengyun.html', key: 'Cilinzhengyun', label: '词林正韵', desc: '19 部' },
-  { href: '/ref/shangguyun.html', key: 'Shangguyun', label: '上古韵', desc: '23 部' },
+  { href: '/ref/shangguyun-shijing.html', key: 'ShangguyunShijing', label: '上古诗经韵', desc: '51 部' },
+  { href: '/ref/shangguyun-chuci.html', key: 'ShangguyunChuci', label: '上古楚辞韵', desc: '36 部' },
   { href: '/ref/zhonghua.html', key: 'Zhonghua_Tongyun', label: '中华通韵', desc: '16 韵' },
 ];
 
@@ -360,8 +362,8 @@ const SHARED_CSS = `
   /* 胶囊：中性边框/文字（标准文字色 #4c443c），内部前置色块承载韵色/声调色 */
   .chip { display: inline-flex; align-items: center; gap: 5px; padding: 2px 10px; border-radius: 999px; font-size: 12.5px; border: 1px solid #4c443c; color: #4c443c; margin: 2px 4px 2px 0; text-decoration: none; }
   .cl-mark { width: 10px; height: 10px; border-radius: 3px; display: inline-block; flex-shrink: 0; }
-  .sg-line { margin: 3px 0; }
-  .sg-reading { font-size: 12.5px; color: #6b6360; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+  .sg-line { margin: 3px 0; display: flex; align-items: baseline; flex-wrap: wrap; gap: 6px; }
+  .sg-reading { font-size: 12.5px; color: #6b6360; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; white-space: nowrap; }
   .loading { text-align: center; padding: 30px 0; color: #a09890; }
   .timeline { margin: 8px 0 10px; }
   .tl-item { position: relative; padding: 0 0 18px 30px; border-left: 2px solid #ece7e1; }
@@ -446,42 +448,12 @@ ${content}
 
 /* ------------------------------- 韵书页面 -------------------------------- */
 
-/** 上古韵页首介绍（用户提供） */
-const SHANGGUYUN_INTRO = '采用 nulll 拟音方案，对标王力上古韵体系设计邻韵通押，适合爱好者使用。';
+/** 上古韵双套页首介绍（按音节拟音；诗经韵 51 部 / 楚辞韵 36 部，楚辞为诗经的时代归并） */
 const SHANGGUYUN_CREDIT = 'Contributor：上海交通大学国学社·「南洋小学」音韵学兴趣小组——@nulll @知母tr @lyy0323';
+const SHANGGUYUN_SJ_INTRO = '上古诗经韵：按主元音×韵尾细分为 51 韵部（鱼a、铎ak、阳aŋ…），反映《诗经》用韵。适合拟古体与仿先秦之作。';
+const SHANGGUYUN_CC_INTRO = '上古楚辞韵：诗经韵按战国音系归并为 36 韵部（之幽=之ə+幽u、耕真=耕eŋ+真iŋ、職覺…），反映《楚辞》用韵。适合拟古体与仿先秦之作。';
 
-/** 上古韵小韵排序：
- * 1) 主元音（rpy 首字母）聚组，顺序 a<e<o<u<y<i（按用户示例反推：物队部 u 组在 y 组前）
- * 2) 同主元音组内：
- *    - 若全部小韵同属一个部名（不带调基名，如 真n/真ng）→ 韵尾优先（n<ng）：真部 3×n（平上去）→ 2×ng（平去）
- *    - 部名混杂（如 乾a/元a）→ 声调优先（平<上<去<入，次入并入入），韵尾作次级
- * 3) 韵尾（rpy 去首元音与尾调符 q/h）：r<n<ng<m<p<t<s<k<j<w，无尾最后
- * 4) 小韵名兜底
- */
-const SG_VOWEL_ORDER = { a: 0, e: 1, o: 2, u: 3, y: 4, i: 5 };
-const SG_TAIL_ORDER = { r: 0, n: 1, ng: 2, m: 3, p: 4, t: 5, s: 6, k: 7, j: 8, w: 9 };
-const SG_TONE_RANK = { 平: 0, 上: 1, 去: 2, 入: 3 };
-function sgTailOf(rpy) {
-  let tail = (rpy || '').slice(1).replace(/[qh]$/, '');
-  if (tail.endsWith('ng')) return 'ng';
-  return tail.slice(-1) || '';
-}
-/** 不带调基名：去声调（平/上/去/入/次入）与尾部字母（a…i/n/ng/t…），如 真n平→真、乾a平→乾 */
-function sgBase(sub) {
-  let b = sub.endsWith('次入') ? sub.slice(0, -2) : sub.slice(0, -1);
-  if (b.endsWith('ng')) return b.slice(0, -2);
-  return /[a-z]$/.test(b) ? b.slice(0, -1) : b;
-}
-function sgSubKey(sub, meta, tailFirst) {
-  const rpy = meta?.rpy || '';
-  const vRank = SG_VOWEL_ORDER[rpy[0] || ''] ?? 9;
-  let tone = SG_TONE_RANK[sub.slice(-1)] ?? 5; // 平0 上1 去2 入3；次入末字为「入」亦得 3
-  if (sub.endsWith('次入')) tone = 3;
-  const tRank = SG_TAIL_ORDER[sgTailOf(rpy)] ?? 10;
-  return tailFirst ? [vRank, tRank, tone, sub] : [vRank, tone, tRank, sub];
-}
-
-// （配色表见下方「上古韵/中华通韵 方案A」——依赖 PINGSHUI_COLORS 与 hslMean，置于其后）
+// （配色表见下方「上古韵双套/中华通韵 方案A」——依赖 PINGSHUI_COLORS 与 hslMean，置于其后）
 
 /** 平水韵 106 韵配色（与「平水韵诗词上色器」一致：平声亮 / 上声暗 / 去声暗 / 入声浊） */
 const PINGSHUI_COLORS = {"一东":[192,80,80],"二冬":[204,80,80],"三江":[36,80,80],"四支":[216,80,80],"五微":[228,80,80],"六鱼":[60,80,80],"七虞":[72,80,80],"八齐":[240,80,80],"九佳":[252,80,80],"十灰":[264,80,80],"十一真":[84,80,80],"十二文":[96,80,80],"十三元":[108,80,80],"十四寒":[120,80,80],"十五删":[132,80,80],"一先":[144,80,80],"二萧":[324,80,80],"三肴":[336,80,80],"四豪":[348,80,80],"五歌":[0,80,80],"六麻":[12,80,80],"七阳":[24,80,80],"八庚":[156,80,80],"九青":[168,80,80],"十蒸":[180,80,80],"十一尤":[48,80,80],"十二侵":[312,80,80],"十三覃":[300,80,80],"十四盐":[288,80,80],"十五咸":[276,80,80],"一董":[192,80,20],"二肿":[204,80,20],"三讲":[36,80,20],"四纸":[216,80,20],"五尾":[228,80,20],"六语":[60,80,20],"七麌":[72,80,20],"八荠":[240,80,20],"九蟹":[252,80,20],"十贿":[264,80,20],"十一轸":[84,80,20],"十二吻":[96,80,20],"十三阮":[108,80,20],"十四旱":[120,80,20],"十五潸":[132,80,20],"十六铣":[144,80,20],"十七筱":[324,80,20],"十八巧":[336,80,20],"十九皓":[348,80,20],"二十哿":[0,80,20],"二十一马":[12,80,20],"二十二养":[24,80,20],"二十三梗":[156,80,20],"二十四迥":[180,80,20],"二十五有":[48,80,20],"二十六寝":[312,80,20],"二十七感":[300,80,20],"二十八俭":[288,80,20],"二十九豏":[276,80,20],"一送":[192,80,30],"二宋":[204,80,30],"三绛":[36,80,30],"四寘":[216,80,30],"五未":[228,80,30],"六御":[60,80,30],"七遇":[72,80,30],"八霁":[240,80,30],"九泰":[252,80,30],"十卦":[264,80,30],"十一队":[84,80,30],"十二震":[96,80,30],"十三问":[108,80,30],"十四愿":[120,80,30],"十五翰":[132,80,30],"十六谏":[144,80,30],"十七霰":[324,80,30],"十八啸":[336,80,30],"十九效":[348,80,30],"二十号":[0,80,30],"二十一个":[12,80,30],"二十二祃":[24,80,30],"二十三漾":[156,80,30],"二十四敬":[168,80,30],"二十五径":[180,80,30],"二十六宥":[48,80,30],"二十七沁":[312,80,30],"二十八勘":[300,80,30],"二十九艳":[288,80,30],"三十陷":[276,80,30],"一屋":[192,30,20],"二沃":[204,30,20],"三觉":[36,30,20],"四质":[84,30,20],"五物":[96,30,20],"六月":[108,30,20],"七曷":[120,30,20],"八黠":[132,30,20],"九屑":[144,30,20],"十药":[24,30,20],"十一陌":[156,30,20],"十二锡":[168,30,20],"十三职":[180,30,20],"十四缉":[312,30,20],"十五合":[300,30,20],"十六叶":[288,30,20],"十七洽":[276,30,20]};
@@ -533,38 +505,36 @@ for (const [no, tones] of Object.entries(CILIN_PINGSHUI)) {
 }
 
 // ============================================================================
-// 上古韵 / 中华通韵 配色（方案A：平水韵映射）
-//   上古韵：每小韵按成员字与平水韵韵目重叠取 HSL 圆均值（小韵名逐色）；
-//           部色取该部字最多的小韵色（圆环/时间线用）
+// 上古韵双套 / 中华通韵 配色（方案A：平水韵映射）
+//   上古诗经韵 51 部、上古楚辞韵 36 部：每韵部按成员字与平水韵韵目重叠取
+//   HSL 圆均值（韵部名逐色，单级展示粒度；圓环/时间线点取部色）
 //   中华通韵：平/仄分开，每韵部（一啊_平 等）各自取色（平仄双色）
 // ============================================================================
 const _psColorOf = (ch) => {
   const ps = (charDict[ch]?.rhymes || {}).Pingshuiyun || [];
   return ps[0] ? PINGSHUI_COLORS[ps[0]] : null;
 };
-const SG_SUB_COLORS = {}; // 小韵 -> {h,s,l}
-const SG_CAT_COLORS = {}; // 部 -> 字最多小韵色 {h,s,l,ring}
-{
-  for (const [catName, cat] of Object.entries(rhymeBooks.Shangguyun.categories)) {
-    const subChars = new Map();
-    for (const ch of cat.characters) {
-      for (const r of charDict[ch]?.shangguyun || []) {
-        if (r.cat !== catName) continue;
-        if (!subChars.has(r.sub)) subChars.set(r.sub, new Set());
-        subChars.get(r.sub).add(ch);
-      }
-    }
-    let maxSub = null, maxN = 0;
-    for (const [sub, set] of subChars) {
-      const list = [];
-      for (const ch of set) { const c = _psColorOf(ch); if (c) list.push(c); }
-      if (list.length) SG_SUB_COLORS[sub] = hslMean(list);
-      if (set.size > maxN) { maxN = set.size; maxSub = sub; }
-    }
-    const c = SG_SUB_COLORS[maxSub];
-    if (c) SG_CAT_COLORS[catName] = { ...c, ring: catName[0] }; // 圆环氛围字取部名第 1 字
-  }
+
+/** 韵部首字（去 IPA 尾标/介音尾字母）：如 鱼a→鱼、职觉→职、耕真→耕、葉ap→葉 */
+function sgCatRing(name) {
+  const m = String(name).match(/[\u3400-\u9fff]/);
+  return m ? m[0] : String(name).slice(-1);
 }
+
+/** 上古韵单套韵部配色：cat -> {h,s,l,ring}（成员字平水色圆均值） */
+function buildSgColors(bookKey) {
+  const colors = {};
+  const book = rhymeBooks[bookKey];
+  if (!book) return colors;
+  for (const [catName, cat] of Object.entries(book.categories)) {
+    const list = [];
+    for (const ch of cat.characters || []) { const c = _psColorOf(ch); if (c) list.push(c); }
+    if (list.length) colors[catName] = { ...hslMean(list), ring: sgCatRing(catName) };
+  }
+  return colors;
+}
+const SG_SJ_COLORS = buildSgColors('ShangguyunShijing'); // 诗经韵 51 部
+const SG_CC_COLORS = buildSgColors('ShangguyunChuci');   // 楚辞韵 36 部
 const ZT_COLORS = {}; // 韵部（含 _平/_仄）-> {h,s,l,ring}
 for (const [name, cat] of Object.entries(rhymeBooks.Zhonghua_Tongyun.categories)) {
   const list = [];
@@ -701,82 +671,44 @@ function buildCilinPage() {
   });
 }
 
-function buildShangguyunPage() {
-  const cats = rhymeBooks.Shangguyun.categories;
-  // 从 char_dict 读音建立 部 → 小韵 → 字 映射（字序保持韵书频率序，同小韵去重）
-  const subMap = {};
-  const subMeta = {}; // sub -> { rpy 韵拼音, ipaf 韵母国际音标 }
-  for (const [catName, cat] of Object.entries(cats)) {
-    const m = new Map();
-    for (const ch of cat.characters) {
-      for (const r of charDict[ch]?.shangguyun || []) {
-        if (r.cat !== catName) continue;
-        if (!m.has(r.sub)) {
-          m.set(r.sub, new Set());
-          subMeta[r.sub] = { rpy: r.rpy || '', ipaf: r.ipaf || '' };
-        }
-        m.get(r.sub).add(ch);
-      }
-    }
-    subMap[catName] = m;
-  }
-  const catRenderer = (cat) => {
-    const m = subMap[cat.name];
-    const entries = [...m.entries()];
-    // 按主元音分组：同组内若全部小韵同属一个部名 → 韵尾优先；否则声调优先
-    const byVowel = new Map();
-    for (const e of entries) {
-      const v = (subMeta[e[0]]?.rpy || '')[0] || '';
-      if (!byVowel.has(v)) byVowel.set(v, []);
-      byVowel.get(v).push(e);
-    }
-    const subs = [...byVowel.entries()].sort((a, b) => (SG_VOWEL_ORDER[a[0]] ?? 9) - (SG_VOWEL_ORDER[b[0]] ?? 9))
-      .flatMap(([, group]) => {
-        const sameBase = new Set(group.map(([s]) => sgBase(s))).size === 1;
-        return group.sort((a, b) => {
-          const ka = sgSubKey(a[0], subMeta[a[0]], sameBase);
-          const kb = sgSubKey(b[0], subMeta[b[0]], sameBase);
-          for (let i = 0; i < ka.length; i++) {
-            if (ka[i] < kb[i]) return -1;
-            if (ka[i] > kb[i]) return 1;
-          }
-          return 0;
-        });
-      });
-    const inner = subs
-      .map(([subName, set]) => {
-        const meta = subMeta[subName] || {};
-        // 小韵韵母注音：国际音标 + 拼音
-        const phon = meta.ipaf
-          ? `<span class="sub-phon">[${esc(meta.ipaf)}] ${esc(meta.rpy || '')}</span>`
-          : '';
-        // 小韵名逐色（方案A·小韵级平水映射）；平声亮色压至 ≤55 保证文字可读
-        const sc = SG_SUB_COLORS[subName];
-        const subStyle = sc ? ` style="color:hsl(${sc.h}, ${sc.s}%, ${Math.min(sc.l, 55)}%)"` : '';
-        return `<div class="sub-group"><div class="sub-name"${subStyle}>${esc(subName)}${phon}<span class="cnt"> ${set.size} 字</span></div><div class="sub-chars">${[...set].map((c) => `<a href="/ref/char.html?q=${encodeURIComponent(c)}">${esc(c)}</a>`).join('')}</div></div>`;
-      })
-      .join('');
-    // 部配色：方案A 部色（字最多小韵色），色点 + 展开圆环
-    const color = SG_CAT_COLORS[cat.name];
-    const hsl = color ? `hsl(${color.h}, ${color.s}%, ${color.l}%)` : '';
-    const dot = color ? `<span class="cat-dot" style="background:${hsl}"></span>` : '';
-    const ring = color
-      ? `<div class="cat-ring" style="--rc-w:hsla(${color.h},${color.s}%,${color.l}%,0.25)"><span>${esc(color.ring || cat.name.slice(-1))}</span></div>`
-      : '';
-    return `<details class="cat"${color ? ` style="--rc:${hsl}"` : ''}><summary>${dot}<span class="name">${esc(cat.name)}</span><span class="cnt">${cat.characters.length} 字 · ${subs.length} 小韵</span></summary><div class="chars">${inner}${ring}</div></details>`;
-  };
-  const names = Object.keys(cats);
-  const groups = [['上古韵 23 部（按小韵细分）', names]];
-  return buildRhymePage('Shangguyun', {
-    canonicalPath: '/ref/shangguyun', ldType: 'CollectionPage',
-    navLabel: '上古韵',
-    seoTitle: '上古韵 23 韵部总览：《诗经》《楚辞》押韵查询',
-    seoDesc: '上古音系 23 韵部完整对照（鱼铎、之职、幽觉、脂质至等），依据先秦音系归纳，《诗经》《楚辞》用韵查询，适合拟古体与仿先秦之作。',
-    subtitle: SHANGGUYUN_INTRO,
+/** 上古韵双套韵书页（诗经 51 部 / 楚辞 36 部，单级展示粒度，韵部逐色） */
+function buildShangguyunBookPage(bookKey, cfg) {
+  const cats = rhymeBooks[bookKey].categories;
+  const names = Object.keys(cats); // rhyme_books.json 键序即 Yun 表行序
+  const groups = [[cfg.groupTitle, names]];
+  return buildRhymePage(bookKey, {
+    canonicalPath: cfg.canonicalPath, ldType: 'CollectionPage',
+    navLabel: cfg.navLabel,
+    seoTitle: cfg.seoTitle,
+    seoDesc: cfg.seoDesc,
+    subtitle: cfg.intro,
     credit: SHANGGUYUN_CREDIT,
     groups,
-    catRenderer,
+    colorOf: (name) => cfg.colors[name],
   });
+}
+
+function buildShangguyunPages() {
+  return {
+    'shangguyun-shijing.html': buildShangguyunBookPage('ShangguyunShijing', {
+      navLabel: '上古诗经韵',
+      canonicalPath: '/ref/shangguyun-shijing',
+      seoTitle: '上古诗经韵 51 韵部总览：主元音×韵尾韵字查询',
+      seoDesc: '上古诗经韵 51 韵部完整对照（鱼a、铎ak、阳aŋ、职ək、叶ap 等），按主元音×韵尾细分，反映《诗经》用韵。依据先秦音系归纳，适合拟古体与仿先秦之作。',
+      intro: SHANGGUYUN_SJ_INTRO,
+      colors: SG_SJ_COLORS,
+      groupTitle: '上古诗经韵 51 部',
+    }),
+    'shangguyun-chuci.html': buildShangguyunBookPage('ShangguyunChuci', {
+      navLabel: '上古楚辞韵',
+      canonicalPath: '/ref/shangguyun-chuci',
+      seoTitle: '上古楚辞韵 36 韵部总览：战国归并韵字查询',
+      seoDesc: '上古楚辞韵 36 韵部完整对照（之幽、耕真、职觉 等），为诗经韵按战国音系归并（之ə+幽u、耕eŋ+真iŋ、职ək+觉uk…），反映《楚辞》用韵。适合拟古体与仿先秦之作。',
+      intro: SHANGGUYUN_CC_INTRO,
+      colors: SG_CC_COLORS,
+      groupTitle: '上古楚辞韵 36 部',
+    }),
+  };
 }
 
 function buildZhonghuaPage() {
@@ -1085,13 +1017,15 @@ function buildCharPage() {
     // 与 SPA 一致，使 checker 调用计入后端调用量统计
     var CHECKER = '/api';
     var BOOKS = [
-      { key: 'Shangguyun', label: '上古韵' },
+      { key: 'ShangguyunShijing', label: '上古诗经韵' },
+      { key: 'ShangguyunChuci', label: '上古楚辞韵' },
       { key: 'Pingshuiyun', label: '平水韵' },
       { key: 'Cilinzhengyun', label: '词林正韵' },
       { key: 'Zhonghua_Tongyun', label: '中华通韵' }
     ];
     var BOOK_PAGE = {
-      Shangguyun: '/ref/shangguyun.html',
+      ShangguyunShijing: '/ref/shangguyun-shijing.html',
+      ShangguyunChuci: '/ref/shangguyun-chuci.html',
       Pingshuiyun: '/ref/index.html',
       Cilinzhengyun: '/ref/cilinzhengyun.html',
       Zhonghua_Tongyun: '/ref/zhonghua.html'
@@ -1104,15 +1038,19 @@ function buildCharPage() {
     // 平水/词林韵部配色（与韵书页一致；多个韵部取首个）
     var PS_COLORS = ${JSON.stringify(PINGSHUI_COLORS)};
     var CL_COLORS = ${JSON.stringify(CILIN_COLORS)};
-    // 上古韵（部色=字最多小韵色）/ 中华通韵（平仄双色）——方案A·平水韵映射
-    var SG_COLORS = ${JSON.stringify(SG_CAT_COLORS)};
-    var SG_SUB = ${JSON.stringify(SG_SUB_COLORS)};
+    // 上古韵双套（诗经 51 / 楚辞 36，韵部逐色）· 中华通韵（平仄双色）——方案A·平水韵映射
+    var SG_SJ_COLORS = ${JSON.stringify(SG_SJ_COLORS)};
+    var SG_CC_COLORS = ${JSON.stringify(SG_CC_COLORS)};
     var ZT_COLORS = ${JSON.stringify(ZT_COLORS)};
+    function sgColorOf(bookKey, name) {
+      var map = bookKey === 'ShangguyunShijing' ? SG_SJ_COLORS : SG_CC_COLORS;
+      return map[name] || null;
+    }
     function itemColor(b, cats) {
       if (!cats.length) return '#8a8178';
       var first = cats[0];
-      if (b.key === 'Shangguyun') {
-        var s = SG_COLORS[first.name];
+      if (b.key === 'ShangguyunShijing' || b.key === 'ShangguyunChuci') {
+        var s = sgColorOf(b.key, first.name);
         if (s) return 'hsl(' + s.h + ',' + s.s + '%,' + s.l + '%)';
       }
       if (b.key === 'Zhonghua_Tongyun') {
@@ -1152,7 +1090,7 @@ function buildCharPage() {
       }
     }
     function render(char, res) {
-      var defs = (res[4] && res[4].definitions) || [];
+      var defs = (res[5] && res[5].definitions) || [];
       var html = '<div class="char-hero"><span class="big">' + char + '</span></div>';
       // 释义（紧凑直排，无标题）
       if (defs.length) {
@@ -1168,17 +1106,19 @@ function buildCharPage() {
         });
         html += '</div>';
       }
-      // 音韵地位 · 时间线（上古 → 平水 → 词林 → 新韵）
+      // 音韵地位 · 时间线（上古诗经韵 → 上古楚辞韵 → 平水 → 词林 → 新韵）
       html += '<div class="timeline">';
       BOOKS.forEach(function (b, bi) {
         var data = res[bi];
         var cats = (data && data.rhyme_categories) || [];
         var href = BOOK_PAGE[b.key] + '?q=' + enc(char);
+        // 上古韵：圆点/胶囊统一取韵部色（亮度 ≤55 保证可读）
+        var isSG = b.key === 'ShangguyunShijing' || b.key === 'ShangguyunChuci';
+        function sgL(hsl) { return 'hsl(' + hsl.h + ',' + hsl.s + '%,' + Math.min(hsl.l, 55) + '%)'; }
         var dotColor = itemColor(b, cats);
-        // 上古韵：时间线圆点填充取首个读音的小韵色（与首个胶囊一致）
-        if (b.key === 'Shangguyun') {
-          var s0 = cats[0]?.readings?.[0] ? SG_SUB[cats[0].readings[0].sub] : null;
-          if (s0) dotColor = 'hsl(' + s0.h + ',' + s0.s + '%,' + Math.min(s0.l, 55) + '%)';
+        if (isSG) {
+          var sc0 = cats[0] ? sgColorOf(b.key, cats[0].name) : null;
+          if (sc0) dotColor = sgL(sc0);
         }
         html += '<div class="tl-item"><span class="tl-dot" style="background:' + dotColor + '"></span>';
         html += '<div class="tl-head">' + b.label + '</div><div class="tl-body">';
@@ -1195,22 +1135,20 @@ function buildCharPage() {
             } else if (b.key === 'Cilinzhengyun') {
               var c1 = CL_COLORS[c.name];
               if (c1) col = 'hsl(' + c1.h + ',' + c1.s + '%,' + (c.tone_type === 'P' ? Math.min(c1.l, 50) : c1.l) + '%)';
-            } else if (b.key === 'Shangguyun') {
-              var s = SG_COLORS[c.name];
-              if (s) col = 'hsl(' + s.h + ',' + s.s + '%,' + s.l + '%)';
+            } else if (isSG) {
+              var s = sgColorOf(b.key, c.name);
+              if (s) col = sgL(s);
             } else if (b.key === 'Zhonghua_Tongyun') {
               var z = ZT_COLORS[c.name];
               if (z) col = 'hsl(' + z.h + ',' + z.s + '%,' + z.l + '%)';
             }
             var chip = '<a class="chip" href="' + href + '"><i class="cl-mark" style="background:' + col + '"></i>' + c.name + '</a>';
-            if (b.key === 'Shangguyun' && c.readings && c.readings.length) {
-              // 上古韵：直接显示小韵（非大韵部），胶囊色块取小韵色；注音 [IPA] 拼音
-              c.readings.forEach(function (r) {
-                var s = SG_SUB[r.sub];
-                var sc = s ? 'hsl(' + s.h + ',' + s.s + '%,' + Math.min(s.l, 55) + '%)' : '#8a8178';
-                html += '<div class="sg-line"><a class="chip" href="' + href + '"><i class="cl-mark" style="background:' + sc + '"></i>' + r.sub + '</a>' +
-                  '<span class="sg-reading"><span class="ipa">[' + (r.ipa || '') + ']</span> ' + (r.py || '') + '</span></div>';
+            if (isSG && c.readings && c.readings.length) {
+              // 上古韵单级：韵部胶囊一颗，下方并列各读音（[IPA] 拼音 · 声调）
+              var lines = c.readings.map(function (r) {
+                return '<span class="sg-reading"><span class="ipa">[' + (r.ipa || '') + ']</span> ' + (r.py || '') + ' · ' + (r.tone || '') + '</span>';
               });
+              html += '<div class="sg-line">' + chip + lines.join('') + '</div>';
             } else {
               html += chip;
             }
@@ -1299,14 +1237,14 @@ function buildCharPage() {
     if (initQ) { input.value = initQ; query(); }
   })();
   </script>`;
-  const content = `<h1>单字查询：释义 · 四部韵书音韵地位</h1>
-<p class="subtitle">输入一个汉字，同屏查看其释义，以及它在平水韵、词林正韵、上古韵、中华通韵下的韵部与声调（上古韵含小韵与拟音）。</p>
+  const content = `<h1>单字查询：释义 · 五部韵书音韵地位</h1>
+<p class="subtitle">输入一个汉字，同屏查看其释义，以及它在平水韵、词林正韵、上古诗经韵、上古楚辞韵、中华通韵下的韵部与声调（上古两套含拟音）。</p>
 <input id="ch-input" class="search" type="search" placeholder="输入单字，如：中 / 白 / 月 / 山 / 风…" autofocus />
 <div id="ch-result"><div class="char-marquee"><div class="char-row"></div><div class="char-row"></div></div></div>
 ${appJs}`;
   return page({
-    title: '单字查询：释义与四部韵书音韵地位',
-    desc: '输入一个汉字，同屏查看释义（拼音、说文引文）与平水韵、词林正韵、上古韵（小韵、拟音）、中华通韵下的音韵地位。',
+    title: '单字查询：释义与五部韵书音韵地位',
+    desc: '输入一个汉字，同屏查看释义（拼音、说文引文）与平水韵、词林正韵、上古诗经韵、上古楚辞韵（拟音）、中华通韵下的音韵地位。',
     activeTab: '/ref/char.html',
     canonicalPath: '/ref/char',
     ldType: 'WebPage',
@@ -1362,17 +1300,17 @@ function buildTutorialPage() {
       title: '平水韵 vs 中华通韵 vs 词林正韵：区别与选择',
       meta: '韵书入门 · 6 分钟',
       body: `
-<p>方寸内置四部韵书，适用场景不同：</p>
+<p>方寸内置五部韵书，适用场景不同：</p>
 <ul>
 <li><b>平水韵</b>（106 韵）：明清以来近体诗押韵的通行标准，保留入声。写律诗、绝句默认用它。</li>
 <li><b>词林正韵</b>（19 部）：清·戈载编，填词专用；特点是以平、上、去三声同部（每部内含三声韵字），入声独立成部。填词默认用它。</li>
 <li><b>中华通韵</b>（16 韵）：按现代普通话归韵，不分入声，适合现代语感与自由诗；方寸中自由诗默认用它。</li>
-<li><b>上古韵</b>（23 部）：依据先秦音系归纳（《诗经》《楚辞》用韵），适合拟古体与仿先秦之作。</li>
+<li><b>上古诗经韵</b>（51 部）与 <b>上古楚辞韵</b>（36 部）：依据先秦音系归纳，前者按主元音×韵尾细分《诗经》用韵，后者为战国归并（《楚辞》用韵），适合拟古体与仿先秦之作。</li>
 </ul>
 <h3>怎么选</h3>
-<p>写近体诗 → 平水韵；填词 → 词林正韵；现代口语 / 自由诗 → 中华通韵；拟先秦 → 上古韵。在方寸右上角设置中可随时切换韵书，同一画板可改。四部韵书的完整韵部与韵字见「韵书总览」。</p>
+<p>写近体诗 → 平水韵；填词 → 词林正韵；现代口语 / 自由诗 → 中华通韵；拟先秦 → 上古诗经韵 / 上古楚辞韵。在方寸右上角设置中可随时切换韵书，同一画板可改。各部韵书的完整韵部与韵字见「韵书总览」。</p>
 <p>提示：同一字在不同韵书中的归属可能不同（尤其入声字与古今音变字），切换韵书后校验结果会相应变化，这是正常现象。</p>
-<a class="cta" href="/ref/index.html">查看四部韵书总览 →</a>`,
+<a class="cta" href="/ref/index.html">查看五部韵书总览 →</a>`,
     },
     {
       id: 'diangu',
@@ -1419,7 +1357,7 @@ const compactAll = ciRules.map((r) => {
 const files = {
   'index.html': buildPingshuiPage(),
   'cilinzhengyun.html': buildCilinPage(),
-  'shangguyun.html': buildShangguyunPage(),
+  ...buildShangguyunPages(),
   'zhonghua.html': buildZhonghuaPage(),
   'char.html': buildCharPage(),
   'cipai.html': buildCipaiPage(),

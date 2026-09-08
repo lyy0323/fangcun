@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useActiveBoard, useBoardContext } from '../context/BoardContext';
 import { charLookup, dictionarySearch, allusionSearch, type AllusionEntry } from '../lib/api';
+import { isShangguyunBook, normalizeBookKey } from '../lib/types';
 import { SendHorizontal, ChevronsDown, ChevronsUp } from 'lucide-react';
 import { AllusionPopup } from './AllusionPopup';
 
@@ -60,7 +61,7 @@ export function Dictionary() {
     categories: {
       name: string;
       tone_type: string;
-      readings?: { sub: string; wangli: string; py: string; rpy: string; tone: string }[];
+      readings?: { sj: string[]; cc: string[]; py: string; ipa: string; ipaf: string; tone: string }[];
     }[];
     definitions: { py: string; defs: { d: string; c?: string }[] }[];
   } | null>(null);
@@ -75,7 +76,7 @@ export function Dictionary() {
   const [lastDictQuery, setLastDictQuery] = useState<string | null>(null);
   const [lastDictCursor, setLastDictCursor] = useState<number | null>(null);
 
-  const bookName = board?.rhymeBookName ?? 'Pingshuiyun';
+  const bookName = normalizeBookKey(board?.rhymeBookName ?? 'Pingshuiyun');
   const isSingle = term.length <= 1;
   const visibleTabs: TabId[] = isSingle
     ? ['rhyme', 'head', 'tail', 'allusion', 'pair', 'tongwei']
@@ -308,15 +309,15 @@ export function Dictionary() {
                       {c.name}
                     </span>
                   );
-                  // [上古韵] 每个读音一行：badge + 细分小韵·读音 同行
-                  if (bookName === 'Shangguyun' && c.readings && c.readings.length > 0) {
+                  // [上古韵双套] 每个读音一行：badge + 声调·拟音 同行
+                  if (isShangguyunBook(bookName) && c.readings && c.readings.length > 0) {
                     return (
                       <div key={c.name} className="flex flex-col gap-0.5 w-full">
                         {c.readings.map((r, ri) => (
                           <div key={ri} className="flex items-center gap-1.5">
                             {badge}
                             <span className="text-[10px] text-[var(--text-muted)] font-mono whitespace-nowrap">
-                              {r.sub}·{r.py}
+                              [{r.ipa || r.py}] {r.tone}
                             </span>
                           </div>
                         ))}

@@ -177,9 +177,11 @@
   .def-item { font-size: 13.5px; margin: 2px 0; color: #4c443c; }
   .def-no { color: #a09890; margin-right: 4px; font-size: 12px; }
   .def-c { font-size: 11.5px; color: #a09890; padding-left: 18px; margin-top: 2px; line-height: 1.6; }
-  .chip { display: inline-block; padding: 2px 10px; border-radius: 999px; font-size: 12.5px; border: 1px solid; margin: 2px 4px 2px 0; text-decoration: none; }
-  .sg-line { margin: 3px 0; }
-  .sg-reading { font-size: 12.5px; color: #6b6360; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+  /* 胶囊：中性边框/文字（标准文字色 #4c443c），内部前置色块承载韵色/声调色 */
+  .chip { display: inline-flex; align-items: center; gap: 5px; padding: 2px 10px; border-radius: 999px; font-size: 12.5px; border: 1px solid #4c443c; color: #4c443c; margin: 2px 4px 2px 0; text-decoration: none; }
+  .cl-mark { width: 10px; height: 10px; border-radius: 3px; display: inline-block; flex-shrink: 0; }
+  .sg-line { margin: 3px 0; display: flex; align-items: baseline; flex-wrap: wrap; gap: 6px; }
+  .sg-reading { font-size: 12.5px; color: #6b6360; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; white-space: nowrap; }
   .loading { text-align: center; padding: 30px 0; color: #a09890; }
   .timeline { margin: 8px 0 10px; }
   .tl-item { position: relative; padding: 0 0 18px 30px; border-left: 2px solid #ece7e1; }
@@ -246,17 +248,17 @@
 <div class="ex">上片：中仄中平中仄平（韵），中平中仄仄平平（韵），中平中仄仄平平（韵）<br>下片：中仄中平中仄平，中平中仄仄平平（韵），中平中仄仄平平（韵）</div>
 <p>填词步骤：① 选词牌 → ② 看句式逐字填写 → ③ 韵脚字在词林正韵中查同韵部 → ④ 整体校验平仄与押韵。常见入韵字可直接在方寸的韵部面板中查找。</p>
 <a class="cta" href="/?ciyun=1&genre=Ci&rule=%E6%B5%A3%E6%BA%AA%E6%B2%99_%E9%92%A6%E8%B0%B1_%E6%A0%BC%E4%B8%80&chars=42&title=%E6%B5%A3%E6%BA%AA%E6%B2%99%E8%AF%95%E5%A1%AB">在方寸中试填《浣溪沙》 →</a></article><article class="article" id="yunshu"><h2>平水韵 vs 中华通韵 vs 词林正韵：区别与选择</h2><p class="a-meta">韵书入门 · 6 分钟</p>
-<p>方寸内置四部韵书，适用场景不同：</p>
+<p>方寸内置五部韵书，适用场景不同：</p>
 <ul>
 <li><b>平水韵</b>（106 韵）：明清以来近体诗押韵的通行标准，保留入声。写律诗、绝句默认用它。</li>
 <li><b>词林正韵</b>（19 部）：清·戈载编，填词专用；特点是以平、上、去三声同部（每部内含三声韵字），入声独立成部。填词默认用它。</li>
 <li><b>中华通韵</b>（16 韵）：按现代普通话归韵，不分入声，适合现代语感与自由诗；方寸中自由诗默认用它。</li>
-<li><b>上古韵</b>（23 部）：依据先秦音系归纳（《诗经》《楚辞》用韵），适合拟古体与仿先秦之作。</li>
+<li><b>上古诗经韵</b>（51 部）与 <b>上古楚辞韵</b>（36 部）：依据先秦音系归纳，前者按主元音×韵尾细分《诗经》用韵，后者为战国归并（《楚辞》用韵），适合拟古体与仿先秦之作。</li>
 </ul>
 <h3>怎么选</h3>
-<p>写近体诗 → 平水韵；填词 → 词林正韵；现代口语 / 自由诗 → 中华通韵；拟先秦 → 上古韵。在方寸右上角设置中可随时切换韵书，同一画板可改。四部韵书的完整韵部与韵字见「韵书总览」。</p>
+<p>写近体诗 → 平水韵；填词 → 词林正韵；现代口语 / 自由诗 → 中华通韵；拟先秦 → 上古诗经韵 / 上古楚辞韵。在方寸右上角设置中可随时切换韵书，同一画板可改。各部韵书的完整韵部与韵字见「韵书总览」。</p>
 <p>提示：同一字在不同韵书中的归属可能不同（尤其入声字与古今音变字），切换韵书后校验结果会相应变化，这是正常现象。</p>
-<a class="cta" href="/ref/index.html">查看四部韵书总览 →</a></article><article class="article" id="diangu"><h2>典故入诗：用方寸检索典故</h2><p class="a-meta">进阶技巧 · 5 分钟</p>
+<a class="cta" href="/ref/index.html">查看五部韵书总览 →</a></article><article class="article" id="diangu"><h2>典故入诗：用方寸检索典故</h2><p class="a-meta">进阶技巧 · 5 分钟</p>
 <p>用典能让诗句有纵深，但须准确、贴切、不堆砌。典出何处、原意如何，写之前最好先查证。</p>
 <p>在<b>方寸</b>的字典区输入关键词（支持多字），切换到「<b>典故</b>」页，即可看到相关典故条目与出处；点击条目可查看典形词、释义与相关条目，点击典形词可快速入诗。</p>
 <h3>使用技巧</h3>
