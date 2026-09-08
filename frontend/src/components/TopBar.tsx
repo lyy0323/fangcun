@@ -465,6 +465,10 @@ export function TopBar() {
     return false;
   });
 
+  // UX 统一：打开画板选择（dropOpen）时，点击其它 topbar 按钮先收起画板选择，
+  // 避免与 metadata/导出等弹层重叠（画板切换按钮自身除外）。
+  const closeBoardDrop = () => setDropOpen(false);
+
   useEffect(() => {
     document.documentElement.classList.toggle('dark', dark);
     localStorage.setItem('theme', dark ? 'dark' : 'light');
@@ -831,7 +835,7 @@ export function TopBar() {
       {/* 画板切换 */}
       <div className="relative">
         <button
-          onClick={() => setDropOpen(!dropOpen)}
+          onClick={() => { setMetaOpen(false); setExportMenuOpen(false); setDropOpen(!dropOpen); }}
           className="w-8 h-8 rounded-lg border border-[var(--border)] flex items-center justify-center text-[var(--text-muted)] hover:bg-[var(--accent-light)] hover:text-[var(--accent)] transition-colors"
           title="切换画板"
         >
@@ -909,7 +913,7 @@ export function TopBar() {
         <div className="relative">
           <button
             className={`w-8 h-8 rounded-lg border flex items-center justify-center transition-colors ${metaOpen ? 'border-[var(--accent)] text-[var(--accent)] bg-[var(--accent-light)]' : 'border-[var(--border)] text-[var(--text-muted)] hover:bg-[var(--accent-light)] hover:text-[var(--accent)]'}`}
-            onClick={() => setMetaOpen(v => !v)}
+            onClick={() => { closeBoardDrop(); setExportMenuOpen(false); setMetaOpen(v => !v); }}
             title="日期 / 序 / 脚注"
           >
             <ScrollText size={15} />
@@ -923,14 +927,14 @@ export function TopBar() {
         <>
           <button
             className={`w-8 h-8 rounded-lg border border-[var(--border)] flex items-center justify-center transition-colors ${canUndo ? 'text-[var(--text-muted)] hover:bg-[var(--accent-light)] hover:text-[var(--accent)]' : 'text-[var(--text-muted)] opacity-30 pointer-events-none'}`}
-            onClick={() => dispatch({ type: 'UNDO' })}
+            onClick={() => { closeBoardDrop(); dispatch({ type: 'UNDO' }); }}
             title="撤销"
           >
             <Undo2 size={15} />
           </button>
           <button
             className={`w-8 h-8 rounded-lg border border-[var(--border)] flex items-center justify-center transition-colors ${canRedo ? 'text-[var(--text-muted)] hover:bg-[var(--accent-light)] hover:text-[var(--accent)]' : 'text-[var(--text-muted)] opacity-30 pointer-events-none'}`}
-            onClick={() => dispatch({ type: 'REDO' })}
+            onClick={() => { closeBoardDrop(); dispatch({ type: 'REDO' }); }}
             title="重做"
           >
             <Redo2 size={15} />
@@ -941,7 +945,7 @@ export function TopBar() {
       {/* 深色模式切换 */}
       <button
         className="w-8 h-8 rounded-lg border border-[var(--border)] flex items-center justify-center text-[var(--text-muted)] hover:bg-[var(--accent-light)] hover:text-[var(--accent)] transition-colors"
-        onClick={() => setDark(d => !d)}
+        onClick={() => { closeBoardDrop(); setDark(d => !d); }}
         title={dark ? '切换浅色模式' : '切换深色模式'}
       >
         {dark ? <Sun size={15} /> : <Moon size={15} />}
@@ -952,7 +956,7 @@ export function TopBar() {
       {/* 格律参考（韵书/词谱/诗格/教程 静态页） */}
       <button
         className="w-8 h-8 rounded-lg border border-[var(--border)] flex items-center justify-center text-[var(--text-muted)] hover:bg-[var(--accent-light)] hover:text-[var(--accent)] transition-colors"
-        onClick={() => { window.location.href = '/ref/index.html'; track('open_ref'); }}
+        onClick={() => { closeBoardDrop(); window.location.href = '/ref/index.html'; track('open_ref'); }}
         title="格律参考"
       >
         <Library size={15} />
@@ -961,7 +965,7 @@ export function TopBar() {
       {/* 设置 */}
       <button
         className="w-8 h-8 rounded-lg border border-[var(--border)] flex items-center justify-center text-[var(--text-muted)] hover:bg-[var(--accent-light)] hover:text-[var(--accent)] transition-colors"
-        onClick={() => setSettingsOpen(true)}
+        onClick={() => { closeBoardDrop(); setSettingsOpen(true); }}
         title="设置"
       >
         <Settings size={15} />
@@ -972,7 +976,7 @@ export function TopBar() {
         <div className="relative">
           <button
             className="w-8 h-8 rounded-lg border border-[var(--border)] flex items-center justify-center text-[var(--text-muted)] hover:bg-[var(--accent-light)] hover:text-[var(--accent)] transition-colors"
-            onClick={() => setExportMenuOpen(v => !v)}
+            onClick={() => { closeBoardDrop(); setMetaOpen(false); setExportMenuOpen(v => !v); }}
             title="导出"
           >
             <Download size={15} />
@@ -1018,7 +1022,7 @@ export function TopBar() {
       {/* 新建按钮 */}
       <button
         className="w-8 h-8 rounded-lg border border-[var(--border)] flex items-center justify-center text-[var(--text-muted)] hover:bg-[var(--accent-light)] hover:text-[var(--accent)] transition-colors"
-        onClick={() => dispatch({ type: 'SHOW_GENRE_SELECTOR', show: true })}
+        onClick={() => { closeBoardDrop(); dispatch({ type: 'SHOW_GENRE_SELECTOR', show: true }); }}
         title="新建画板"
       >
         <Plus size={18} />
