@@ -234,7 +234,7 @@ export function buildSankey({ rhymeBooks, colors, orders }) {
       const inn = nodePorts[bi + 1][rR].in.find((o) => o === l);
       if (!out || !inn) continue;
       const d = `M${x0},${out.yL0} C${x0 + cx},${out.yL0} ${x1 - cx},${inn.yR0} ${x1},${inn.yR0} L${x1},${inn.yR1} C${x1 - cx},${inn.yR1} ${x0 + cx},${out.yL1} ${x0},${out.yL1} Z`;
-      paths += `<path class="sk-l" data-s="${rid(bi, rL)}" data-t="${rid(bi + 1, rR)}" d="${d}" fill="${linkFill(bi, l)}"></path>`;
+      paths += `<path class="sk-l" data-s="${rid(bi, rL)}" data-t="${rid(bi + 1, rR)}" data-w="${Math.round(l.w * 10) / 10}" d="${d}" fill="${linkFill(bi, l)}"></path>`;
       linkCnt++;
     }
   }
@@ -270,7 +270,10 @@ export function buildSankey({ rhymeBooks, colors, orders }) {
     heads += `<text class="sk-head-sub" x="${cx}" y="${M.top - 3}" text-anchor="middle">${activeCol[bi].length} 部</text>`;
   });
 
-  // 交互：悬停某结点，高亮它的入/出链路（提亮）与对端结点，其余压暗
+  // 交互：悬停某结点——按链路权重分级高亮
+  //   粗流（≥可见阈值，≈>2 字）→ 提亮弧 + 点亮对端结点；
+  //   细流（仍相连但肉眼难辨）→ 弧微亮、对端结点不强亮；
+  //   其余 → 压暗。悬停结束后全部复原。
   const script = `
   <script>
   (function () {
@@ -278,12 +281,13 @@ export function buildSankey({ rhymeBooks, colors, orders }) {
     if (!svg) return;
     var nodes = Array.prototype.slice.call(svg.querySelectorAll('.sk-n'));
     var links = Array.prototype.slice.call(svg.querySelectorAll('.sk-l'));
-    var linkDefault = 0.34;   // 常态整图流带明度
-    var linkHl = 1;           // 悬停相连流带明度
-    var linkDim = 0.04;       // 悬停其余流带明度
-    function paint() {
-      links.forEach(function (l) { l.style.opacity = String(linkDefault); });
-    }
+    var unitPx = 0.11;
+    var linkDefault = 0.34;
+    var linkStrong = 1;     // 可见强流的弧
+    var linkWeak = 0.5;     // 细流的弧（仍相连但更淡）
+    var linkDim = 0.04;     // 无关
+    var strongMin = 2.5;    // 权重大于此的链路视为「可见强流」（≈0.28px 以上）
+    function paint() { links.forEach(function (l) { l.style.opacity = String(linkDefault); }); }
     function reset() {
       nodes.forEach(function (n) { n.classList.remove('hl', 'dim'); });
       paint();
@@ -292,19 +296,24 @@ export function buildSankey({ rhymeBooks, colors, orders }) {
       n.addEventListener('mouseenter', function () {
         reset();
         var id = n.getAttribute('data-id');
-        var ids = { id: 1 };
+        var strong = {};  // 通过强流相连的对端
+        var weak = {};    // 仅细流相连的对端
+        strong[id] = 1;
         links.forEach(function (l) {
           var a = l.getAttribute('data-s'), b = l.getAttribute('data-t');
+          var w = parseFloat(l.getAttribute('data-w')) || 0;
           if (a === id || b === id) {
-            l.style.opacity = String(linkHl);
-            ids[a] = ids[b] = 1;
+            var other = a === id ? b : a;
+            if (w >= strongMin) { strong[other] = 1; l.style.opacity = String(linkStrong); }
+            else { weak[other] = 1; l.style.opacity = String(linkWeak); }
           } else {
             l.style.opacity = String(linkDim);
           }
         });
         nodes.forEach(function (m) {
           var mid = m.getAttribute('data-id');
-          if (ids[mid]) m.classList.add('hl');
+          if (strong[mid]) m.classList.add('hl');
+          else if (weak[mid]) m.classList.add('wink');
           else m.classList.add('dim');
         });
       });
@@ -320,6 +329,7 @@ export function buildSankey({ rhymeBooks, colors, orders }) {
 .sk-n rect { transition: opacity .12s; }
 .sk-n.hl rect { stroke: rgba(0,0,0,.35); stroke-width: 1.2; filter: saturate(1.25); }
 .sk-n.dim rect { opacity: .22; }
+.sk-n.wink rect { opacity: .6; }
 .sk-label { font-size: 10.5px; font-family: "Noto Serif SC","Songti SC",serif; paint-order: stroke; stroke: #faf8f5; stroke-width: 3px; stroke-linejoin: round; }
 .sk-head { font-size: 13px; font-weight: 600; font-family: "ml","Noto Serif SC",serif; letter-spacing: 1px; }
 .sk-head-sub { font-size: 10px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
