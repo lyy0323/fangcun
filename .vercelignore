@@ -6,7 +6,7 @@ node_modules
 android
 tests
 data
-fonts
+/fonts
 frontend/public/fonts/NotoSerifSC-Bold
 frontend/public/fonts/NotoSerifSC-Regular
 frontend/public/fonts/NotoSansSC-Regular
