@@ -957,7 +957,7 @@ export function TopBar() {
 
       {/* 深色模式切换 */}
       <button
-        className="ICON_BTN_CLS"
+        className={ICON_BTN_CLS}
         onClick={() => { closeMenus(); setDark(d => !d); }}
         title={dark ? '切换浅色模式' : '切换深色模式'}
       >
@@ -968,7 +968,7 @@ export function TopBar() {
 
       {/* 格律参考（韵书/词谱/诗格/教程 静态页） */}
       <button
-        className="ICON_BTN_CLS"
+        className={ICON_BTN_CLS}
         onClick={() => { closeMenus(); window.location.href = '/ref/index.html'; track('open_ref'); }}
         title="格律参考"
       >
@@ -977,7 +977,7 @@ export function TopBar() {
 
       {/* 设置 */}
       <button
-        className="ICON_BTN_CLS"
+        className={ICON_BTN_CLS}
         onClick={() => { closeMenus(); setSettingsOpen(true); }}
         title="设置"
       >
@@ -1031,7 +1031,7 @@ export function TopBar() {
 
       {/* 新建按钮 */}
       <button
-        className="ICON_BTN_CLS"
+        className={ICON_BTN_CLS}
         onClick={() => { closeMenus(); dispatch({ type: 'SHOW_GENRE_SELECTOR', show: true }); }}
         title="新建画板"
       >
