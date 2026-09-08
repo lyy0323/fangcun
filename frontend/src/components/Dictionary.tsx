@@ -46,14 +46,29 @@ const TAB_LABELS: Record<TabId, string> = {
   rhyme: '韵部', head: '词首', tail: '词末', allusion: '典故', pair: '对语', tongwei: '同位',
 };
 
+const TAB_KEY = 'fangcun_dict_tab';
+
+function readSavedTab(): TabId {
+  try {
+    const v = localStorage.getItem(TAB_KEY);
+    if (v && v in TAB_LABELS) return v as TabId;
+  } catch { /* ignore */ }
+  return 'rhyme';
+}
+
 export function Dictionary() {
   const { state, dispatch } = useBoardContext();
   const board = useActiveBoard();
   const [term, setTerm] = useState('');
-  const [tab, setTab] = useState<TabId>('rhyme');
+  const [tab, setTab] = useState<TabId>(readSavedTab);
   const [length, setLength] = useState('2');
   const [tone, setTone] = useState('all');
   const pendingQuery = useRef(false);
+
+  // 字典 tab 持久化：用户手动切换后记住，下次打开仍在该 tab
+  useEffect(() => {
+    try { localStorage.setItem(TAB_KEY, tab); } catch { /* ignore */ }
+  }, [tab]);
 
   // 结果
   const [rhymeResult, setRhymeResult] = useState<{
@@ -138,13 +153,12 @@ export function Dictionary() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tab, length, tone]);
 
-  // 联动：网格点击已填字时触发搜索
+  // 联动：网格点击已填字时触发搜索（保持当前 tab，不强制切回「韵部」）
   useEffect(() => {
     if (state.dictQuery) {
       setTerm(state.dictQuery);
       setLastDictQuery(state.dictQuery);
       setLastDictCursor(state.dictQueryCursor);
-      setTab('rhyme');
       pendingQuery.current = true;
       dispatch({ type: 'SET_DICT_QUERY', query: null });
     }
