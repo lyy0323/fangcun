@@ -45,6 +45,9 @@ export function FreeEditor() {
   const [activeLine, setActiveLine] = useState(0);
   const [cursorPos, setCursorPos] = useState(0);
   const [inputFocused, setInputFocused] = useState(true);
+  // 切换画板后恢复光标高亮（不主动 focus，移动端避免键盘自动弹出）
+  const boardId = board?.id;
+  useEffect(() => { setInputFocused(true); }, [boardId]);
   const [immersiveHint, setImmersiveHint] = useState(false);
   const hintTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
   const activeLineRef = useRef(activeLine);
@@ -345,7 +348,7 @@ export function FreeEditor() {
     <div
       ref={containerRef}
       className="w-full max-w-lg mx-auto py-6 px-4"
-      onClick={() => inputRef.current?.blur()}
+      onClick={() => { setInputFocused(false); inputRef.current?.blur(); }}
     >
       {/* Title */}
       <div className="flex flex-col items-center mb-6" onClick={e => e.stopPropagation()}>
@@ -515,7 +518,6 @@ export function FreeEditor() {
         onKeyDown={handleKeyDown}
         onPaste={handlePaste}
         onFocus={() => setInputFocused(true)}
-        onBlur={() => setInputFocused(false)}
         autoFocus
       />
     </div>

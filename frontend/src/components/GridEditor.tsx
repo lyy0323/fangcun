@@ -435,6 +435,9 @@ export function GridEditor() {
     } else {
       setCursor(0);
     }
+    // 切换画板/分组后恢复光标高亮（不主动 focus——移动端避免键盘自动弹出，
+    // 焦点与光标已解耦：打字时点格子即 focus，浏览时高亮常驻）
+    setInputFocused(true);
     setSelectionEnd(null);
     requestAnimationFrame(() => {
       const gi = target ?? 0;
@@ -742,7 +745,11 @@ export function GridEditor() {
   };
 
   return (
-    <div className="w-full relative" onClick={() => inputRef.current?.blur()} ref={containerRef}>
+    <div
+      className="w-full relative"
+      onClick={() => { setInputFocused(false); inputRef.current?.blur(); }}
+      ref={containerRef}
+    >
       {/* Board title */}
       <div className="flex flex-col items-center mb-4" onClick={e => e.stopPropagation()}>
         <input
@@ -1184,7 +1191,6 @@ export function GridEditor() {
         onCompositionStart={handleCompositionStart}
         onCompositionEnd={handleCompositionEnd}
         onFocus={() => setInputFocused(true)}
-        onBlur={() => setInputFocused(false)}
         autoFocus={!state.onboardingOpen}
       />
     </div>
