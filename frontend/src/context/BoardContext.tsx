@@ -18,6 +18,7 @@ export interface AppState {
   activeSectionIndex: number;
   validations: (ValidationResult | null)[];
   showGenreSelector: boolean;
+  onboardingOpen: boolean;
   dictQuery: string | null;
   dictQueryCursor: number | null;
   insertCharFn: ((text: string, mode?: 'forward' | 'backward' | 'pair') => void) | null;
@@ -37,6 +38,7 @@ const initialState: AppState = {
   activeSectionIndex: 0,
   validations: [],
   showGenreSelector: false,
+  onboardingOpen: false,
   dictQuery: null,
   dictQueryCursor: null,
   insertCharFn: null,
@@ -66,6 +68,7 @@ export type Action =
   | { type: 'UPDATE_CHAR'; index: number; char: string }
   | { type: 'SET_VALIDATION'; sectionIndex: number; result: ValidationResult | null }
   | { type: 'SHOW_GENRE_SELECTOR'; show: boolean }
+  | { type: 'SET_ONBOARDING'; open: boolean }
   | { type: 'SET_POEM_CHARS'; chars: string[] }
   | { type: 'SET_DICT_QUERY'; query: string | null; cursor?: number | null }
   | { type: 'SET_RHYME_OVERRIDE'; category: string | null }
@@ -241,6 +244,8 @@ function reducer(state: AppState, action: Action): AppState {
     }
     case 'SHOW_GENRE_SELECTOR':
       return { ...state, showGenreSelector: action.show };
+    case 'SET_ONBOARDING':
+      return { ...state, onboardingOpen: action.open };
     case 'SET_DICT_QUERY':
       return { ...state, dictQuery: action.query, dictQueryCursor: action.cursor ?? null };
     case 'SET_RHYME_OVERRIDE':

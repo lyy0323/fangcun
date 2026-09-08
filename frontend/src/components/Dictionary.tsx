@@ -198,7 +198,7 @@ export function Dictionary() {
   const noAllusionResult = !loading && term && tab === 'allusion' && !hasAllusionResults;
 
   return (
-    <div className={`border-t border-[var(--border)] bg-[var(--bg-card)] flex flex-col overflow-hidden transition-[height] duration-200 ease-in-out ${expanded ? 'h-[255px]' : 'h-[65px]'}`}>
+    <div data-onb="onb-dict" className={`border-t border-[var(--border)] bg-[var(--bg-card)] flex flex-col overflow-hidden transition-[height] duration-200 ease-in-out ${expanded ? 'h-[255px]' : 'h-[65px]'}`}>
       {/* 抽拉控件 */}
       <button
         className="w-full h-5 flex items-center justify-center text-[var(--text-muted)] hover:text-[var(--accent)] transition-colors"

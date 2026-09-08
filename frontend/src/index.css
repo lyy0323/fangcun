@@ -98,3 +98,22 @@ body {
   from { opacity: 0; transform: translateY(6px); }
   to { opacity: 1; transform: translateY(0); }
 }
+
+/* ===================== 新手引导（overlay 聚光灯） ===================== */
+/* 遮暗层：四块挖洞矩形共享同一暗色；浅/深色主题各自收敛 */
+.onb-dim { background: rgba(16, 10, 14, 0.55); }
+.dark .onb-dim { background: rgba(0, 0, 0, 0.72); }
+
+/* 高亮「洞」的描边（accent 圈 + 柔光），本身不拦截点击 */
+.onb-ring {
+  pointer-events: none;
+  border: 2px solid var(--accent);
+  border-radius: 12px;
+  box-shadow:
+    0 0 0 3px color-mix(in srgb, var(--accent) 30%, transparent),
+    0 2px 18px rgba(0, 0, 0, 0.35);
+}
+
+/* 引导卡投影（比普通卡片稍重，浮在遮罩上更清晰） */
+.onb-card-shadow { box-shadow: var(--shadow), 0 12px 36px rgba(0, 0, 0, 0.3); }
+.dark .onb-card-shadow { box-shadow: var(--shadow), 0 12px 36px rgba(0, 0, 0, 0.55); }

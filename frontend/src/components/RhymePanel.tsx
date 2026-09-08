@@ -185,7 +185,7 @@ export function RhymePanel() {
   const bookLabel = bookOptions.find(o => o.value === bookName)?.label ?? bookName;
 
   return (
-    <div className="p-3 text-sm">
+    <div data-onb="onb-rhyme" className="p-3 text-sm">
       {/* 韵书选择 */}
       <div className="mb-3 pb-3 border-b border-[var(--border)]">
         <div className="text-xs text-[var(--text-secondary)] mb-1">韵书</div>

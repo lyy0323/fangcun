@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useBoardContext, useActiveBoard } from '../context/BoardContext';
 import { PLACEHOLDER } from '../lib/types';
-import { Layers, Plus, ClipboardType, Check, Upload, Sun, Moon, Settings, ChevronRight, ChevronDown, X, BookOpen, Library, Lightbulb, SendHorizontal, ExternalLink, Download, FolderUp, ImageDown, ScrollText, FolderPlus, Pencil, FolderInput, ChevronUp, ArrowUpDown, ArrowDown, ArrowUp, ArrowDownAZ, Undo2, Redo2, FileText } from 'lucide-react';
+import { Layers, Plus, ClipboardType, Check, Upload, Sun, Moon, Settings, ChevronRight, ChevronDown, X, BookOpen, Library, Lightbulb, SendHorizontal, ExternalLink, Download, FolderUp, ImageDown, ScrollText, FolderPlus, Pencil, FolderInput, ChevronUp, ArrowUpDown, ArrowDown, ArrowUp, ArrowDownAZ, Undo2, Redo2, FileText, Compass } from 'lucide-react';
 import type { Board, SortMode } from '../lib/types';
 import { track } from '../lib/api';
 import { buildBoardMarkdown } from '../lib/markdownRoundTrip';
@@ -109,6 +109,21 @@ function SettingsModal({ onClose, onExportMarkdown }: { onClose: () => void; onE
       title: '教程',
       content: (
         <div className="text-sm text-[var(--text-secondary)] space-y-3 leading-relaxed">
+          {/* 新手引导入口：关闭设置后以聚光灯引导重播 */}
+          <div className="flex items-center justify-between gap-2 rounded-xl border border-[var(--accent)] bg-[var(--accent-light)] px-3 py-2.5">
+            <div className="min-w-0">
+              <p className="text-[13px] font-medium text-[var(--accent)] flex items-center gap-1.5">
+                <Compass size={14} /> 新手引导
+              </p>
+              <p className="text-[11px] text-[var(--text-muted)] mt-0.5">分步介绍顶部按钮、创作网格、字典与韵部面板</p>
+            </div>
+            <button
+              onClick={() => { dispatch({ type: 'SET_ONBOARDING', open: true }); onClose(); }}
+              className="shrink-0 text-xs px-3 py-1.5 rounded-lg bg-[var(--accent)] text-white font-medium hover:opacity-90 transition-opacity"
+            >
+              重新开始
+            </button>
+          </div>
           <div>
             <p className="font-medium text-[var(--text)] flex items-center gap-1.5">顶部按钮</p>
             <ul className="mt-1 space-y-1.5 pl-1">
@@ -852,7 +867,7 @@ export function TopBar() {
           onClick={toggleDrop}
           className={ICON_BTN_CLS}
           title="切换画板"
-        >
+         data-onb="onb-boards">
           <Layers size={16} />
         </button>
         {dropOpen && (
@@ -928,7 +943,7 @@ export function TopBar() {
             className={ICON_BTN_CLS}
             onClick={toggleMeta}
             title="日期 / 序 / 脚注"
-          >
+           data-onb="onb-meta">
             <ScrollText size={15} />
           </button>
           {metaOpen && <MetadataPopover overlay={false} onClose={() => setMetaOpen(false)} />}
@@ -971,6 +986,7 @@ export function TopBar() {
         className={ICON_BTN_CLS}
         onClick={() => { closeMenus(); window.location.href = '/ref/index.html'; track('open_ref'); }}
         title="格律参考"
+        data-onb="onb-ref"
       >
         <Library size={15} />
       </button>
@@ -980,6 +996,7 @@ export function TopBar() {
         className={ICON_BTN_CLS}
         onClick={() => { closeMenus(); setSettingsOpen(true); }}
         title="设置"
+        data-onb="onb-settings"
       >
         <Settings size={15} />
       </button>
@@ -991,7 +1008,7 @@ export function TopBar() {
             className={ICON_BTN_CLS}
             onClick={toggleExport}
             title="导出"
-          >
+           data-onb="onb-export">
             <Download size={15} />
           </button>
           {exportMenuOpen && (
@@ -1034,6 +1051,7 @@ export function TopBar() {
         className={ICON_BTN_CLS}
         onClick={() => { closeMenus(); dispatch({ type: 'SHOW_GENRE_SELECTOR', show: true }); }}
         title="新建画板"
+        data-onb="onb-new"
       >
         <Plus size={18} />
       </button>
