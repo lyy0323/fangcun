@@ -441,16 +441,19 @@ class MainActivity : Activity() {
 
     // ---- 等待 Flask 就绪 ----
 
+    // 等待本地 Flask 就绪。探测本地即时端点（/api/_stats/routes，本地统计，不经
+    // checker 代理）——早期版本探测 /api/rhyme/list，v3.0 起该端点改经线上
+    // checker 代理（往返可能 >500ms），会让就绪轮询读超时、拖慢启动 ~60s。
     private fun waitForServer() {
-        for (i in 1..60) {
+        for (i in 1..120) {
             try {
-                val conn = URL("http://127.0.0.1:5050/api/rhyme/list?book=Pingshuiyun")
+                val conn = URL("http://127.0.0.1:5050/api/_stats/routes")
                     .openConnection() as HttpURLConnection
-                conn.connectTimeout = 500
-                conn.readTimeout = 500
+                conn.connectTimeout = 800
+                conn.readTimeout = 800
                 if (conn.responseCode == 200) return
             } catch (_: Exception) { }
-            Thread.sleep(500)
+            Thread.sleep(300)
         }
     }
 

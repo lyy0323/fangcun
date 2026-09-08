@@ -418,6 +418,28 @@ function page({ title, desc, activeTab, content, extraHead = '', canonicalPath, 
     document.addEventListener('gesturechange', function (e) { e.preventDefault(); });
     document.documentElement.style.touchAction = 'pan-x pan-y';
   })();
+  /* Android 状态栏安全区：native 在页面加载后注入 __STATUS_BAR_HEIGHT__（dp），
+     给粘性顶栏补上安全高度，避免标题/按钮顶到状态栏（与创作页 TopBar 一致） */
+  (function () {
+    if (!/FangcunAndroid/i.test(navigator.userAgent)) return;
+    var safeTop = 0;
+    var topbar = null;
+    function apply() {
+      if (!topbar) topbar = document.querySelector('.topbar');
+      if (!topbar) return;
+      var h = Math.min(window.__STATUS_BAR_HEIGHT__ || 0, 24);
+      if (h !== safeTop) {
+        safeTop = h;
+        topbar.style.paddingTop = h + 'px';
+        // .topbar 为 border-box + sticky：加 paddingTop 即整体下移，为状态栏让位
+      }
+    }
+    var tries = 0;
+    (function poll() {
+      apply();
+      if (safeTop <= 0 && tries < 100) { tries++; setTimeout(poll, 100); }
+    })();
+  })();
 </script>
 <title>${esc(title)} | 方寸</title>
 <meta name="description" content="${esc(desc)}" />
