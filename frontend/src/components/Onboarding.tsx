@@ -232,6 +232,9 @@ export function Onboarding() {
         const board = createBoard('Shi', DEMO_RULE, DEMO_CHARS);
         setSession('auto');
         demoIdRef.current = board.id;
+        // 同步标为「引导展示中」：示例画板建成后正文网格不抢焦点，
+        // 避免移动端输入法自动弹出（manual 场景由设置入口先置 true）
+        dispatch({ type: 'SET_ONBOARDING', open: true });
         dispatch({ type: 'ADD_BOARD', board });
         dispatch({ type: 'SHOW_GENRE_SELECTOR', show: false });
         track('onboarding_show');

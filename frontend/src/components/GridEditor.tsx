@@ -1185,7 +1185,7 @@ export function GridEditor() {
         onCompositionEnd={handleCompositionEnd}
         onFocus={() => setInputFocused(true)}
         onBlur={() => setInputFocused(false)}
-        autoFocus
+        autoFocus={!state.onboardingOpen}
       />
     </div>
   );
