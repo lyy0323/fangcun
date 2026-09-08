@@ -273,6 +273,29 @@ export function ExportPreview({ onClose }: { onClose: () => void }) {
   const renderAbortRef = useRef<AbortController | null>(null);
   const renderRequestRef = useRef(0);
 
+  // 主题行横向滚动的左右 helper（渐变遮罩 + < > 按钮，条件显示）
+  const themeRowRef = useRef<HTMLDivElement>(null);
+  const [themeArrows, setThemeArrows] = useState({ left: false, right: false });
+  const syncThemeArrows = useCallback(() => {
+    const el = themeRowRef.current;
+    if (!el) return;
+    const left = el.scrollLeft > 4;
+    const right = el.scrollLeft + el.clientWidth < el.scrollWidth - 4;
+    setThemeArrows(prev => (prev.left === left && prev.right === right ? prev : { left, right }));
+  }, []);
+  const scrollTheme = useCallback((dir: 1 | -1) => {
+    themeRowRef.current?.scrollBy({ left: dir * 120, behavior: 'smooth' });
+  }, []);
+  // 容器尺寸/内容变化（含首帧与弹窗宽度变化）后刷新箭头显隐
+  useEffect(() => {
+    const el = themeRowRef.current;
+    if (!el) return;
+    syncThemeArrows();
+    const ro = new ResizeObserver(syncThemeArrows);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [syncThemeArrows, theme]);
+
   const isFree = board?.genre === 'Free';
   const sectionCount = board?.sections.length ?? 0;
   const splitOptions = useMemo(() => buildSplitOptions(sectionCount), [sectionCount]);
@@ -685,7 +708,35 @@ export function ExportPreview({ onClose }: { onClose: () => void }) {
           </div>
           {/* 配色 + 下载 */}
           <div className="flex items-center justify-between gap-3">
-          <div className="flex gap-1.5 overflow-x-auto h-scroll flex-1 min-w-0 py-1 px-1">
+          <div className="relative flex-1 min-w-0">
+            {/* 左右渐变遮罩 + 条件显示的 < > helper（桌面可滚动时出现） */}
+            <div className={`pointer-events-none absolute inset-y-0 left-0 w-6 z-[1] transition-opacity ${themeArrows.left ? 'opacity-100' : 'opacity-0'}`}
+              style={{ background: 'linear-gradient(to right, var(--bg-card), transparent)' }} />
+            <div className={`pointer-events-none absolute inset-y-0 right-0 w-6 z-[1] transition-opacity ${themeArrows.right ? 'opacity-100' : 'opacity-0'}`}
+              style={{ background: 'linear-gradient(to left, var(--bg-card), transparent)' }} />
+            {themeArrows.left && (
+              <button
+                onClick={() => scrollTheme(-1)}
+                className="absolute left-0 top-1/2 -translate-y-1/2 z-[2] w-5 h-5 rounded-full flex items-center justify-center text-[var(--text-muted)] bg-[var(--bg-card)]/80 hover:text-[var(--accent)] border border-[var(--border)] transition-colors"
+                title="向前翻主题"
+              >
+                <ChevronLeft size={13} />
+              </button>
+            )}
+            {themeArrows.right && (
+              <button
+                onClick={() => scrollTheme(1)}
+                className="absolute right-0 top-1/2 -translate-y-1/2 z-[2] w-5 h-5 rounded-full flex items-center justify-center text-[var(--text-muted)] bg-[var(--bg-card)]/80 hover:text-[var(--accent)] border border-[var(--border)] transition-colors"
+                title="向后翻主题"
+              >
+                <ChevronRight size={13} />
+              </button>
+            )}
+            <div
+              ref={themeRowRef}
+              onScroll={syncThemeArrows}
+              className="flex gap-1.5 overflow-x-auto h-scroll flex-1 min-w-0 py-1 px-1 scrollbar-gutter-stable"
+            >
             {THEME_KEYS.map((k) => {
               const t = THEMES[k];
               const available = availableThemes.includes(k);
@@ -720,6 +771,7 @@ export function ExportPreview({ onClose }: { onClose: () => void }) {
               </button>
               );
             })}
+            </div>
           </div>
           <div className="shrink-0 flex items-center gap-1.5">
             {canCopyImage && (
