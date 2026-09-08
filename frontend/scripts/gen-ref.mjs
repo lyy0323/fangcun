@@ -452,7 +452,7 @@ ${content}
 /* ------------------------------- 韵书页面 -------------------------------- */
 
 /** 上古韵双套页首介绍（按音节拟音；诗经韵 51 部 / 楚辞韵 36 部，楚辞为诗经的时代归并） */
-const SHANGGUYUN_CREDIT = 'Contributor：上海交通大学国学社·「南洋小学」音韵学兴趣小组——@nulll @知母tr @lyy0323';
+const SHANGGUYUN_CREDIT = '上古汉语拟音方案来自知乎 <a href="https://www.zhihu.com/people/shu-hua-zhou-jin" target="_blank" rel="noopener">Nulll</a> 维护的「基於文獻的上古漢語」（Philology-Based Old Chinese，PBOC）；诗经与楚辞的韵部划分参考了知乎 <a href="https://www.zhihu.com/pin/1818755561421955074" target="_blank" rel="noopener">cyslngsul</a> 的文章。感谢以上创作者提供的外部支持，功能实现如有错误与他们无关。<br>国学社团贡献者：知母tr、林雨夜、花桐、晴岚';
 const SHANGGUYUN_SJ_INTRO = '上古诗经韵：按主元音×韵尾细分为 51 韵部（鱼a、铎ak、阳aŋ…），反映《诗经》用韵。适合拟古体与仿先秦之作。';
 const SHANGGUYUN_CC_INTRO = '上古楚辞韵：诗经韵按战国音系归并为 36 韵部（之幽=之ə+幽u、耕真=耕eŋ+真iŋ、職覺…），反映《楚辞》用韵。适合拟古体与仿先秦之作。';
 
