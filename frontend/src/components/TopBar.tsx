@@ -482,7 +482,8 @@ export function TopBar() {
   const renderBoardItem = useCallback((b: typeof state.boards[0], isCustomSort = false) => {
     const created = fmt(b.createdAt);
     const modified = fmt(b.updatedAt);
-    const timeLabel = created === modified ? `${created}创建` : `${modified}修改`;
+    // 体裁/格式标签：词（含组词）统一显示「词」，不展开完整词牌名
+    const typeLabel = b.genre === 'Ci' ? '词' : (b.sections[0]?.ruleName || '');
     return (
       <div key={b.id} className="relative group">
         <div
@@ -491,7 +492,7 @@ export function TopBar() {
         >
           <div className="truncate flex-1 mr-2">
             <div className="truncate text-[13px]">{b.title}</div>
-            <div className="text-[11px] text-[var(--text-muted)]">{b.sections.length > 1 ? `${b.sections.length}首·` : ''}{b.sections[0].ruleName} · {timeLabel}</div>
+            <div className="text-[11px] text-[var(--text-muted)]">{b.sections.length > 1 ? `${b.sections.length}首·` : ''}{typeLabel} · 建{created} 改{modified}</div>
           </div>
           <div className="flex items-center gap-0.5 shrink-0 opacity-0 group-hover:opacity-100 touch-show transition-opacity">
             {isCustomSort && (
