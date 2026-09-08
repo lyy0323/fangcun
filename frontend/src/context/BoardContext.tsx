@@ -23,7 +23,7 @@ export interface AppState {
   dictQueryCursor: number | null;
   insertCharFn: ((text: string, mode?: 'forward' | 'backward' | 'pair') => void) | null;
   rhymeOverride: string | null;
-  pairQuery: { text: string; insertAt: number } | null;
+  pairQuery: { text: string } | null;
   freeRhymeResult: FreeRhymeResult | null;
   rootSortMode: SortMode;
   undoStacks: Record<string, Board[]>;
@@ -72,7 +72,7 @@ export type Action =
   | { type: 'SET_POEM_CHARS'; chars: string[] }
   | { type: 'SET_DICT_QUERY'; query: string | null; cursor?: number | null }
   | { type: 'SET_RHYME_OVERRIDE'; category: string | null }
-  | { type: 'SET_PAIR_QUERY'; payload: { text: string; insertAt: number } | null }
+  | { type: 'SET_PAIR_QUERY'; payload: { text: string } | null }
   | { type: 'SET_INSERT_FN'; fn: ((text: string, mode?: 'forward' | 'backward' | 'pair') => void) | null }
   | { type: 'ADD_CANDIDATE'; index: number; char: string }
   | { type: 'REMOVE_CANDIDATE'; index: number; char: string }

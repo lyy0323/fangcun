@@ -448,7 +448,6 @@ export function GridEditor() {
   // Register insert-char callback for active section
   useEffect(() => {
     if (!board || !sec) return;
-    const sl = board.genre === 'Shi' ? (sec.charCount % 7 === 0 ? 7 : 5) : 0;
 
     const fn = (text: string, mode: 'forward' | 'backward' | 'pair' = 'forward') => {
       const cur = cursorRef.current;
@@ -456,12 +455,12 @@ export function GridEditor() {
       if (chars.length === 0) return;
 
       // 填入完成后把创作焦点移到「末字后一位」并滚动可见：
-      //   - forward：从 N 连续填 k 字 → 末字 N+k-1 → 光标 N+k（=N+1 语义）
+      //   - forward / pair（对语同位并入）：从当前格 N 起连续填 k 字，
+      //     末字 N+k-1 → 光标 N+k（=N+1 语义），不再计算对句相对位置
       //   - backward：以 N 为末位往前填（词末联想 N-n…N）→ 末字停在 N → 光标 N+1
-      //   - pair：词写入对句，主句光标保持 N 不动
       let next: number | null = null;
       let focus = true;
-      if (mode === 'forward') {
+      if (mode === 'forward' || mode === 'pair') {
         let pos = cur;
         for (const ch of chars) {
           if (pos >= sec.charCount) break;
@@ -480,17 +479,6 @@ export function GridEditor() {
           wroteLast = pos === endPos;
         }
         next = wroteLast ? Math.min(endPos + 1, sec.charCount - 1) : cur;
-      } else if (mode === 'pair' && sl > 0) {
-        const coupletLen = sl * 2;
-        const posInCouplet = cur % coupletLen;
-        const targetStart = posInCouplet < sl ? cur + sl : cur - sl;
-        let pos = targetStart;
-        for (const ch of chars) {
-          if (pos >= sec.charCount || pos < 0) break;
-          dispatch({ type: 'UPDATE_CHAR', index: pos, char: ch });
-          pos++;
-        }
-        next = cur; // 对句填充：主句光标保持
       }
       if (next != null) {
         setCursor(next);
@@ -563,10 +551,9 @@ export function GridEditor() {
     if (Math.floor(selStart / sentenceLen) !== Math.floor(selEnd / sentenceLen)) return;
     const text = poemChars.slice(selStart, selEnd + 1).filter(c => c !== PLACEHOLDER).join('');
     if (text.length !== len) return;
-    const coupletLen = sentenceLen * 2;
-    const posInCouplet = selStart % coupletLen;
-    const insertAt = posInCouplet < sentenceLen ? selStart + sentenceLen : selStart - sentenceLen;
-    dispatch({ type: 'SET_PAIR_QUERY', payload: { text, insertAt } });
+    // 填入不再按对句相对位置定位：仅把选中文本送给字典做对语搜索，
+    // 点击结果一律从当前焦点起填（forward）
+    dispatch({ type: 'SET_PAIR_QUERY', payload: { text } });
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selStart, selEnd]);
 

@@ -367,36 +367,18 @@ export function Dictionary() {
           </div>
         )}
 
-        {/* 词首/词末/对语结果（可点击填入网格） */}
+        {/* 词首/词末/对语/同位结果（可点击填入网格：一律从当前焦点位置起填） */}
         {tab !== 'rhyme' && tab !== 'allusion' && phraseResult.length > 0 && (() => {
-          const isPairDisabled = (effectiveTab === 'pair' || effectiveTab === 'tongwei') && board?.genre !== 'Shi';
-          // 对语点击：如果有 pairQuery.insertAt，直接写入该位置
-          const handlePairClick = (word: string) => {
-            if (state.pairQuery && board) {
-              const start = state.pairQuery.insertAt;
-              for (let i = 0; i < word.length; i++) {
-                const pos = start + i;
-                if (pos >= 0 && pos < board.sections[0].charCount) {
-                  dispatch({ type: 'UPDATE_CHAR', index: pos, char: word[i] });
-                }
-              }
-            } else {
-              state.insertCharFn?.(word, 'pair');
-            }
-          };
-          const clickMode = effectiveTab === 'tail' ? 'backward' as const
-            : (effectiveTab === 'pair' || effectiveTab === 'tongwei') ? 'pair' as const
-            : 'forward' as const;
+          // 词末（tail）联想：以当前格为末字、把词回填到其前 → backward；
+          // 词首 / 对语 / 同位：从当前格起顺序前填 → forward（不再计算对句相对位置）。
+          const clickMode = effectiveTab === 'tail' ? 'backward' as const : 'forward' as const;
           return (
             <div className="py-1 leading-7 text-sm break-all">
               {phraseResult.map(([word, count]) => (
                 <span
                   key={word}
-                  className={`inline mr-2 whitespace-nowrap rounded px-0.5 transition-colors ${isPairDisabled ? 'text-[var(--text)]' : 'cursor-pointer hover:text-[var(--accent)] hover:bg-[var(--accent-light)]'}`}
-                  onClick={isPairDisabled ? undefined : () => {
-                    if (effectiveTab === 'pair' || effectiveTab === 'tongwei') handlePairClick(word);
-                    else state.insertCharFn?.(word, clickMode);
-                  }}
+                  className="inline mr-2 whitespace-nowrap rounded px-0.5 cursor-pointer transition-colors hover:text-[var(--accent)] hover:bg-[var(--accent-light)]"
+                  onClick={() => state.insertCharFn?.(word, clickMode)}
                 >
                   {word}<span className="text-[11px] text-[var(--text-muted)] ml-0.5">{count}</span>
                 </span>
