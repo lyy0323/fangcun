@@ -359,7 +359,7 @@ export function Dictionary() {
                 {rhymeResult.sgDefinitions.map((d, di) => (
                   <div key={di} className="text-xs leading-relaxed pl-1">
                     <span className="text-[var(--text-muted)]">{di + 1}. </span>
-                    <span className="font-serif">{d}</span>
+                    <span>{d}</span>
                   </div>
                 ))}
               </div>
