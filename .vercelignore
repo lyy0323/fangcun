@@ -7,7 +7,13 @@ android
 tests
 data
 fonts
-frontend/public/fonts
+frontend/public/fonts/NotoSerifSC-Bold
+frontend/public/fonts/NotoSerifSC-Regular
+frontend/public/fonts/NotoSansSC-Regular
+frontend/public/fonts/LXGWWenKaiLite-Regular
+frontend/public/fonts/方正宋刻本秀楷简体
+frontend/public/fonts/汇文明朝体
+# ml 已入库，ref 页面标题字体需上 Vercel，故不排除
 checker-api
 # 已迁移到 checker 服务
 checker.py
