@@ -349,7 +349,8 @@ function reducer(state: AppState, action: Action): AppState {
     }
     case 'FILL_BOARD_DATE': {
       // 画板级「今天/最后修改」日期填充：写 metadata.date；
-      // 组诗时（sectionsToo）同步给每个 section 填入同一日期（原子，一次 undo/updatedAt）。
+      // 组诗时（sectionsToo）仅给 sectionDate 为空的 section 填入同一日期
+      // （已填日期的 section 不覆写；原子，一次 undo/updatedAt）。
       const boards = state.boards.map(b => {
         if (b.id !== state.activeBoardId) return b;
         let updatedBoard: Board = {
@@ -360,7 +361,7 @@ function reducer(state: AppState, action: Action): AppState {
         if (action.sectionsToo && b.sections.length > 1) {
           updatedBoard = {
             ...updatedBoard,
-            sections: b.sections.map(s => ({ ...s, sectionDate: action.date })),
+            sections: b.sections.map(s => s.sectionDate ? s : ({ ...s, sectionDate: action.date })),
           };
         }
         return updatedBoard;
