@@ -11,6 +11,7 @@ import { Dictionary } from './components/Dictionary';
 import { useBoardContext, useActiveBoard, createBoard } from './context/BoardContext';
 import { Lightbulb, BookOpen, PanelLeftClose, PanelRightClose } from 'lucide-react';
 import Slides from './slides/Slides';
+import SlidesV3 from './slides/SlidesV3';
 import { track } from './lib/api';
 
 // Android WebView 始终走移动端布局（部分设备 viewport >= 1024px 会误触桌面模式）
@@ -202,7 +203,7 @@ function Layout() {
   );
 }
 
-/** 简单 hash 路由：#slides 显示产品介绍幻灯片 */
+/** 简单 hash 路由：#slides 产品介绍 / #slidesv3 v3 宣传 */
 function useHashRoute() {
   const [hash, setHash] = useState(window.location.hash);
   useEffect(() => {
@@ -218,6 +219,9 @@ export default function App() {
 
   if (hash === '#slides') {
     return <Slides />;
+  }
+  if (hash === '#slidesv3') {
+    return <SlidesV3 />;
   }
 
   return (
