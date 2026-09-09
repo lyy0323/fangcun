@@ -1223,8 +1223,12 @@ function buildCharPage() {
             var chip = '<a class="chip" href="' + href + '"><i class="cl-mark" style="background:' + col + '"></i>' + c.name + '</a>';
             if (isSG && c.readings && c.readings.length) {
               // 上古韵单级：韵部胶囊一颗，下方并列各读音（[IPA] 拼音 · 声调）
+              // 诗经书取 r.ipa（诗经音）；楚辞书取 r.ipa_cc（楚辞音，异读时附带）
               var lines = c.readings.map(function (r) {
-                return '<span class="sg-reading"><span class="ipa">[' + (r.ipa || '') + ']</span> ' + (r.py || '') + ' · ' + (r.tone || '') + '</span>';
+                var ipaText = b.key === 'ShangguyunChuci'
+                  ? (r.ipa_cc || r.ipa || r.py || '')
+                  : (r.ipa || r.py || '');
+                return '<span class="sg-reading"><span class="ipa">[' + ipaText + ']</span> ' + (r.py || '') + ' · ' + (r.tone || '') + '</span>';
               });
               html += '<div class="sg-line">' + chip + lines.join('') + '</div>';
             } else {
