@@ -76,7 +76,7 @@ export function Dictionary() {
     categories: {
       name: string;
       tone_type: string;
-      readings?: { sj: string[]; cc: string[]; py: string; ipa: string; ipaf: string; tone: string }[];
+      readings?: import('../lib/types').ShangguyunReading[];
     }[];
     definitions: { py: string; defs: { d: string; c?: string }[] }[];
     sgDefinitions?: string[];
@@ -325,17 +325,23 @@ export function Dictionary() {
                     </span>
                   );
                   // [上古韵双套] 每个读音一行：badge + 声调·拟音 同行
+                  // 诗经书取 r.ipa（诗经音）；楚辞书取 r.ipa_cc（楚辞音，异读时附带）
                   if (isShangguyunBook(bookName) && c.readings && c.readings.length > 0) {
                     return (
                       <div key={c.name} className="flex flex-col gap-0.5 w-full">
-                        {c.readings.map((r, ri) => (
-                          <div key={ri} className="flex items-center gap-1.5">
-                            {badge}
-                            <span className="text-[10px] text-[var(--text-muted)] font-mono whitespace-nowrap">
-                              [{r.ipa || r.py}] {r.tone}
-                            </span>
-                          </div>
-                        ))}
+                        {c.readings.map((r, ri) => {
+                          const ipaText = bookName === 'ShangguyunChuci'
+                            ? (r.ipa_cc || r.ipa || r.py)
+                            : (r.ipa || r.py);
+                          return (
+                            <div key={ri} className="flex items-center gap-1.5">
+                              {badge}
+                              <span className="text-[10px] text-[var(--text-muted)] font-mono whitespace-nowrap">
+                                [{ipaText}] {r.tone}
+                              </span>
+                            </div>
+                          );
+                        })}
                       </div>
                     );
                   }
