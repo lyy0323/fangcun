@@ -1,4 +1,8 @@
 *_with_metadata.json
+.vercel-home
+.env*
+frontend/.env*
+deploy
 __pycache__
 node_modules
 *.md
@@ -22,7 +26,7 @@ config_loader.py
 **/shi_rules.json
 **/char_dict.json
 **/rhyme_books.json
-# 已迁移到 Neon DB
+# 已迁移到 coco2 SQLite
 **/phrase_pairs.json
 **/phrase_tongwei.json
 **/allusion_entries.json

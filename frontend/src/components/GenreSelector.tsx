@@ -11,16 +11,30 @@ export function GenreSelector() {
   const [ciRules, setCiRules] = useState<RuleListItem[]>([]);
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(false);
+  const [loadError, setLoadError] = useState(false);
+  const [reloadNonce, setReloadNonce] = useState(0);
   const [showImport, setShowImport] = useState(false);
   const [importMsg, setImportMsg] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
+  // 预取词牌列表：选择器一打开就开始加载，用户点「词」时通常已就绪，
+  // 避免在词牌界面空等后端代理 2-4 秒。
+  useEffect(() => {
+    if (ciRules.length === 0) {
+      rulesList('Ci', { basic: true }).then(setCiRules).catch(() => {});
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   useEffect(() => {
     if (step === 'ci' && ciRules.length === 0) {
       setLoading(true);
-      rulesList('Ci').then(r => { setCiRules(r); setLoading(false); }).catch(() => setLoading(false));
+      // 只需要 name/char_count：完整词谱列表响应约 3.4 MB，经代理往返可达数秒
+      rulesList('Ci', { basic: true })
+        .then(r => { setCiRules(r); setLoading(false); })
+        .catch(() => { setLoading(false); setLoadError(true); });
     }
-  }, [step, ciRules.length]);
+  }, [step, ciRules.length, reloadNonce]);
 
   const selectShi = (label: string) => {
     const charCount = SHI_CHAR_COUNTS[label];
@@ -198,6 +212,17 @@ export function GenreSelector() {
                 autoFocus
               />
               {loading && <div className="text-center text-[var(--text-muted)] py-8">加载中...</div>}
+              {!loading && loadError && (
+                <div className="flex flex-col items-center py-8 gap-2">
+                  <div className="text-xs text-[var(--text-muted)]">词牌列表加载失败，请检查网络后重试</div>
+                  <button
+                    className="px-3 py-1 text-xs rounded-md border border-[var(--border)] text-[var(--text-secondary)] hover:text-[var(--accent)] hover:bg-[var(--accent-light)]"
+                    onClick={() => { setLoadError(false); setReloadNonce(n => n + 1); }}
+                  >
+                    重试
+                  </button>
+                </div>
+              )}
               <div className="space-y-1 max-h-[50vh]">
                 {/* 随机一个（仅搜索框为空时显示） */}
                 {!loading && !search && ciRules.length > 0 && (
@@ -228,7 +253,7 @@ export function GenreSelector() {
                     加载更多（还有 {filtered.length - showCount} 个）
                   </button>
                 )}
-                {!loading && filtered.length === 0 && (
+                {!loading && !loadError && filtered.length === 0 && (
                   <div className="text-center text-[var(--text-muted)] py-4">未找到匹配词牌</div>
                 )}
               </div>

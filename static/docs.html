@@ -149,7 +149,7 @@
 
 <!-- Sidebar -->
 <aside class="sidebar">
-  <div class="sidebar-title">方寸 API <span>v3.0</span></div>
+  <div class="sidebar-title">方寸 API <span>v3.0.2</span></div>
   <nav>
     <a class="section-title">概览</a>
     <a href="#rate-limit">限流</a>
@@ -179,19 +179,16 @@
 
 <!-- ==================== 认证 ==================== -->
 <h2 id="auth">认证</h2>
-<p>所有 API 端点<strong>无需认证</strong>，公开访问。按 IP 限流。</p>
+<p>所有 API 端点<strong>无需认证</strong>，公开访问。</p>
 
 <!-- ==================== 限流 ==================== -->
 <h2 id="rate-limit">限流</h2>
 <table>
   <tr><th>端点</th><th>限制</th></tr>
-  <tr><td>/api/validate_meter</td><td>60 次/分钟</td></tr>
-  <tr><td>/api/free_rhyme</td><td>60 次/分钟</td></tr>
-  <tr><td>/api/dictionary/search</td><td>120 次/分钟</td></tr>
-  <tr><td>/api/dictionary/allusion</td><td>120 次/分钟</td></tr>
-  <tr><td>其他</td><td>60 次/分钟</td></tr>
+  <tr><td>本站应用层限流</td><td>当前关闭；部署时可通过 <code>RATELIMIT_ENABLED=1</code> 开启，普通接口默认每 IP 60 次/分钟</td></tr>
+  <tr><td>格律校验、自由押韵、查字及韵书/规则查询</td><td>不计入本站应用层限流；受上游 checker 服务限制（默认 600 次/分钟，以其部署配置为准）</td></tr>
 </table>
-<p>超限返回 <code>429 Too Many Requests</code>。</p>
+<p>上游 checker 可能按代理服务器的共享出口 IP 计数。启用的限流超限时返回 <code>429 Too Many Requests</code>。</p>
 
 <!-- ==================== 错误 ==================== -->
 <h2 id="errors">错误处理</h2>
@@ -481,6 +478,7 @@
   <tr><th>参数</th><th>类型</th><th></th><th>说明</th></tr>
   <tr><td>genre</td><td>string</td><td><span class="badge badge-optional">可选</span></td><td><code>Shi</code> 或 <code>Ci</code>，默认 <code>Ci</code></td></tr>
   <tr><td>search</td><td>string</td><td><span class="badge badge-optional">可选</span></td><td>按关键词搜索规则名或词牌名</td></tr>
+  <tr><td>fields</td><td>string</td><td><span class="badge badge-optional">可选</span></td><td>传 <code>basic</code> 时仅返回 <code>name</code>/<code>char_count</code>；Ci 列表由约 3.4 MB 降至约 190 KB</td></tr>
 </table>
 
 <h3>示例 — 搜索五绝</h3>
@@ -510,7 +508,7 @@
   <tr><th>参数</th><th>类型</th><th></th><th>说明</th></tr>
   <tr><td>term</td><td>string</td><td><span class="badge badge-required">必填</span></td><td>查询字（支持繁体）</td></tr>
   <tr><td>mode</td><td>string</td><td><span class="badge badge-optional">可选</span></td><td><code>head</code>（以此字开头）、<code>tail</code>（以此字结尾）、<code>pair</code>（对仗字/词）、<code>tongwei</code>（同位词，对语的对语）。默认 <code>head</code></td></tr>
-  <tr><td>length</td><td>string</td><td><span class="badge badge-optional">可选</span></td><td>词语长度（<code>2</code>、<code>3</code>...），<code>all</code> 返回所有长度。默认 <code>2</code></td></tr>
+  <tr><td>length</td><td>string</td><td><span class="badge badge-optional">可选</span></td><td>词首/词末模式的词语长度（<code>2</code>、<code>3</code>...），默认 <code>2</code>；<code>all</code> 返回按长度、平仄分组的完整对象，此时忽略 <code>tone</code>、<code>limit</code> 和 <code>offset</code></td></tr>
   <tr><td>tone</td><td>string</td><td><span class="badge badge-optional">可选</span></td><td>末字声调过滤：<code>P</code>（平）或 <code>Z</code>（仄）。默认不过滤</td></tr>
   <tr><td>limit</td><td>int</td><td><span class="badge badge-optional">可选</span></td><td>返回结果数上限。不传则全量返回</td></tr>
   <tr><td>offset</td><td>int</td><td><span class="badge badge-optional">可选</span></td><td>跳过前 N 条结果，默认 <code>0</code></td></tr>
@@ -527,7 +525,7 @@
   [<span class="string">"明时"</span>, <span class="number">296</span>]
 ]</code></pre>
 
-<div class="callout">返回 <code>[词语, 频次]</code> 数组，按频次降序排列。</div>
+<div class="callout">指定长度时返回 <code>[词语, 频次]</code> 数组，按频次降序排列；词首/词末模式的 <code>length=all</code> 返回 <code>{"2": {"P": [["词语", 频次]], "Z": [...]}, ...}</code> 分组对象。</div>
 
 <h3>示例 — 对仗字</h3>
 <pre><code>curl <span class="string">"https://write.sjtuguoxue.space/api/dictionary/search?term=月&amp;mode=pair"</span> \
@@ -640,7 +638,7 @@
 
 <table>
   <tr><th>参数</th><th>类型</th><th></th><th>说明</th></tr>
-  <tr><td>lines</td><td>string[]</td><td><span class="badge badge-required">必填</span></td><td>诗行数组，每行一个字符串</td></tr>
+  <tr><td>lines</td><td>string[]</td><td><span class="badge badge-required">必填</span></td><td>诗行数组，每行一个字符串，最多 100 行；超过返回 <code>400</code></td></tr>
   <tr><td>rhyme_book_name</td><td>string</td><td><span class="badge badge-optional">可选</span></td><td>韵书名，默认 <code>Zhonghua_Tongyun</code>（中华通韵）。可选：<code>Pingshuiyun</code>（平水韵）、<code>Cilinzhengyun</code>（词林正韵）、<code>Zhonghua_Tongyun</code>（中华通韵）、<code>ShangguyunShijing</code>（上古诗经韵）、<code>ShangguyunChuci</code>（上古楚辞韵）</td></tr>
   <tr><td>merge_tones</td><td>boolean</td><td><span class="badge badge-optional">可选</span></td><td>是否合并平仄声调（同韵部的平声字和仄声字视为同韵）。默认 <code>false</code></td></tr>
   <tr><td>strip_particles</td><td>boolean</td><td><span class="badge badge-optional">可选</span></td><td>是否剔除句末语气词并顺移至前一实字（仅上古两书 <code>ShangguyunShijing</code>/<code>ShangguyunChuci</code> 生效）。默认 <code>true</code></td></tr>

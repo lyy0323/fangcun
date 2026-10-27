@@ -21,7 +21,7 @@
     { "src": "/download/android", "dest": "/api/index.py" },
     { "src": "/docs", "dest": "/api/index.py" },
     { "src": "/dashboard", "dest": "/api/index.py" },
-    { "src": "/api/(.*)", "dest": "/api/index.py" },
+    { "src": "/api/(.*)", "dest": "https://shi.sjtuguoxue.space/__shiva/api/$1" },
     { "handle": "filesystem" },
     { "src": "/(.*)", "dest": "/frontend/$1" }
   ],

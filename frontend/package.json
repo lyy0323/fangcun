@@ -1,13 +1,14 @@
 {
   "name": "frontend",
   "private": true,
-  "version": "1.2.0",
+  "version": "3.0.2",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "gen:ref": "node scripts/gen-ref.mjs",
     "check:md": "node scripts/check-markdown-roundtrip.mjs",
     "check:upload": "node scripts/check-upload-sequence.mjs",
+    "check:titles": "node scripts/check-sequence-title.mjs",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview"

@@ -272,11 +272,15 @@
 </div>
 
 <script>
-const PRODUCTION_API = 'https://write.sjtuguoxue.space';
+// 生产环境直连 coco2 源站：Vercel 边缘 → 国内源站偶发连接失败（30s 后 502），
+// 直连源站 CORS 已放开且稳定。
+const SHIVA_ORIGIN = 'https://shi.sjtuguoxue.space/__shiva';
 const queryParams = new URLSearchParams(window.location.search);
 const isLocalPreview = window.location.protocol === 'file:' || ['localhost', '127.0.0.1'].includes(window.location.hostname);
-const useLocalStats = queryParams.get('data') === 'local';
-const API = isLocalPreview && !useLocalStats ? PRODUCTION_API : '';
+const isHttpPreview = ['localhost', '127.0.0.1'].includes(window.location.hostname);
+const useLocalStats = isHttpPreview && queryParams.get('data') !== 'production';
+// 本地 HTTP 预览使用当前站点的 /api（遵循本地代理）；线上与 file: 预览直连源站。
+const API = useLocalStats ? '' : SHIVA_ORIGIN;
 const TZ_OFFSET = 8;
 let allStats = [];
 let rangeMode = '7d';
@@ -286,7 +290,7 @@ const DETAIL_PAGE_SIZE = 20;
 const NORTH_STAR_LAUNCH_DAY = '2026-04-21';
 
 document.getElementById('dataSourceLabel').textContent = isLocalPreview && useLocalStats
-  ? 'Dashboard · 本地数据'
+  ? 'Dashboard · 当前代理数据'
   : 'Dashboard · 线上数据';
 
 function todayUTC8() {
@@ -320,7 +324,17 @@ function escapeHTML(value) {
     '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
   })[char]);
 }
-async function fetchJSON(url) { return (await fetch(url)).json(); }
+async function fetchJSON(url) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 15000);
+  try {
+    const response = await fetch(url, { signal: controller.signal });
+    if (!response.ok) throw new Error(`统计加载失败 (${response.status})`);
+    return response.json();
+  } finally {
+    clearTimeout(timer);
+  }
+}
 
 async function loadAll() {
   allStats = await fetchJSON(`${API}/api/_stats/routes`);
@@ -834,7 +848,12 @@ window.addEventListener('resize', () => {
   clearTimeout(dashboardResizeTimer);
   dashboardResizeTimer = setTimeout(render, 100);
 });
-loadAll();
+loadAll().catch(() => {
+  document.getElementById('detailTable').textContent = '统计加载失败，请刷新重试';
+  document.querySelectorAll('.loading').forEach(element => {
+    element.textContent = '统计加载失败，请刷新重试';
+  });
+});
 </script>
 </body>
 </html>

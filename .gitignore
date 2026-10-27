@@ -11,9 +11,13 @@ build/
 
 # Local database
 data/api_keys.db
+data/*.sqlite3
+data/*.sqlite3-*
+data/*.sqlite3.manifest.json
 
 # Vercel
 .vercel/
+.vercel-home/
 
 # Node / Frontend build
 node_modules/

@@ -324,6 +324,7 @@ GET /api/rules/list
 |------|------|------|------|
 | `genre` | string | 否 | `Shi` 或 `Ci`，默认 `Ci` |
 | `search` | string | 否 | 按关键词搜索规则名或词牌名 |
+| `fields` | string | 否 | 传 `basic` 时仅返回 `name`/`char_count`（Ci 全量响应由约 3.4 MB 降至约 190 KB） |
 
 **示例 — 搜索五绝：**
 

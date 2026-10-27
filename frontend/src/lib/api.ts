@@ -1,27 +1,35 @@
 import type { ValidationResult, RhymeLookupResult, RuleListItem, PoemSearchResult, PoemFull, FreeRhymeResult, RhymeCategory, ShangguyunReading } from './types';
 
-const BASE = '/api';
-
 const IS_ANDROID = navigator.userAgent.includes('FangcunAndroid');
-// checker 端点统一经本服务（/api）透传：Web 走 Vercel 上的 Flask 代理，
-// Android 走本地 Flask（5050）代理，使 checker 调用计入后端调用量统计。
-const CHECKER_BASE = '/api';
+// 生产 Web 直连 coco2 源站：Vercel 边缘 → 国内源站存在约 27% 的连接失败
+// （30s 后返回 502 ROUTER_EXTERNAL_TARGET_CONNECTION_ERROR），直连源站 CORS 已放开且稳定。
+// Android 走本地 Flask（5050），本地开发走 Vite 代理。
+const IS_LOCAL_DEV = ['localhost', '127.0.0.1'].includes(location.hostname);
+const BASE = IS_ANDROID || IS_LOCAL_DEV
+  ? '/api'
+  : 'https://shi.sjtuguoxue.space/__shiva/api';
+
+// checker 端点经 shiva 透传，使 checker 调用计入后端调用量统计。
+const CHECKER_BASE = BASE;
+// 词牌列表为静态数据，直连 checker 可避开 coco2 代理偶发的 10s+ 卡顿/30s 502。
+const CHECKER_DIRECT_BASE = 'https://checker.sjtuguoxue.space/api';
 
 // checker 暂不计入 CJK 扩展 A；用占位符保留词谱位置，画板原文不变。
 const normalizePoemTextForChecker = (poemText: string) =>
   poemText.replace(/[\u3400-\u4dbf]/g, '□');
 
-async function get<T>(path: string, base = BASE): Promise<T> {
-  const res = await fetch(`${base}${path}`);
+async function get<T>(path: string, base = BASE, signal?: AbortSignal): Promise<T> {
+  const res = await fetch(`${base}${path}`, { signal });
   if (!res.ok) throw new Error(`API error: ${res.status}`);
   return res.json();
 }
 
-async function post<T>(path: string, body: unknown, base = BASE): Promise<T> {
+async function post<T>(path: string, body: unknown, base = BASE, signal?: AbortSignal): Promise<T> {
   const res = await fetch(`${base}${path}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
+    signal,
   });
   if (!res.ok) throw new Error(`API error: ${res.status}`);
   return res.json();
@@ -36,11 +44,11 @@ export function validateMeter(params: {
   ensure_longpu?: boolean;
   warnings?: string | string[];
   include_punctuation?: boolean;
-}): Promise<ValidationResult> {
+}, signal?: AbortSignal): Promise<ValidationResult> {
   return post('/validate_meter', {
     ...params,
     poem_text: normalizePoemTextForChecker(params.poem_text),
-  }, CHECKER_BASE);
+  }, CHECKER_BASE, signal);
 }
 
 // --- 自由韵脚检测（→ checker 服务）---
@@ -75,8 +83,55 @@ export function rhymeList(book: string, tone?: string) {
 }
 
 // --- 规则列表（→ checker 服务）---
-export function rulesList(genre: string): Promise<RuleListItem[]> {
-  return get(`/rules/list?genre=${enc(genre)}`, CHECKER_BASE);
+// fields=basic 只返回 name/char_count，词牌选择器不需要完整词谱（完整响应约 3.4 MB）。
+// 旧版 checker 会忽略未知参数，仍返回完整列表，因此该参数可安全提前上线。
+const rulesListCache = new Map<string, Promise<RuleListItem[]>>();
+
+const RULES_LIST_TIMEOUT_MS = 10000;
+const RULES_LIST_RETRY_DELAY_MS = 800;
+
+// 直连 checker 后补记一次调用量，保持 dashboard 的 API 口径
+function reportRulesListCall() {
+  fetch(`${BASE}/_ping`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ source: IS_ANDROID ? 'android' : 'frontend', route: '/api/rules/list' }),
+  }).catch(() => {});
+}
+
+export function rulesList(genre: string, opts?: { basic?: boolean }): Promise<RuleListItem[]> {
+  const basic = opts?.basic ?? false;
+  const key = `${genre}:${basic ? 'basic' : 'full'}`;
+  const cached = rulesListCache.get(key);
+  if (cached) return cached;
+
+  const url = `/rules/list?genre=${enc(genre)}${basic ? '&fields=basic' : ''}`;
+  const request = (async () => {
+    let lastError: unknown;
+    // 后端代理偶尔会卡住 30s 才返回 502：这里主动超时并重试一次，
+    // 避免词牌选择器无限停在「加载中...」。
+    for (let attempt = 0; attempt < 2; attempt++) {
+      if (attempt > 0) await new Promise(resolve => setTimeout(resolve, RULES_LIST_RETRY_DELAY_MS));
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), RULES_LIST_TIMEOUT_MS);
+      try {
+        const list = await get<RuleListItem[]>(url, CHECKER_DIRECT_BASE, controller.signal);
+        reportRulesListCall();
+        return list;
+      } catch (err) {
+        lastError = err;
+      } finally {
+        clearTimeout(timer);
+      }
+    }
+    throw lastError;
+  })().catch(err => {
+    // 失败不缓存，下一次打开词牌选择器可以立即重试
+    rulesListCache.delete(key);
+    throw err;
+  });
+  rulesListCache.set(key, request);
+  return request;
 }
 
 // --- 单字查询：并发调用 checker(音韵) + 主项目(释义) ---

@@ -64,6 +64,7 @@ export function Dictionary() {
   const [length, setLength] = useState('2');
   const [tone, setTone] = useState('all');
   const pendingQuery = useRef(false);
+  const searchSequence = useRef(0);
 
   // 字典 tab 持久化：用户手动切换后记住，下次打开仍在该 tab
   useEffect(() => {
@@ -84,6 +85,7 @@ export function Dictionary() {
   const [phraseResult, setPhraseResult] = useState<[string, number][]>([]);
   const [allusionResult, setAllusionResult] = useState<AllusionEntry[]>([]);
   const [loading, setLoading] = useState(false);
+  const [searchError, setSearchError] = useState<string | null>(null);
 
   // 典故弹窗
   const [allusionPopup, setAllusionPopup] = useState<AllusionEntry | null>(null);
@@ -108,13 +110,31 @@ export function Dictionary() {
   // 搜索词记录（上次搜索时的 term，用于 tab/filter 切换时重搜）
   const [searchedTerm, setSearchedTerm] = useState('');
 
+  // Invalidate in-flight responses immediately when the query context changes,
+  // including the debounce interval before the next request starts.
+  useEffect(() => {
+    searchSequence.current += 1;
+    setRhymeResult(null);
+    setPhraseResult([]);
+    setAllusionResult([]);
+    setSearchError(null);
+    setLoading(false);
+    return () => { searchSequence.current += 1; };
+  }, [term, tab, length, tone, bookName]);
+
   const doSearch = useCallback(async (overrideTerm?: string) => {
+    const requestId = ++searchSequence.current;
     const q = overrideTerm ?? term;
+    setRhymeResult(null);
+    setPhraseResult([]);
+    setAllusionResult([]);
+    setSearchError(null);
     if (!q) {
       setRhymeResult(null);
       setPhraseResult([]);
       setAllusionResult([]);
       setSearchedTerm('');
+      setLoading(false);
       return;
     }
     // 根据输入长度决定实际使用的 tab（多字时只有 allusion 和 pair 可见）
@@ -124,34 +144,43 @@ export function Dictionary() {
     try {
       if (curTab === 'rhyme') {
         const r = await charLookup(q, bookName);
+        if (requestId !== searchSequence.current) return;
         setRhymeResult({ tones: r.tones, categories: r.rhyme_categories, definitions: r.definitions ?? [], sgDefinitions: r.sg_definitions ?? [] });
         setPhraseResult([]);
         setAllusionResult([]);
       } else if (curTab === 'allusion') {
         const r = await allusionSearch(q);
+        if (requestId !== searchSequence.current) return;
         setAllusionResult(r);
         setRhymeResult(null);
         setPhraseResult([]);
       } else if (curTab === 'pair' || curTab === 'tongwei') {
         const r = await dictionarySearch({ term: q, mode: curTab });
+        if (requestId !== searchSequence.current) return;
         setPhraseResult(r as [string, number][]);
         setRhymeResult(null);
         setAllusionResult([]);
       } else if (curTab === 'head' || curTab === 'tail') {
         const r = await dictionarySearch({ term: q, mode: curTab, length, tone });
+        if (requestId !== searchSequence.current) return;
         setPhraseResult(r as [string, number][]);
         setRhymeResult(null);
         setAllusionResult([]);
       }
-    } catch { /* ignore */ }
-    setLoading(false);
+    } catch {
+      if (requestId === searchSequence.current) {
+        setSearchError('查询失败，请稍后重试');
+      }
+    } finally {
+      if (requestId === searchSequence.current) setLoading(false);
+    }
   }, [term, tab, length, tone, bookName]);
 
   // tab/filter 切换时：如果之前已搜索过，用上次的搜索词重搜
   useEffect(() => {
     if (searchedTerm) doSearch(searchedTerm);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tab, length, tone]);
+  }, [tab, length, tone, bookName]);
 
   // 联动：网格点击已填字时触发搜索（保持当前 tab，不强制切回「韵部」）
   useEffect(() => {
@@ -207,9 +236,9 @@ export function Dictionary() {
   const showFilters = effectiveTab === 'head' || effectiveTab === 'tail';
   const [expanded, setExpanded] = useState(true);
   const hasAllusionResults = allusionResult.length > 0;
-  const noResult = !loading && term &&
+  const noResult = !loading && !searchError && term &&
     tab !== 'rhyme' && tab !== 'allusion' && phraseResult.length === 0;
-  const noAllusionResult = !loading && term && tab === 'allusion' && !hasAllusionResults;
+  const noAllusionResult = !loading && !searchError && term && tab === 'allusion' && !hasAllusionResults;
 
   return (
     <div data-onb="onb-dict" className={`border-t border-[var(--border)] bg-[var(--bg-card)] flex flex-col overflow-hidden transition-[height] duration-200 ease-in-out ${expanded ? 'h-[255px]' : 'h-[65px]'}`}>
@@ -423,6 +452,10 @@ export function Dictionary() {
               </span>
             ))}
           </div>
+        )}
+
+        {searchError && (
+          <div role="alert" className="text-xs text-[var(--text-muted)] py-2 text-center">{searchError}</div>
         )}
 
         {(noResult || noAllusionResult) && (

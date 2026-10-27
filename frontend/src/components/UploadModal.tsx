@@ -6,6 +6,7 @@ import { submitPoem, track } from '../lib/api';
 import type { SubmitResult, SubmitData } from '../lib/api';
 import { runUploadSequence } from '../lib/uploadSequence';
 import { resolveUploadPreface, resolveUploadFootnote } from '../lib/uploadPreface';
+import { formatSequenceTitle } from '../lib/sequenceTitle';
 import type { ValidationResult } from '../lib/types';
 import { X, Loader, Check, AlertCircle } from 'lucide-react';
 
@@ -20,8 +21,6 @@ interface UploadItem {
   footnote?: string;
   legacyId?: string;
 }
-
-const ORDINALS = ['一','二','三','四','五','六','七','八','九','十'];
 
 function buildSectionContent(
   genre: 'Shi' | 'Ci' | 'Free',
@@ -97,15 +96,13 @@ export function UploadModal({ onClose }: { onClose: () => void }) {
     const date = toApiDate(metadata.date, metadata.dateFormat, board.updatedAt);
     const genre = board.genre;
     const typeStr = genre === 'Shi' ? '诗' : genre === 'Ci' ? '词' : '现代韵文';
+    const sequenceStyle = localStorage.getItem('fangcun_seq_style') === 'paren' ? 'paren' : 'space';
 
     return board.sections.map((sec, idx) => {
       const v = state.validations[idx] ?? null;
       const content = buildSectionContent(genre, sec, v);
-      const ord = ORDINALS[idx] ?? idx + 1;
-      const sty = localStorage.getItem('fangcun_seq_style') || 'space';
-      const autoTitle = sty === 'paren' ? `${board.title}（其${ord}）` : `${board.title} 其${ord}`;
       const title = board.sections.length > 1
-        ? (sec.title || autoTitle)
+        ? formatSequenceTitle(board.title, sec.title, idx + 1, sequenceStyle)
         : board.title;
       // 序的上传映射：单首画板的序存于画板级 metadata.preface（组诗整组序同源，归入首首）；
       // 组诗各首另有本首小序 sectionPreface。两者并存时按 组序 → 本首序 顺序拼接。

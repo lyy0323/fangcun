@@ -31,6 +31,14 @@ except Exception:
 
 _UTC8 = timezone(timedelta(hours=8))
 
+
+def _record_call_safely(source, route):
+    """统计故障不阻断创作或客户端埋点。"""
+    try:
+        record_call(source, route)
+    except Exception:
+        app.logger.warning("Call statistics write failed", exc_info=True)
+
 # ============================================================================
 # 初始化
 # ============================================================================
@@ -61,7 +69,7 @@ with open(f"{CFG}/t2s_map.json", "r") as f:
 
 import dict_db
 
-print(f"[App] 就绪: 词库→{'DB' if dict_db.POSTGRES_URL else 'JSON'}, "
+print(f"[App] 就绪: 词库→{'SQLite' if os.environ.get('DICT_SQLITE_PATH') else 'DB' if dict_db.POSTGRES_URL else 'JSON'}, "
       f"限流→{'开' if _RATELIMIT_ENABLED else '关'}, "
       f"统计→{'开' if _STATS_AVAILABLE else '关'}")
 
@@ -89,10 +97,7 @@ def validate_input():
 def track_api_call(response):
     """记录 API 调用统计（可选）"""
     if _STATS_AVAILABLE and request.path.startswith("/api/") and not request.path.startswith("/api/_") and not request.path.startswith("/api/stats/") and response.status_code < 400:
-        try:
-            record_call("api", request.path)
-        except Exception:
-            pass
+        _record_call_safely("api", request.path)
     return response
 
 
@@ -133,6 +138,15 @@ def _lookup_sg_definitions(ch: str):
 # ============================================================================
 # API 路由
 # ============================================================================
+
+@app.route("/api/_health")
+@limiter.exempt
+def health():
+    try:
+        return jsonify({"ok": True, "dictionary": dict_db.check_health()})
+    except Exception:
+        app.logger.exception("Dictionary readiness check failed")
+        return jsonify({"ok": False, "error": "词库暂不可用"}), 503
 
 # ---------- GET /api/char/definitions ----------
 
@@ -233,7 +247,7 @@ def api_ping():
     source = data.get("source", "android")
     route = data.get("route", "")
     if route.startswith("/api/") and not route.startswith("/api/_"):
-        record_call(source, route)
+        _record_call_safely(source, route)
     return jsonify({"ok": True})
 
 @app.route("/api/_track", methods=["POST"])
@@ -250,7 +264,7 @@ def track_event():
     source = data.get("source", "frontend")
     if source not in ("frontend", "android"):
         source = "frontend"
-    record_call(source, route)
+    _record_call_safely(source, route)
     return jsonify({"ok": True})
 
 # ---------- 统计端点 ----------

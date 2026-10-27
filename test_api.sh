@@ -1,10 +1,11 @@
 #!/usr/bin/env bash
 # 方寸 API 生产环境测试脚本
 # 用法: bash test_api.sh
+# 本地代理: FANGCUN_API_BASE=http://127.0.0.1:3000 bash test_api.sh
 
 set -euo pipefail
 
-BASE="https://write.sjtuguoxue.space"
+BASE="${FANGCUN_API_BASE:-https://write.sjtuguoxue.space}"
 PASS=0
 FAIL=0
 
@@ -12,6 +13,13 @@ test_endpoint() {
   local label="$1" expect_code="$2" method="$3" path="$4"
   shift 4
   local url="${BASE}${path}"
+  # curl 不会自动编码 URL 中的中文；Node/Vite 代理会拒绝原始非 ASCII 请求。
+  url=$(python3 - "$url" <<'PY'
+import sys
+from urllib.parse import quote
+print(quote(sys.argv[1], safe=":/?=&%"))
+PY
+  )
 
   if [[ "$method" == "POST" ]]; then
     code=$(curl -s -o /tmp/fangcun_resp.json -w "%{http_code}" \
@@ -31,7 +39,7 @@ test_endpoint() {
   fi
 }
 
-echo "🔍 测试生产环境: $BASE"
+echo "🔍 测试环境: $BASE"
 echo
 
 # --- 1. 文档页面 ---
@@ -58,6 +66,11 @@ test_endpoint "rhyme/list" 200 GET "/api/rhyme/list?book=Pingshuiyun&tone=P"
 test_endpoint "rules/list" 200 GET "/api/rules/list?genre=Shi"
 
 test_endpoint "dictionary/search" 200 GET "/api/dictionary/search?term=明&mode=head&length=2"
+test_endpoint "dictionary/allusion" 200 GET "/api/dictionary/allusion?term=春"
+test_endpoint "dictionary/pair" 200 GET "/api/dictionary/search?term=春&mode=pair"
+test_endpoint "dictionary/tongwei" 200 GET "/api/dictionary/search?term=春&mode=tongwei"
+test_endpoint "dashboard" 200 GET "/dashboard"
+test_endpoint "stats/routes" 200 GET "/api/_stats/routes"
 
 # --- 3. 输入校验 ---
 echo "🛡️  输入校验"

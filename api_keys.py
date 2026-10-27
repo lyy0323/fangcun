@@ -3,21 +3,25 @@
 """
 API 调用统计 — 双后端（SQLite 本地 / Postgres 线上）
 
-环境变量 POSTGRES_URL 存在时使用 Postgres，否则使用 SQLite。
+设置 STATS_SQLITE_PATH 时使用指定 SQLite；否则 POSTGRES_URL 存在时使用 Postgres。
 仅记录调用统计，不管理 API Key。
 """
 
 import os
 import sqlite3
+import threading
 from datetime import datetime, timezone, timedelta
 from typing import List, Dict
 
 DATA_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data")
-DB_PATH = os.path.join(DATA_DIR, "api_keys.db")
+STATS_SQLITE_PATH = os.environ.get("STATS_SQLITE_PATH")
+DB_PATH = STATS_SQLITE_PATH or os.path.join(DATA_DIR, "api_keys.db")
 
 POSTGRES_URL = os.environ.get("POSTGRES_URL")
 
 _UTC8 = timezone(timedelta(hours=8))
+_sqlite_init_lock = threading.Lock()
+_sqlite_initialized = set()
 
 _CREATE_ROUTE_STATS_SQL = """
     CREATE TABLE IF NOT EXISTS api_route_stats (
@@ -32,11 +36,21 @@ _CREATE_ROUTE_STATS_SQL = """
 
 
 def _sqlite_conn() -> sqlite3.Connection:
-    os.makedirs(DATA_DIR, exist_ok=True)
-    conn = sqlite3.connect(DB_PATH)
+    db_path = os.path.abspath(DB_PATH)
+    os.makedirs(os.path.dirname(db_path), exist_ok=True)
+    conn = sqlite3.connect(db_path, timeout=5)
     conn.row_factory = sqlite3.Row
-    conn.execute(_CREATE_ROUTE_STATS_SQL)
-    conn.commit()
+    try:
+        with _sqlite_init_lock:
+            if db_path not in _sqlite_initialized:
+                conn.execute("PRAGMA journal_mode=WAL")
+                conn.execute(_CREATE_ROUTE_STATS_SQL)
+                conn.commit()
+                _sqlite_initialized.add(db_path)
+        conn.execute("PRAGMA busy_timeout=5000")
+    except Exception:
+        conn.close()
+        raise
     return conn
 
 
@@ -51,7 +65,7 @@ def _pg_conn():
 
 
 def _use_pg() -> bool:
-    return bool(POSTGRES_URL)
+    return bool(POSTGRES_URL) and not STATS_SQLITE_PATH
 
 
 def record_call(source: str, route: str):

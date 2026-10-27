@@ -357,7 +357,7 @@ export function GridEditor() {
   const cursorRef = useRef(cursor);
   cursorRef.current = cursor;
 
-  useValidation();
+  const { failed: validationFailed, retry: retryValidation } = useValidation();
 
   const pickerRef = useRef<HTMLDivElement>(null);
   const blurTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
@@ -940,11 +940,22 @@ export function GridEditor() {
               </div>
             )}
 
-            {/* Ci loading */}
-            {ciLoading && (
+            {/* Ci loading / 加载失败 */}
+            {ciLoading && !(isActive && validationFailed) && (
               <div className="flex flex-col items-center py-8 gap-3">
                 <div className="w-5 h-5 border-2 border-[var(--grid-empty-border)] border-t-[var(--accent)] rounded-full animate-spin" />
                 <div className="text-xs text-[var(--text-muted)]">加载词谱...</div>
+              </div>
+            )}
+            {ciLoading && isActive && validationFailed && (
+              <div className="flex flex-col items-center py-8 gap-2">
+                <div className="text-xs text-[var(--text-muted)]">词谱加载失败，请检查网络后重试</div>
+                <button
+                  className="px-3 py-1 text-xs rounded-md border border-[var(--border)] text-[var(--text-secondary)] hover:text-[var(--accent)] hover:bg-[var(--accent-light)]"
+                  onClick={retryValidation}
+                >
+                  重试
+                </button>
               </div>
             )}
 
