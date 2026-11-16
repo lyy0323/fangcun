@@ -375,6 +375,7 @@ export function filterThemesByRatio(ratio: AspectRatio): ThemeKey[] {
 
 // ---- 标题排向常量 ----
 const TITLE_MAX_W = 760;          // 横排标题宽度预算
+const TITLE_H_RIGHT = W - PAD_X;  // 横排标题右缘：与正文默认右边距对齐
 const TITLE_SIZES_H = [96, 72, 56, 44, 36]; // 横排字号档位（按宽度预算取最大）
 const TITLE_TRACKING = 0.15;      // 字距（每字额外 0.15em，即推进 1.15em）
 const TITLE_LINE_ADV = 1.35;      // 多行标题的行距（em）
@@ -388,11 +389,33 @@ function charAdvance(ch: string, size: number): number {
   return size * 0.55;
 }
 
-/** 带字距的整行宽度 */
-function trackedWidth(text: string, size: number): number {
-  const chars = [...text];
-  if (!chars.length) return 0;
-  return chars.reduce((w, ch) => w + charAdvance(ch, size), 0) + size * TITLE_TRACKING * (chars.length - 1);
+/** 中文/全角字符 */
+const CJK_CHAR_RE = /[\u2e80-\u9fff\uf900-\ufaff\uff00-\uffef\u3000-\u303f]/;
+
+type TitleUnit = { text: string; cjk: boolean };
+
+/** 按「中文逐字 / 西文连写」切分：西文内部不加字距，中西边界加一次 */
+function titleUnits(text: string): TitleUnit[] {
+  const units: TitleUnit[] = [];
+  for (const ch of text) {
+    const cjk = CJK_CHAR_RE.test(ch);
+    const last = units[units.length - 1];
+    if (!cjk && last && !last.cjk) last.text += ch;
+    else units.push({ text: ch, cjk });
+  }
+  return units;
+}
+
+/** 一行标题的宽度；传 ctx 时用真实字宽（字距规则一致） */
+function titleWidth(text: string, size: number, ctx?: CanvasRenderingContext2D): number {
+  const units = titleUnits(text);
+  let w = 0;
+  units.forEach((unit, i) => {
+    w += ctx ? ctx.measureText(unit.text).width : [...unit.text].reduce((sum, ch) => sum + charAdvance(ch, size), 0);
+    const next = units[i + 1];
+    if (next && (unit.cjk || next.cjk)) w += size * TITLE_TRACKING;
+  });
+  return w;
 }
 
 // ---- 竖排标题的按词切分：中文逐字，西文整词（转 90° 后变成纵向长度） ----
@@ -483,17 +506,38 @@ function horizontalTitleLines(title: string): string[] {
   return lines.length ? lines : [''];
 }
 
-function horizontalLineWidth(line: string, size: number): number {
-  const { cipai, sub } = splitCipai(line);
+interface TitlePlanLine {
+  big: string;      // 词牌（大字）
+  sub: string;      // 题目（小字）
+  bigSize: number;
+  subSize: number;
+  gap: number;
+}
+
+/** 横排排版：含「·」的标题，其余换行行都归入题目小字 */
+function horizontalTitlePlan(title: string, size: number): TitlePlanLine[] {
+  const lines = horizontalTitleLines(title);
+  const isCi = lines[0].search(/[·•]/) > 0;
   const subSize = Math.round(size * 0.62);
-  return trackedWidth(cipai, size) + (sub ? size * 0.28 + trackedWidth(sub, subSize) : 0);
+  return lines.map((line, i) => {
+    if (!isCi) return { big: line, sub: '', bigSize: size, subSize, gap: 0 };
+    if (i === 0) {
+      const { cipai, sub } = splitCipai(line);
+      return { big: cipai, sub, bigSize: size, subSize, gap: sub ? size * 0.28 : 0 };
+    }
+    return { big: '', sub: line, bigSize: size, subSize, gap: 0 };
+  });
+}
+
+function planLineWidth(line: TitlePlanLine, ctx?: CanvasRenderingContext2D): number {
+  return titleWidth(line.big, line.bigSize, ctx)
+    + (line.sub ? line.gap + titleWidth(line.sub, line.subSize, ctx) : 0);
 }
 
 /** 横排字号：取能放进宽度预算的最大档 */
 function horizontalTitleSize(title: string): number {
-  const lines = horizontalTitleLines(title);
   for (const size of TITLE_SIZES_H) {
-    const maxW = Math.max(...lines.map(l => horizontalLineWidth(l, size)));
+    const maxW = Math.max(...horizontalTitlePlan(title, size).map(line => planLineWidth(line)));
     if (maxW <= TITLE_MAX_W) return size;
   }
   return TITLE_SIZES_H[TITLE_SIZES_H.length - 1];
@@ -1480,25 +1524,33 @@ function drawCiTitle(
   };
 }
 
-/** 横排标题：右上角、右对齐，逐行一条 0.5em 色带（上沿字心 +0.25em） */
+/** 横排标题：右上角、右对齐（与正文右边距对齐），逐行一条 0.5em 色带（上沿字心 +0.25em） */
 function drawHorizontalTitle(
   ctx: CanvasRenderingContext2D,
   title: string,
   colors: ColorTheme,
 ): { bottomY: number; leftX: number } {
-  const lines = horizontalTitleLines(title);
   const size = horizontalTitleSize(title);
+  const plan = horizontalTitlePlan(title, size);
   const lineAdv = size * TITLE_LINE_ADV;
-  const rightX = W * 0.85;
+  const rightX = TITLE_H_RIGHT;
   let leftX = rightX;
 
-  lines.forEach((line, i) => {
+  plan.forEach((line, i) => {
     const cy = TITLE_PAD_TOP + size * 0.5 + i * lineAdv;
-    const { cipai, sub } = splitCipai(line);
-    const subSize = Math.round(size * 0.62);
-    const cipaiW = trackedWidth(cipai, size);
-    const subW = sub ? trackedWidth(sub, subSize) : 0;
-    const totalW = cipaiW + (sub ? size * 0.28 + subW : 0);
+
+    // 用真实字宽定位（字体已就绪），保证色带与文字等宽
+    let bigW = 0;
+    if (line.big) {
+      ctx.font = exportFont(700, line.bigSize);
+      bigW = titleWidth(line.big, line.bigSize, ctx);
+    }
+    let subW = 0;
+    if (line.sub) {
+      ctx.font = exportFont(400, line.subSize);
+      subW = titleWidth(line.sub, line.subSize, ctx);
+    }
+    const totalW = bigW + (line.sub ? line.gap + subW : 0);
     const left = rightX - totalW;
     leftX = Math.min(leftX, left);
 
@@ -1512,23 +1564,27 @@ function drawHorizontalTitle(
 
     let x = left;
     const drawRun = (text: string, runSize: number, y: number, weight: number) => {
-      const chars = [...text];
+      if (!text) return;
       ctx.font = exportFont(weight, runSize);
-      chars.forEach((ch, idx) => {
-        ctx.fillText(ch, x, y);
-        x += charAdvance(ch, runSize) + (idx < chars.length - 1 ? runSize * TITLE_TRACKING : 0);
+      const units = titleUnits(text);
+      units.forEach((unit, ui) => {
+        ctx.fillText(unit.text, x, y);
+        x += ctx.measureText(unit.text).width;
+        const next = units[ui + 1];
+        // 字距只加在中文一侧：西文内部不加，中西边界加一次
+        if (next && (unit.cjk || next.cjk)) x += runSize * TITLE_TRACKING;
       });
     };
 
-    drawRun(cipai, size, cy, 700);
-    if (sub) {
-      x += size * 0.28;
-      drawRun(sub, subSize, cy + (size - subSize) / 2, 400);
+    drawRun(line.big, line.bigSize, cy, 700);
+    if (line.sub) {
+      x += line.gap;
+      drawRun(line.sub, line.subSize, cy + (size - line.subSize) / 2, 400);
     }
   });
 
   return {
-    bottomY: TITLE_PAD_TOP + (lines.length - 1) * lineAdv + size * (0.5 + TITLE_BAND_TOP + TITLE_BAND_H),
+    bottomY: TITLE_PAD_TOP + (plan.length - 1) * lineAdv + size * (0.5 + TITLE_BAND_TOP + TITLE_BAND_H),
     leftX,
   };
 }
