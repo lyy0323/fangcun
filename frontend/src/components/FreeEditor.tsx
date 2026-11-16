@@ -6,6 +6,13 @@ import { isMarkdownPaste, parseMarkdownPaste } from '../lib/markdownParse';
 import { usePinEditorFocus } from '../lib/usePinEditorFocus';
 import { Plus, Eye } from 'lucide-react';
 
+/** 标题输入框随内容自动增高（支持手动换行） */
+function autoGrowTitle(el: HTMLTextAreaElement) {
+  el.style.height = 'auto';
+  el.style.height = `${el.scrollHeight}px`;
+}
+
+
 const MAX_LINE_CHARS = 26;
 const CJK_PUNCT = '，。？！、～：＃；％——……·（）『』〔〕【】〖〗《》「」〈〉｜“”‘’';
 const RHYME_COLORS = ['#559977', '#557799', '#997755', '#775599', '#779955', '#995577', '#996666', '#669966', '#666699', '#888855', '#885588', '#558888'];
@@ -352,11 +359,15 @@ export function FreeEditor() {
     >
       {/* Title */}
       <div className="flex flex-col items-center mb-6" onClick={e => e.stopPropagation()}>
-        <input
-          className="text-lg text-center bg-transparent outline-none border-b border-dashed border-transparent focus:border-[var(--accent)] placeholder:text-[var(--text-muted)] w-48 transition-colors font-semibold"
+        <textarea
+          ref={(el) => { if (el) autoGrowTitle(el); }}
+          rows={1}
+          className="text-lg text-center bg-transparent outline-none border-b border-dashed border-transparent focus:border-[var(--accent)] placeholder:text-[var(--text-muted)] w-48 transition-colors font-semibold resize-none overflow-hidden leading-snug"
           defaultValue={board.title}
           key={board.id + '-title'}
           placeholder="标题"
+          onInput={(e) => autoGrowTitle(e.currentTarget)}
+          onKeyDown={(e) => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) e.currentTarget.blur(); }}
           onBlur={(e) => dispatch({ type: 'UPDATE_TITLE', title: e.target.value.trim() || '新建·自由诗' })}
           onPaste={(e) => {
             const text = e.clipboardData.getData('text/plain');

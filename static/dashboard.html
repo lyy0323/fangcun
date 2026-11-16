@@ -60,15 +60,15 @@
 
   .container { width: 100%; max-width: 1100px; min-width: 0; margin: 0 auto; padding: 1.5rem; }
 
-  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1.5rem; }
+  .cards { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 1rem; margin-bottom: 1.5rem; }
   .card { min-width: 0; background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.25rem; box-shadow: var(--shadow); }
   .card-label { font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.25rem; }
   .card-value { font-size: 2rem; font-weight: 700; line-height: 1.2; }
-  .card-sub { font-size: 0.8rem; color: var(--text-secondary); margin-top: 0.25rem; }
   .card--blue .card-value { color: var(--accent); }
   .card--green .card-value { color: var(--green); }
   .card--purple .card-value { color: var(--purple); }
   .card--orange .card-value { color: var(--orange); }
+  .card--pink .card-value { color: #db2777; }
 
   .section { min-width: 0; background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.25rem; margin-bottom: 1.5rem; box-shadow: var(--shadow); }
   .section-title { font-size: 0.95rem; font-weight: 600; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem; }
@@ -201,22 +201,22 @@
     <div class="card card--blue">
       <div class="card-label">后端 API 调用</div>
       <div class="card-value" id="rangeApiCalls">-</div>
-      <div class="card-sub metric-range" data-note="已统计成功请求">-</div>
     </div>
     <div class="card card--green">
       <div class="card-label">前端事件</div>
       <div class="card-value" id="rangeEvents">-</div>
-      <div class="card-sub metric-range" data-note="埋点事件">-</div>
     </div>
     <div class="card card--purple">
       <div class="card-label">导出图片次数</div>
       <div class="card-value" id="rangeExportImages">-</div>
-      <div class="card-sub metric-range" data-note="成功导出事件">-</div>
     </div>
     <div class="card card--orange">
       <div class="card-label">复制文本次数</div>
       <div class="card-value" id="rangeCopyTexts">-</div>
-      <div class="card-sub metric-range" data-note="成功复制事件">-</div>
+    </div>
+    <div class="card card--pink">
+      <div class="card-label">上传作品总数</div>
+      <div class="card-value" id="rangeUploads">-</div>
     </div>
   </div>
 
@@ -640,6 +640,7 @@ const EVENT_LABELS = {
   export_boards: '导出画板', import_ciyun: '次韵导入', create_folder: '新建文件夹',
   delete_folder: '删除文件夹', move_board: '移动画板', add_inspiration: '添加灵感',
   toggle_immersive: '沉浸模式',
+  upload_attempt: '上传尝试', upload_poem: '上传作品',
 };
 
 // checker 透传端点：统计归一为 api 来源（后端调用），与前端事件埋点分离
@@ -659,18 +660,18 @@ function render() {
   const apiRows = filtered.filter(row => !row.route.startsWith('_event:'));
   const frontendEventRows = filtered.filter(row => row.route.startsWith('_event:'));
   const eventCounts = {};
+  // 上传作品按 props.count 累加（组诗按首计），不是事件条数
+  let uploadTotal = 0;
   frontendEventRows.forEach(row => {
-    const { eventName } = parseEventProps(row.route);
+    const { eventName, props } = parseEventProps(row.route);
     eventCounts[eventName] = (eventCounts[eventName] || 0) + row.call_count;
+    if (eventName === 'upload_poem') uploadTotal += parseInt(props.count, 10) || 0;
   });
   document.getElementById('rangeApiCalls').textContent = apiRows.reduce((sum, row) => sum + row.call_count, 0).toLocaleString();
   document.getElementById('rangeEvents').textContent = frontendEventRows.reduce((sum, row) => sum + row.call_count, 0).toLocaleString();
   document.getElementById('rangeExportImages').textContent = (eventCounts.export_image || 0).toLocaleString();
   document.getElementById('rangeCopyTexts').textContent = (eventCounts.copy_text || 0).toLocaleString();
-  document.querySelectorAll('.metric-range').forEach(element => {
-    const note = element.dataset?.note;
-    element.textContent = note ? `${label} · ${note}` : label;
-  });
+  document.getElementById('rangeUploads').textContent = uploadTotal.toLocaleString();
 
   // North-star: daily successful take-away actions + their combined MA30.
   renderNorthStar(selectedDays());
@@ -742,6 +743,7 @@ function render() {
   const breakdownsEl = document.getElementById('eventBreakdowns');
   let bHTML = '';
   const bCfg = [
+    { event: 'upload_poem', prop: 'author', weightProp: 'count', title: '上传作品 · 作者', fallback: '未记录作者' },
     { event: 'export_image', prop: 'theme', title: '导出图片 · 主题' },
     { event: 'export_image', prop: 'genre', title: '导出图片 · 体裁', transform: g => g === 'Shi' ? '诗' : g === 'Ci' ? '词' : '自由诗' },
     { event: 'create_board', prop: 'genre', title: '新建画板 · 体裁', transform: g => g === 'Shi' ? '诗' : g === 'Ci' ? '词' : g === 'Free' ? '自由诗' : g },
@@ -750,7 +752,14 @@ function render() {
   for (const cfg of bCfg) {
     const items = eventPropsMap[cfg.event] || [];
     const pm = {};
-    items.forEach(({ props, count }) => { let v = props[cfg.prop]; if (!v) return; if (cfg.transform) v = cfg.transform(v, props); pm[v] = (pm[v] || 0) + count; });
+    items.forEach(({ props, count }) => {
+      let v = props[cfg.prop] || cfg.fallback;
+      if (!v) return;
+      if (cfg.transform) v = cfg.transform(v, props);
+      // 上传按 props.count（作品首数）累加，其余按事件条数
+      const weight = cfg.weightProp ? (parseInt(props[cfg.weightProp], 10) || 0) : count;
+      pm[v] = (pm[v] || 0) + weight;
+    });
     const entries = Object.entries(pm).sort((a, b) => b[1] - a[1]);
     if (entries.length) {
       bHTML += `<div class="section"><div class="section-title">${cfg.title}</div>

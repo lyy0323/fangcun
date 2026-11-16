@@ -2,6 +2,8 @@
 // 诗词图片导出 — Canvas 绘制引擎
 // ============================================================================
 
+import type { TitleOrientation } from './types';
+
 export type ThemeKey = '素白' | '朱砂' | '墨韵' | '竹青' | '藏蓝' | '烟紫' | '秋棠' | '霜灰' | '纸感' | '棉花糖' | '鱼肚白' | '极光' | '春水' | '暮山' | '星河' | '薄荷' | '大理石' | '晨暮' | '丹霞' | '碧落' | '苍翠' | '鎏金' | '西湖' | '金乌' | '烟雨' | '枯藤' | '青瓷' | '残雪' | '芭蕉' | '蝶梦' | '桃源' | '鹊桥' | '琉璃' | '草纸' | '白叶' | '卡纸' | '藕纸' | '青纹' | '樱花' | '墨荷' | '红梅' | '巴山' | '天净沙' | '烟柳';
 
 export type AspectRatio = '3:4' | '9:16' | '9:18' | 'long';
@@ -352,7 +354,7 @@ export function computeMinHeight(data: ExportData): number {
   const measureCtx = measureCanvas.getContext('2d')!;
   const { prefaceH, footerH } = measureMetaHeight(measureCtx, { date, preface, footnote }, metaMaxW);
 
-  const titleBlockH = measureTitleBlockHeight(data.title);
+  const titleBlockH = measureTitleBlockHeight(data.title, data.titleOrientation);
   const titleRegionH = TITLE_PAD_TOP + titleBlockH;
   const paraBreaks = data.align === 'justify' ? lines.filter(l => l === '').length : 0;
   const poemTotalH = lines.length * lineHeight - paraBreaks * lineHeight * 0.2;
@@ -371,24 +373,157 @@ export function filterThemesByRatio(ratio: AspectRatio): ThemeKey[] {
   });
 }
 
-/** 测量标题竖排区域高度（不含顶部 padding） */
-function measureTitleBlockHeight(title: string): number {
+// ---- 标题排向常量 ----
+const TITLE_MAX_W = 760;          // 横排标题宽度预算
+const TITLE_SIZES_H = [96, 72, 56, 44, 36]; // 横排字号档位（按宽度预算取最大）
+const TITLE_TRACKING = 0.15;      // 字距（每字额外 0.15em，即推进 1.15em）
+const TITLE_LINE_ADV = 1.35;      // 多行标题的行距（em）
+const TITLE_BAND_H = 0.5;         // 色带高度（em）
+const TITLE_BAND_TOP = 0.25;      // 色带上沿 = 字心 + 0.25em
+
+/** 单字推进宽度（不含字距）；用于不依赖字体是否就绪的稳定测量 */
+function charAdvance(ch: string, size: number): number {
+  if (ch === ' ') return size * 0.35;
+  if (/[\u2e80-\u9fff\uf900-\ufaff\uff00-\uffef\u3000-\u303f]/.test(ch)) return size;
+  return size * 0.55;
+}
+
+/** 带字距的整行宽度 */
+function trackedWidth(text: string, size: number): number {
+  const chars = [...text];
+  if (!chars.length) return 0;
+  return chars.reduce((w, ch) => w + charAdvance(ch, size), 0) + size * TITLE_TRACKING * (chars.length - 1);
+}
+
+// ---- 竖排标题的按词切分：中文逐字，西文整词（转 90° 后变成纵向长度） ----
+
+type TitleCell = { type: 'cjk' | 'word' | 'space'; text: string };
+
+const LATIN_JOIN_RE = /[A-Za-z0-9'’\-.,!?;:&%@#]/;
+
+function segmentTitleCells(text: string): TitleCell[] {
+  const chars = [...text].filter(ch => ch !== '\r');
+  const cells: TitleCell[] = [];
+  let i = 0;
+  while (i < chars.length) {
+    const ch = chars[i];
+    if (/[A-Za-z0-9]/.test(ch)) {
+      let j = i + 1;
+      while (j < chars.length && LATIN_JOIN_RE.test(chars[j])) j++;
+      cells.push({ type: 'word', text: chars.slice(i, j).join('') });
+      i = j;
+    } else if (ch === ' ') {
+      cells.push({ type: 'space', text: ch });
+      i++;
+    } else {
+      cells.push({ type: 'cjk', text: ch });
+      i++;
+    }
+  }
+  return cells;
+}
+
+/** 字格在列里占的高度（em 估算，仅用于分列与排版测量） */
+function cellEm(cell: TitleCell): number {
+  if (cell.type === 'cjk') return 1;
+  if (cell.type === 'space') return 0.4;
+  return Math.max(1, [...cell.text].length * 0.6);
+}
+
+/** 竖排列：先按用户换行切，再按每列上限自动断列；不会把西文词劈开 */
+function splitTitleCellColumns(text: string): TitleCell[][] {
+  const cols: TitleCell[][] = [];
+  for (const segment of text.split('\n')) {
+    const cells = segmentTitleCells(segment);
+    if (!cells.length) continue;
+    let col: TitleCell[] = [];
+    let used = 0;
+    for (const cell of cells) {
+      const w = cellEm(cell);
+      if (col.length && used + w > MAX_COL_CHARS) {
+        cols.push(col);
+        col = [];
+        used = 0;
+      }
+      col.push(cell);
+      used += w;
+    }
+    if (col.length) cols.push(col);
+  }
+  return cols.length ? cols : [[]];
+}
+
+/** 一列的纵向高度（到最后一个字格/词的下缘） */
+function columnBottom(col: TitleCell[], fontSize: number, spacing: number): number {
+  let ink = 0;
+  let y = 0;
+  for (const cell of col) {
+    if (cell.type === 'cjk') {
+      ink = y + fontSize;
+      y += spacing;
+    } else if (cell.type === 'space') {
+      y += spacing * 0.4;
+    } else {
+      const w = [...cell.text].reduce((sum, ch) => sum + charAdvance(ch, fontSize), 0);
+      ink = y + w;
+      y += w + spacing * 0.3;
+    }
+  }
+  return Math.max(ink, fontSize);
+}
+
+/** 标题里的「词牌·题目」拆分 */
+function splitCipai(line: string): { cipai: string; sub: string } {
+  const dot = line.search(/[·•]/);
+  return dot > 0 ? { cipai: line.slice(0, dot), sub: line.slice(dot + 1) } : { cipai: line, sub: '' };
+}
+
+function horizontalTitleLines(title: string): string[] {
+  const lines = title.split('\n').map(l => l.trim()).filter(Boolean);
+  return lines.length ? lines : [''];
+}
+
+function horizontalLineWidth(line: string, size: number): number {
+  const { cipai, sub } = splitCipai(line);
+  const subSize = Math.round(size * 0.62);
+  return trackedWidth(cipai, size) + (sub ? size * 0.28 + trackedWidth(sub, subSize) : 0);
+}
+
+/** 横排字号：取能放进宽度预算的最大档 */
+function horizontalTitleSize(title: string): number {
+  const lines = horizontalTitleLines(title);
+  for (const size of TITLE_SIZES_H) {
+    const maxW = Math.max(...lines.map(l => horizontalLineWidth(l, size)));
+    if (maxW <= TITLE_MAX_W) return size;
+  }
+  return TITLE_SIZES_H[TITLE_SIZES_H.length - 1];
+}
+
+/** 测量标题区域高度（不含顶部 padding） */
+function measureTitleBlockHeight(title: string, orientation: TitleOrientation = 'vertical'): number {
+  if (orientation === 'horizontal') {
+    const lines = horizontalTitleLines(title);
+    const size = horizontalTitleSize(title);
+    // 首行字框顶到末行色带底：0.5em 字心 + 0.25em 偏移 + 0.5em 带高 = 1.25em
+    return (lines.length - 1) * size * TITLE_LINE_ADV + size * (0.5 + TITLE_BAND_TOP + TITLE_BAND_H);
+  }
+
   const dotIdx = title.search(/[·•·]/);
   const cipai = dotIdx > 0 ? title.slice(0, dotIdx) : title;
   const subtitle = dotIdx > 0 ? title.slice(dotIdx + 1) : '';
   const configKey = dotIdx > 0 ? Math.max(cipai.length, subtitle.length) : cipai.length;
   const config = getTitleConfig(configKey);
 
-  const visibleChars = Math.min(cipai.length, MAX_COL_CHARS);
-  let h = (visibleChars - 1) * config.spacing + config.fontSize;
+  const cipaiCols = splitTitleCellColumns(cipai);
+  let h = Math.max(...cipaiCols.map(col => columnBottom(col, config.fontSize, config.spacing)));
 
   if (subtitle) {
     const subSpacing = Math.round(config.spacing * 0.78);
     const subFontSize = Math.round(config.fontSize * 0.75);
-    const subChars = Math.min(subtitle.length, MAX_COL_CHARS);
     const subStartOffset = config.spacing * 1.6;
-    const subH = subStartOffset + (subChars - 1) * subSpacing + subFontSize;
-    h = Math.max(h, subH);
+    const subCols = splitTitleCellColumns(subtitle);
+    const subH = Math.max(...subCols.map(col => columnBottom(col, subFontSize, subSpacing)));
+    h = Math.max(h, subStartOffset + subH);
   }
 
   return h;
@@ -852,21 +987,40 @@ function toVerticalChar(ch: string): string {
   return VERTICAL_PUNCT[ch] ?? ch;
 }
 
-/** 竖排文字，返回底部 Y 坐标 */
-function drawVerticalText(
+/** 竖排一列：中文逐字，西文整词旋转 90°，返回底部 Y 坐标 */
+function drawTitleColumn(
   ctx: CanvasRenderingContext2D,
-  text: string,
+  col: TitleCell[],
   x: number,
   startY: number,
+  fontSize: number,
   spacing: number,
 ): number {
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  const chars = [...text];
-  chars.forEach((ch, i) => {
-    ctx.fillText(toVerticalChar(ch), x, startY + i * spacing);
-  });
-  return startY + (chars.length - 1) * spacing;
+  let y = startY;
+  let ink = startY;
+  for (const cell of col) {
+    if (cell.type === 'cjk') {
+      ctx.fillText(toVerticalChar(cell.text), x, y);
+      ink = y + fontSize * 0.5;
+      y += spacing;
+    } else if (cell.type === 'space') {
+      y += spacing * 0.4;
+    } else {
+      const w = ctx.measureText(cell.text).width;
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.rotate(Math.PI / 2);
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(cell.text, 0, 0);
+      ctx.restore();
+      ink = y + w;
+      y += w + spacing * 0.3;
+    }
+  }
+  return ink;
 }
 
 // ============================================================================
@@ -1023,6 +1177,8 @@ export type TextAlign = 'left' | 'center' | 'right' | 'justify';
 
 export interface ExportData {
   title: string;
+  /** 标题排向，默认竖排 */
+  titleOrientation?: TitleOrientation;
   lines: string[];
   charCount: number;
   genre: 'Shi' | 'Ci' | 'Free' | 'Free';
@@ -1061,7 +1217,7 @@ export function renderToCanvas(data: ExportData): HTMLCanvasElement {
   const measureCtx = measureCanvas.getContext('2d')!;
   const { prefaceH, footerH } = measureMetaHeight(measureCtx, { date, preface, footnote }, metaMaxW);
 
-  const titleBlockH = measureTitleBlockHeight(title);
+  const titleBlockH = measureTitleBlockHeight(title, data.titleOrientation);
   const titleRegionH = TITLE_PAD_TOP + titleBlockH;
   const paraBreaks = data.align === 'justify' ? lines.filter(l => l === '').length : 0;
   const poemTotalH = lines.length * lineHeight - paraBreaks * lineHeight * 0.2;
@@ -1134,12 +1290,16 @@ export function renderToCanvas(data: ExportData): HTMLCanvasElement {
     drawBlobs(ctx, W, colors.blobs, colors.bg);
   }
 
-  // ---- 标题色块（先画，标题文字叠在上面） ----
-  const titleInfo = measureTitle(title);
-  drawTitleBlock(ctx, colors, titleInfo);
+  const horizontalTitle = data.titleOrientation === 'horizontal';
+
+  // ---- 标题色块（竖排先画，标题文字叠在上面；横排的色带在 drawTitle 内绘制） ----
+  if (!horizontalTitle) {
+    const titleInfo = measureTitle(title);
+    drawTitleBlock(ctx, colors, titleInfo);
+  }
 
   // ---- 标题文字 ----
-  drawTitle(ctx, title, colors);
+  drawTitle(ctx, title, colors, horizontalTitle);
 
   // ---- 计算诗句实际位置 ----
   const poemTopBound = titleRegionH + (height - titleRegionH - contentH);  // = height - contentH
@@ -1239,13 +1399,9 @@ function drawVerticalColumns(
   startY: number,
   fontSize: number,
   spacing: number,
-  maxColChars: number = MAX_COL_CHARS,
 ): { maxBottom: number; leftX: number } {
-  const chars = [...text];
-  const cols: string[][] = [];
-  for (let i = 0; i < chars.length; i += maxColChars) {
-    cols.push(chars.slice(i, i + maxColChars));
-  }
+  // 先按用户手动换行切列，超出单列上限的再自动断列；西文词不拆开
+  const cols = splitTitleCellColumns(text);
   const colGap = fontSize * 1.5;
   let maxBottom = startY;
   let leftX = rightX;
@@ -1254,7 +1410,7 @@ function drawVerticalColumns(
   cols.forEach((col, ci) => {
     const x = rightX - ci * colGap;
     leftX = Math.min(leftX, x);
-    const bottom = drawVerticalText(ctx, col.join(''), x, startY, spacing);
+    const bottom = drawTitleColumn(ctx, col, x, startY, fontSize, spacing);
     maxBottom = Math.max(maxBottom, bottom);
   });
 
@@ -1265,7 +1421,10 @@ function drawTitle(
   ctx: CanvasRenderingContext2D,
   title: string,
   colors: ColorTheme,
+  horizontal = false,
 ): { bottomY: number; leftX: number } {
+  if (horizontal) return drawHorizontalTitle(ctx, title, colors);
+
   ctx.fillStyle = colors.titleText ?? colors.text;
 
   // 处理词牌 · 分隔符
@@ -1321,6 +1480,59 @@ function drawCiTitle(
   };
 }
 
+/** 横排标题：右上角、右对齐，逐行一条 0.5em 色带（上沿字心 +0.25em） */
+function drawHorizontalTitle(
+  ctx: CanvasRenderingContext2D,
+  title: string,
+  colors: ColorTheme,
+): { bottomY: number; leftX: number } {
+  const lines = horizontalTitleLines(title);
+  const size = horizontalTitleSize(title);
+  const lineAdv = size * TITLE_LINE_ADV;
+  const rightX = W * 0.85;
+  let leftX = rightX;
+
+  lines.forEach((line, i) => {
+    const cy = TITLE_PAD_TOP + size * 0.5 + i * lineAdv;
+    const { cipai, sub } = splitCipai(line);
+    const subSize = Math.round(size * 0.62);
+    const cipaiW = trackedWidth(cipai, size);
+    const subW = sub ? trackedWidth(sub, subSize) : 0;
+    const totalW = cipaiW + (sub ? size * 0.28 + subW : 0);
+    const left = rightX - totalW;
+    leftX = Math.min(leftX, left);
+
+    // 色带：半字高，上沿压住字身下缘、下沿落到字外
+    ctx.fillStyle = colors.accent;
+    ctx.fillRect(left, cy + size * TITLE_BAND_TOP, totalW, size * TITLE_BAND_H);
+
+    ctx.fillStyle = colors.titleText ?? colors.text;
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+
+    let x = left;
+    const drawRun = (text: string, runSize: number, y: number, weight: number) => {
+      const chars = [...text];
+      ctx.font = exportFont(weight, runSize);
+      chars.forEach((ch, idx) => {
+        ctx.fillText(ch, x, y);
+        x += charAdvance(ch, runSize) + (idx < chars.length - 1 ? runSize * TITLE_TRACKING : 0);
+      });
+    };
+
+    drawRun(cipai, size, cy, 700);
+    if (sub) {
+      x += size * 0.28;
+      drawRun(sub, subSize, cy + (size - subSize) / 2, 400);
+    }
+  });
+
+  return {
+    bottomY: TITLE_PAD_TOP + (lines.length - 1) * lineAdv + size * (0.5 + TITLE_BAND_TOP + TITLE_BAND_H),
+    leftX,
+  };
+}
+
 // ---- 标题色块 ----
 
 interface TitleMeasure {
@@ -1342,9 +1554,13 @@ function measureTitle(title: string): TitleMeasure {
 
   const titleX = W * 0.85;
   const startY = TITLE_PAD_TOP;
-  // 色块只覆盖词牌名（右列）高度，不含题目
-  const visibleChars = Math.min(cipai.length, MAX_COL_CHARS);
-  const bottomY = startY + (visibleChars - 1) * config.spacing + config.fontSize * 0.5;
+  // 色块只覆盖词牌名（最右列）高度，不含题目；手换行后取第一列
+  const firstCol = splitTitleCellColumns(cipai)[0] ?? [];
+  const colH = columnBottom(firstCol, config.fontSize, config.spacing);
+  // 末字为汉字时按字心收半步，保持原有色块长度
+  const lastIsCjk = firstCol.length === 0 || firstCol[firstCol.length - 1].type === 'cjk';
+  const blockH = Math.max(colH - (lastIsCjk ? config.fontSize * 0.5 : 0), config.fontSize);
+  const bottomY = startY + blockH;
   return { titleX, startY, bottomY, fontSize: config.fontSize };
 }
 

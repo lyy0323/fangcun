@@ -3,7 +3,7 @@
 // 从 TopBar.tsx / BoardContext.tsx 抽出，供 reducer / 组件调用，且可在 Node 中
 // 直接做往返（导出 → 解析 → 导入）单元验证。
 // ============================================================================
-import { PLACEHOLDER, resolveAuthor } from './types';
+import { flattenTitle, PLACEHOLDER, resolveAuthor } from './types';
 import type { Board, BoardMetadata, PoemSection, ValidationResult } from './types';
 
 export interface MarkdownPasteSection {
@@ -56,7 +56,7 @@ export function buildBoardMarkdown(
   const author = opts.author === 'off' ? ''
     : opts.author === 'override' ? (meta.author ?? '')
     : resolveAuthor(meta);
-  const heading = author ? `### ${b.title} / ${author}` : `### ${b.title}`;
+  const heading = author ? `### ${flattenTitle(b.title)} / ${author}` : `### ${flattenTitle(b.title)}`;
   const bq = (text: string) => text.split('\n').map(l => `> ${l}`);
   const lines: string[] = [heading, ''];
 

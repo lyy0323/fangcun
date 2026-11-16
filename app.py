@@ -237,17 +237,32 @@ VALID_EVENTS = {
     'add_section', 'delete_section', 'move_section',
     'save_image', 'long_press_image', 'switch_theme',
     'fill_date', 'switch_date_format', 'fill_preface', 'fill_footnote', 'fill_author',
-    'upload_poem',
+    'upload_attempt', 'upload_poem',
     'onboarding_show', 'onboarding_done', 'onboarding_skip',
 }
 
 @app.route("/api/_ping", methods=["POST"])
 def api_ping():
+    """补齐一条已格式化的统计记录（本地队列补发用）。
+
+    Android 端把事件先写本地队列，联网后按原 route 字符串补发到这里，
+    因此这里同时接受 `/api/...` 调用记录与 `_event:...` 事件记录。
+    """
     data = request.get_json(force=True)
     source = data.get("source", "android")
+    if source not in ("frontend", "android"):
+        source = "android"
     route = data.get("route", "")
-    if route.startswith("/api/") and not route.startswith("/api/_"):
-        _record_call_safely(source, route)
+    if route.startswith("_event:"):
+        event = route.split(":")[1] if ":" in route[7:] else route[7:]
+        if event not in VALID_EVENTS:
+            return jsonify({"error": "invalid event"}), 400
+    elif route.startswith("/api/"):
+        if route.startswith("/api/_"):
+            return jsonify({"error": "invalid route"}), 400
+    else:
+        return jsonify({"error": "invalid route"}), 400
+    _record_call_safely(source, route)
     return jsonify({"ok": True})
 
 @app.route("/api/_track", methods=["POST"])
@@ -257,9 +272,12 @@ def track_event():
     if event not in VALID_EVENTS:
         return jsonify({"error": "invalid event"}), 400
     props = data.get("props", {})
+    if not isinstance(props, dict):
+        props = {}
     parts = [f"_event:{event}"]
     for k, v in sorted(props.items()):
-        parts.append(f"{k}={v}")
+        # 作者名等自由文本可能含分隔符，替换掉以免破坏 route 的 k=v / ":" 解析
+        parts.append(f"{k}={str(v).replace(':', ' ').replace('=', ' ')}")
     route = ":".join(parts)
     source = data.get("source", "frontend")
     if source not in ("frontend", "android"):

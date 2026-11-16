@@ -11,6 +11,12 @@ import { lunarToGregorian } from '../lib/dateConvert';
 import type { ValidationResult } from '../lib/types';
 import { X, ChevronUp, ChevronDown, Eye, EyeOff, ScrollText, Info } from 'lucide-react';
 
+/** 标题输入框随内容自动增高（支持手动换行） */
+function autoGrowTitle(el: HTMLTextAreaElement) {
+  el.style.height = 'auto';
+  el.style.height = `${el.scrollHeight}px`;
+}
+
 // ============================================================================
 // Constants
 // ============================================================================
@@ -701,12 +707,12 @@ export function GridEditor() {
     }
   };
 
-  const handleTitleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
+  const handleTitleBlur = (e: React.FocusEvent<HTMLTextAreaElement>) => {
     const val = e.target.value.trim();
     if (val && val !== board.title) dispatch({ type: 'UPDATE_TITLE', title: val });
   };
 
-  const handleTitlePaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
+  const handleTitlePaste = (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
     const text = e.clipboardData.getData('text/plain');
     if (!text) return;
 
@@ -716,7 +722,7 @@ export function GridEditor() {
         const parsed = parseMarkdownPaste(text);
         if (parsed.sections.length > 0 || parsed.title) {
           dispatch({ type: 'IMPORT_MARKDOWN', payload: parsed });
-          if (parsed.title) (e.target as HTMLInputElement).value = parsed.title;
+          if (parsed.title) (e.target as HTMLTextAreaElement).value = parsed.title;
         }
       } catch { /* fall through */ }
       return;
@@ -728,7 +734,7 @@ export function GridEditor() {
       const title = first.trim();
       if (title) {
         dispatch({ type: 'UPDATE_TITLE', title });
-        (e.target as HTMLInputElement).value = title;
+        (e.target as HTMLTextAreaElement).value = title;
       }
       const body = rest.map(l => l.trim()).filter(Boolean);
       if (body.length > 0) {
@@ -752,14 +758,17 @@ export function GridEditor() {
     >
       {/* Board title */}
       <div className="flex flex-col items-center mb-4" onClick={e => e.stopPropagation()}>
-        <input
-          className="text-lg font-semibold text-center bg-transparent outline-none border-b border-dashed border-[var(--grid-empty-border)] focus:border-[var(--accent)] pb-1 w-full max-w-64 text-[var(--text)] placeholder:text-[var(--text-muted)] text-ellipsis overflow-hidden"
+        <textarea
+          ref={(el) => { if (el) autoGrowTitle(el); }}
+          rows={1}
+          className="text-lg font-semibold text-center bg-transparent outline-none border-b border-dashed border-[var(--grid-empty-border)] focus:border-[var(--accent)] pb-1 w-full max-w-64 text-[var(--text)] placeholder:text-[var(--text-muted)] resize-none overflow-hidden leading-snug"
           defaultValue={board.title}
           key={board.id + '-title'}
           placeholder="点击输入标题..."
           onBlur={handleTitleBlur}
           onPaste={handleTitlePaste}
-          onKeyDown={e => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
+          onInput={e => autoGrowTitle(e.currentTarget)}
+          onKeyDown={e => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) e.currentTarget.blur(); }}
           onMouseDown={(e) => {
             const anyImmersive = board.sections.findIndex(s => s.immersive);
             if (anyImmersive >= 0 && !multiSection) {

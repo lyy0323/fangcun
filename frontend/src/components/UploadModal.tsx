@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useBoardContext, useActiveBoard } from '../context/BoardContext';
-import { PLACEHOLDER, resolveAuthor } from '../lib/types';
+import { PLACEHOLDER, resolveAuthor, flattenTitle } from '../lib/types';
 import { ensureGregorianDate } from '../lib/dateConvert';
 import { submitPoem, track } from '../lib/api';
 import type { SubmitResult, SubmitData } from '../lib/api';
@@ -102,8 +102,8 @@ export function UploadModal({ onClose }: { onClose: () => void }) {
       const v = state.validations[idx] ?? null;
       const content = buildSectionContent(genre, sec, v);
       const title = board.sections.length > 1
-        ? formatSequenceTitle(board.title, sec.title, idx + 1, sequenceStyle)
-        : board.title;
+        ? formatSequenceTitle(flattenTitle(board.title), sec.title, idx + 1, sequenceStyle)
+        : flattenTitle(board.title);
       // 序的上传映射：单首画板的序存于画板级 metadata.preface（组诗整组序同源，归入首首）；
       // 组诗各首另有本首小序 sectionPreface。两者并存时按 组序 → 本首序 顺序拼接。
       // 脚注对称：整组注位于文末 → 归入末首；本首注在前、整组注在后。
@@ -163,11 +163,18 @@ export function UploadModal({ onClose }: { onClose: () => void }) {
       footnote: it.footnote,
       legacy_id: it.legacyId || undefined,
     }));
+    // 埋点分两步：尝试（本轮待传首数）与成功（本轮实际传上的首数）。
+    // 组诗按首计数；author 取本批统一署名，供 dashboard 按作者聚合。
+    const author = items[0]?.author?.trim() ?? '';
+    const pending = results.filter(r => !r?.ok).length;
+    track('upload_attempt', { count: pending, genre: board.genre, author });
     // 一首失败立即停止；已成功的跳过 → 再次点击即从断点继续
     const outcome = await runUploadSequence(dataItems, apiKey.trim(), submitPoem, results, setResults);
     setUploading(false);
     if (!outcome.stopped && outcome.results.every(r => r?.ok)) setDone(true);
-    track('upload_poem', { count: items.length, genre: board.genre });
+    // 只计本轮新成功的首数：断点续传不会把上一轮已成功的作品再算一次
+    const uploaded = outcome.results.filter((r, i) => r?.ok && !results[i]?.ok).length;
+    if (uploaded > 0) track('upload_poem', { count: uploaded, genre: board.genre, author });
   };
 
   const hasKey = apiKey.trim().length > 0;

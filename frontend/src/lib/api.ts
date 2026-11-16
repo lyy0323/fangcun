@@ -226,14 +226,42 @@ export async function poemsGetPoem(id: number): Promise<PoemFull> {
   return res.json();
 }
 
+// 直连 coco2 源站：Vercel 回源（write.sjtuguoxue.space → 国内源站）实测
+// 20%–67% 的请求 30s 后 502，埋点会静默丢失。
+const TRACK_REMOTE = 'https://shi.sjtuguoxue.space/__shiva/api/_track';
+
+async function postEvent(url: string, body: string, timeoutMs: number): Promise<void> {
+  const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+  const timer = controller ? setTimeout(() => controller.abort(), timeoutMs) : null;
+  try {
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body,
+      keepalive: true,
+      signal: controller?.signal,
+    });
+    if (!res.ok) throw new Error(`track failed: ${res.status}`);
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
+}
+
 export function track(event: string, props?: Record<string, string | number>) {
-  const url = IS_ANDROID ? 'https://write.sjtuguoxue.space/api/_track' : `${BASE}/_track`;
   const source = IS_ANDROID ? 'android' : 'frontend';
-  fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ event, props, source }),
-  }).catch(() => {});
+  const body = JSON.stringify({ event, props, source });
+  if (IS_ANDROID) {
+    // 本地优先：同源写入本地 Flask 的落盘队列，断网也不丢，联网后补发；
+    // 本地服务异常时才直连源站兜底。
+    postEvent(`${BASE}/_track`, body, 3000)
+      .catch(() => postEvent(TRACK_REMOTE, body, 6000))
+      .catch(() => {});
+    return;
+  }
+  // Web 直连源站；失败重试一次，宁可变多一点也不要丢
+  postEvent(`${BASE}/_track`, body, 8000)
+    .catch(() => new Promise<void>(resolve => setTimeout(resolve, 800)).then(() => postEvent(`${BASE}/_track`, body, 8000)))
+    .catch(() => {});
 }
 
 // ---------- 作品上传 ----------

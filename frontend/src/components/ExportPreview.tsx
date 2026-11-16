@@ -22,7 +22,7 @@ import {
 } from '../lib/exportImage';
 import { track } from '../lib/api';
 import type { ThemeKey, FontKey, AspectRatio } from '../lib/exportImage';
-import type { Board } from '../lib/types';
+import type { Board, ExportPrefs, TitleOrientation } from '../lib/types';
 import { X, Download, Loader, Check, ImageIcon, Copy, ChevronLeft, ChevronRight } from 'lucide-react';
 
 
@@ -257,17 +257,30 @@ interface ExportLoadState {
 }
 
 export function ExportPreview({ onClose }: { onClose: () => void }) {
-  const { state } = useBoardContext();
+  const { state, dispatch } = useBoardContext();
   const board = useActiveBoard();
-  const [theme, setTheme] = useState<ThemeKey>('素白');
-  const [fontKey, setFontKey] = useState<FontKey>(DEFAULT_FONT);
+  const exportPrefs = board?.metadata?.exportPrefs ?? {};
+  const [theme, setTheme] = useState<ThemeKey>(() => (exportPrefs.theme as ThemeKey) || '素白');
+  const [fontKey, setFontKey] = useState<FontKey>(() => (exportPrefs.fontKey as FontKey) || DEFAULT_FONT);
+  const [titleOrientation, setTitleOrientation] = useState<TitleOrientation>(
+    () => exportPrefs.titleOrientation ?? 'vertical',
+  );
   const [loadState, setLoadState] = useState<ExportLoadState>({ phase: 'idle' });
   const [canvasEls, setCanvasEls] = useState<HTMLCanvasElement[]>([]);
   const [page, setPage] = useState(0);
   const [downloadState, setDownloadState] = useState<'idle' | 'saving' | 'done'>('idle');
   const [copyState, setCopyState] = useState<'idle' | 'copying' | 'done' | 'error'>('idle');
-  const [align, setAlign] = useState<TextAlign>('center');
-  const [splitValue, setSplitValue] = useState<number | 'all'>('all');
+  const [align, setAlign] = useState<TextAlign>(() => exportPrefs.align ?? 'center');
+  const [splitValue, setSplitValue] = useState<number | 'all'>(() => exportPrefs.split ?? 'all');
+  // 导出选项随画板持久化：改一次即记住，下次打开还是这套
+  const persistPrefs = useCallback((patch: Partial<ExportPrefs>) => {
+    if (!board) return;
+    dispatch({
+      type: 'UPDATE_METADATA',
+      metadata: { exportPrefs: { ...(board.metadata?.exportPrefs ?? {}), ...patch } },
+    });
+  }, [board, dispatch]);
+
   const previewRef = useRef<HTMLDivElement>(null);
   const previewScrollRef = useRef<HTMLDivElement>(null);
   const renderAbortRef = useRef<AbortController | null>(null);
@@ -301,6 +314,15 @@ export function ExportPreview({ onClose }: { onClose: () => void }) {
   const splitOptions = useMemo(() => buildSplitOptions(sectionCount), [sectionCount]);
   const chunks = useMemo(() => buildChunks(sectionCount, splitValue), [sectionCount, splitValue]);
 
+  // 组诗首数变化后，旧的拆分选择可能已不存在，回到「全部」
+  useEffect(() => {
+    if (!splitOptions.includes(splitValue)) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setSplitValue('all');
+      persistPrefs({ split: 'all' });
+    }
+  }, [splitOptions, splitValue, persistPrefs]);
+
   // 每张拆分图各自的行（含 section 级序/标题/正文/脚注/日期）
   const chunkLines = useMemo(() => {
     if (!board) return [];
@@ -331,11 +353,12 @@ export function ExportPreview({ onClose }: { onClose: () => void }) {
         author: resolveAuthor(metadata),
         sectionCount: chunks[ci][1] - chunks[ci][0],
         align: isFree ? align : undefined,
+        titleOrientation,
       });
       maxMinH = Math.max(maxMinH, minH);
     });
     return resolveAspectRatio(maxMinH);
-  }, [board, chunkLines, chunks, theme, align, isFree]);
+  }, [board, chunkLines, chunks, theme, align, isFree, titleOrientation]);
   const availableThemes = useMemo(() => filterThemesByRatio(aspectRatio), [aspectRatio]);
 
   // 如果当前选中模板不可用，自动切换
@@ -440,6 +463,7 @@ export function ExportPreview({ onClose }: { onClose: () => void }) {
           titleLines: cl.titleLines,
           metaLines: cl.metaLines,
           align: isFree ? align : undefined,
+          titleOrientation,
         });
       });
       if (!isCurrent()) return;
@@ -454,7 +478,7 @@ export function ExportPreview({ onClose }: { onClose: () => void }) {
       setLoadState({ phase: 'error', message: '渲染失败，请重试' });
       console.error('Export render failed:', error);
     }
-  }, [board, chunkLines, chunks, theme, fontKey, align, isFree]);
+  }, [board, chunkLines, chunks, theme, fontKey, align, isFree, titleOrientation]);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -646,7 +670,7 @@ export function ExportPreview({ onClose }: { onClose: () => void }) {
                 max={splitOptions.length - 1}
                 step={1}
                 value={splitOptions.indexOf(splitValue)}
-                onChange={(e) => setSplitValue(splitOptions[Number(e.target.value)])}
+                onChange={(e) => { const v = splitOptions[Number(e.target.value)]; setSplitValue(v); persistPrefs({ split: v }); }}
                 className="w-full accent-[var(--accent)]"
               />
               <div className="flex justify-between text-[11px] text-[var(--text-muted)]">
@@ -661,38 +685,70 @@ export function ExportPreview({ onClose }: { onClose: () => void }) {
               </div>
             </div>
           )}
-          {/* 对齐方式（仅自由诗） */}
-          {isFree && (
-          <div className="flex gap-0.5 border border-[var(--border)] rounded-lg p-0.5 w-fit">
-            {([
-              ['left', 'M2 3h8M2 7h6M2 11h8M2 15h5'],
-              ['center', 'M1 3h10M3 7h6M1 11h10M2 15h8'],
-              // ['right', 'M4 3h8M6 7h6M4 11h8M7 15h5'],
-              ['justify', 'M2 3h8M2 7h8M2 11h8M2 15h8'],
-            ] as [TextAlign, string][]).map(([mode, d]) => (
-              <button
-                key={mode}
-                onClick={() => setAlign(mode)}
-                className={`w-8 h-7 rounded-[0.35rem] flex items-center justify-center transition-colors ${
-                  align === mode
-                    ? 'bg-[var(--accent)] text-white'
-                    : 'text-[var(--text-muted)] hover:bg-[var(--accent-light)]'
-                }`}
-                title={{ left: '左对齐', center: '居中', right: '右对齐', justify: '两端对齐' }[mode]}
-              >
-                <svg width="12" height="18" viewBox="0 0 12 18" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
-                  <path d={d} />
-                </svg>
-              </button>
-            ))}
+          {/* 对齐方式（仅自由诗）+ 标题排向 */}
+          <div className="flex items-center justify-between gap-2">
+            {isFree ? (
+              <div className="flex gap-0.5 border border-[var(--border)] rounded-lg p-0.5 w-fit">
+                {([
+                  ['left', 'M2 3h8M2 7h6M2 11h8M2 15h5'],
+                  ['center', 'M1 3h10M3 7h6M1 11h10M2 15h8'],
+                  // ['right', 'M4 3h8M6 7h6M4 11h8M7 15h5'],
+                  ['justify', 'M2 3h8M2 7h8M2 11h8M2 15h8'],
+                ] as [TextAlign, string][]).map(([mode, d]) => (
+                  <button
+                    key={mode}
+                    onClick={() => { setAlign(mode); persistPrefs({ align: mode }); }}
+                    className={`w-8 h-7 rounded-[0.35rem] flex items-center justify-center transition-colors ${
+                      align === mode
+                        ? 'bg-[var(--accent)] text-white'
+                        : 'text-[var(--text-muted)] hover:bg-[var(--accent-light)]'
+                    }`}
+                    title={{ left: '左对齐', center: '居中', right: '右对齐', justify: '两端对齐' }[mode]}
+                  >
+                    <svg width="12" height="18" viewBox="0 0 12 18" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+                      <path d={d} />
+                    </svg>
+                  </button>
+                ))}
+              </div>
+            ) : <span />}
+            <div
+              className="flex gap-0.5 border border-[var(--border)] rounded-lg p-0.5 w-fit"
+              role="group"
+              aria-label="标题排向"
+            >
+              {(['vertical', 'horizontal'] as TitleOrientation[]).map((mode) => {
+                const active = titleOrientation === mode;
+                const label = mode === 'vertical' ? '竖排标题' : '横排标题';
+                return (
+                  <button
+                    key={mode}
+                    onClick={() => { setTitleOrientation(mode); persistPrefs({ titleOrientation: mode }); }}
+                    className={`w-8 h-7 rounded-[0.35rem] flex items-center justify-center transition-colors ${
+                      active
+                        ? 'bg-[var(--accent)] text-white'
+                        : 'text-[var(--text-muted)] hover:bg-[var(--accent-light)]'
+                    }`}
+                    title={label}
+                    aria-label={label}
+                    aria-pressed={active}
+                  >
+                    <svg width="12" height="18" viewBox="0 0 12 18" fill="none" stroke="currentColor" strokeWidth="1.5">
+                      {mode === 'vertical'
+                        ? <rect x="3.5" y="3" width="5" height="12" rx="1" />
+                        : <rect x="1" y="6.5" width="10" height="5" rx="1" />}
+                    </svg>
+                  </button>
+                );
+              })}
+            </div>
           </div>
-          )}
           {/* 字体选择 */}
           <div className="flex flex-wrap gap-1.5">
             {FONT_OPTIONS.map((f) => (
               <button
                 key={f.key}
-                onClick={() => setFontKey(f.key)}
+                onClick={() => { setFontKey(f.key); persistPrefs({ fontKey: f.key }); }}
                 className="w-7 h-7 rounded-full flex items-center justify-center text-xs transition-all shrink-0"
                 style={{
                   fontFamily: previewFontFamily(f.cssDir),
@@ -752,7 +808,7 @@ export function ExportPreview({ onClose }: { onClose: () => void }) {
               return (
               <button
                 key={k}
-                onClick={() => { if (available) { setTheme(k); track('switch_theme', { theme: k }); } }}
+                onClick={() => { if (available) { setTheme(k); persistPrefs({ theme: k }); track('switch_theme', { theme: k }); } }}
                 className={`relative w-6 h-6 rounded-full transition-all shrink-0 ${available ? '' : 'opacity-20 pointer-events-none'}`}
                 style={{
                   ...bgStyle,

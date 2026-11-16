@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useBoardContext, useActiveBoard } from '../context/BoardContext';
-import { PLACEHOLDER } from '../lib/types';
+import { flattenTitle, PLACEHOLDER } from '../lib/types';
 import { Layers, Plus, ClipboardType, Check, Upload, Sun, Moon, Settings, ChevronRight, ChevronDown, X, BookOpen, Library, Lightbulb, SendHorizontal, ExternalLink, Download, FolderUp, ImageDown, ScrollText, FolderPlus, Pencil, FolderInput, ChevronUp, ArrowUpDown, ArrowDown, ArrowUp, ArrowDownAZ, Undo2, Redo2, FileText, Compass } from 'lucide-react';
 import type { Board, SortMode } from '../lib/types';
 import { track } from '../lib/api';
@@ -287,6 +287,7 @@ function SettingsModal({ onClose, onExportMarkdown }: { onClose: () => void; onE
           </a>
           <p className="font-medium text-[var(--text)] pt-1">更新日志</p>
           <ul className="list-disc pl-4 space-y-1">
+            <li>v3.0.3 (11-16) — 导出图片：标题可手动换行、可选择横排（默认竖排），竖排西文按词旋转；导出选项随画板记忆</li>
             <li>v3.0.2 (10-27) — Bugfix：修复组诗上传标题丢失总题及序数重复问题，支持空格与括号连缀</li>
             <li>维护更新 (2026-09-27) — 修复典故、对语、同位查询失败时误显示「无结果」或其他标签结果的问题；查询失败时显示重试提示，快速切换标签时结果保持对应</li>
             <li>v3.0 (09-09) — 上古韵检测分设「诗经韵 51 部 / 楚辞韵 36 部」两套韵书，支持上古创作与校验；字典与查字新增上古释义；新建「韵书总览」参考站（五部韵书·查字·词谱·诗格·教程）并在韵书首页加入全库韵部流变桑基图（Beta）；Markdown 粘贴导入可重建标点与引号；新手引导改为聚光灯式引导；导出默认字体改为汇文明朝体；修复上传丢失序/脚注、组诗断点续传等</li>
@@ -810,7 +811,7 @@ export function TopBar() {
           author: (localStorage.getItem('fangcun_export_author') || 'all') as 'off' | 'override' | 'all',
           date: localStorage.getItem('fangcun_export_date') !== '0',
         }, state.validations)
-      : `${board.title}\n${buildText()}`;
+      : `${flattenTitle(board.title)}\n${buildText()}`;
     navigator.clipboard.writeText(text).then(() => {
       setCopied(true);
       track('copy_text');

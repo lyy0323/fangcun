@@ -9,6 +9,23 @@ export interface InspirationCard {
   createdAt: number;
 }
 
+/** 标题排向：竖排（默认）或横排 */
+export type TitleOrientation = 'vertical' | 'horizontal';
+
+/** 导出图片选项，随画板持久化 */
+export interface ExportPrefs {
+  theme?: string;
+  fontKey?: string;
+  align?: 'left' | 'center' | 'right' | 'justify';
+  titleOrientation?: TitleOrientation;
+  split?: number | 'all';
+}
+
+/** 标题可能带手动换行（仅导出排版用）；复制/上传/Markdown 等出口统一归一为空格 */
+export function flattenTitle(title: string): string {
+  return title.replace(/[\r\n]+/g, ' ').replace(/\s{2,}/g, ' ').trim();
+}
+
 export interface BoardMetadata {
   author?: string;
   date?: string;
@@ -18,6 +35,7 @@ export interface BoardMetadata {
   preface?: string;
   footnote?: string;
   legacyId?: string;
+  exportPrefs?: ExportPrefs;
 }
 
 export function resolveAuthor(metadata?: BoardMetadata): string {
